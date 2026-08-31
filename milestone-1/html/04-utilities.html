@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>THE CITY OF VAEL — Milestone 1 · 04 Utilities</title>
+  <link rel="stylesheet" href="../assets/audit.css" />
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-kicker">Milestone 1 &nbsp;·&nbsp; Technical Audit &nbsp;·&nbsp; August 2026</div>
+    <img class="cover-medallion" src="../assets/vael-medallion.png" alt="THE CITY OF VAEL medallion" />
+    <div class="cover-center">
+      <h1>THE CITY OF VAEL</h1>
+      <div class="cover-term">Utilities</div>
+      <div class="doc-title">04 &nbsp;—&nbsp; APIs and Integrations Review</div>
+      <p class="doc-sub">What is hooked up, what is labeled on the panel, and what does not exist yet.</p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Prepared for</strong>Tony Grant, Owner<br>TSG Construction LLC</div>
+      <div><strong>Prepared by</strong>Appifest — Technical Audit<br>Continuing the existing prototype</div>
+      <div><strong>Document type</strong>Milestone 1 deliverable<br>PRD acceptance pack</div>
+      <div><strong>Date / method</strong>25 August 2026<br>Read-only inspection of the live tree</div>
+    </div>
+  </section>
+  <main class="interior">
+    <h2>1. Utilities in the PRD sense</h2>
+    <p class="lead">Utilities are APIs, edge functions, and third-party connections. For a City that is meant to match people in real time across devices, this is the electrical and plumbing. Today the building has labeled breaker panels and almost no live feed.</p>
+
+    <h2>2. Inventory</h2>
+    <table>
+      <thead><tr><th>Utility</th><th>Status</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Live database / Auth project</td><td>Not connected to the running app</td><td><code>supabase = null</code> without env vars. No <code>.env</code> in this tree.</td></tr>
+        <tr><td>Supabase JS SDK</td><td>Listed dependency; inert at runtime</td><td><code>package.json</code>; <code>src/integrations/supabase/client.ts</code></td></tr>
+        <tr><td>Edge functions</td><td>None</td><td>No <code>supabase/functions/</code> directory</td></tr>
+        <tr><td>File storage bucket</td><td>Disabled / unused</td><td><code>supabase/config.toml</code> storage enabled = false. Media <code>storage_reference</code> stays null.</td></tr>
+        <tr><td>SMS</td><td>Not connected</td><td><code>notificationChannels.ts</code>: only <code>in_app</code> is true. Label: NOT YET CONNECTED. Local consent only.</td></tr>
+        <tr><td>Email</td><td>Not connected</td><td>Same channel map. Mock “resend verification” does not send mail.</td></tr>
+        <tr><td>Web push / native push</td><td>Not connected</td><td>Same channel map. No Firebase/APNs.</td></tr>
+        <tr><td>Payments / Stripe</td><td>Not present</td><td>Zero Stripe references in <code>src/</code>. Extended VAEL checkout is a local demo. <code>visibility_plans.is_purchasable</code> defaults false.</td></tr>
+        <tr><td>External content sources</td><td>Placeholders</td><td><code>sourceRegistry.ts</code> uses <code>example.com</code> URLs. No live fetch of third-party sites.</td></tr>
+        <tr><td>Concierge</td><td>Local rules engine</td><td><code>concierge.ts</code> — keyword routing, explicitly not a live AI service, no network call.</td></tr>
+        <tr><td>CI (GitHub Actions)</td><td>Not in this tree</td><td>No <code>.github/</code>. SQL test README mentions a workflow file that is not present here. 0017 cites an external <code>infra/vael-db-validator</code> branch/folder that is not in this repository.</td></tr>
+        <tr><td>Deploy (Netlify / Vercel / Docker)</td><td>None</td><td>No <code>netlify.toml</code>, <code>vercel.json</code>, or Dockerfile.</td></tr>
+        <tr><td>Git remote</td><td>None in this copy</td><td>This workspace has no <code>.git</code> directory. Architecture notes say historically there was no configured remote.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>3. Notification plumbing</h2>
+    <p>Five channels are named: in-app, SMS, web push, email, native push. Only in-app is marked connected. Screens that offer channel toggles are required to read <code>CHANNEL_CONNECTED</code> / <code>channelStatusLabel()</code> rather than pretending a vendor exists.</p>
+    <p>On the Foundation drawing, <code>notification_events</code> can hold in-app records. <code>notification_deliveries</code> is the meter for actual sends — and nothing in SQL or TypeScript writes to it. That is honest incompleteness, not a hidden send path.</p>
+    <p>The notification <em>service</em> is implemented against those tables and is <strong>not wired to any screen</strong>. The bell, notification pages, and lifecycle notices still read/write <code>mockNotifications.ts</code> (and related preference/consent mocks) directly.</p>
+
+    <h2>4. Media plumbing</h2>
+    <p>What users attach in Handshake chat today goes through <code>mockAttachments.ts</code> (metadata in localStorage, preview as a session object URL). A parallel media service writes a different local key and is unused by those screens. The Supabase media provider can create a <code>pending</code> metadata row and cannot mark a file stored: that function is service-role-only, and no callback/edge function exists to call it. End to end, there is no Utility that holds file bytes in the cloud.</p>
+    <p>Profile documents in local mode store file bytes as a data URL on the record — a documented exception. That will not survive a Foundation cutover without a storage Utility.</p>
+
+    <h2>5. Payments (explicitly out of scope)</h2>
+    <p>The PRD puts payment processing and in-platform commissions out of scope unless a Change Order is approved. Finalizing the subscription model is also out of scope. What exists is structural demo only:</p>
+    <ul>
+      <li>Extended VAEL plans, checkout, and success pages (protected files).</li>
+      <li>A <code>DEMO PRICING — NOT YET AVAILABLE FOR PURCHASE</code> label on paid tiers.</li>
+      <li>SQL <code>price_demo_cents</code> / <code>is_purchasable = false</code>.</li>
+    </ul>
+    <p>Milestone 3’s “subscription gating, structural only” can reuse these hooks. It must not quietly become Stripe.</p>
+
+    <h2>6. Dead Utility: <code>exchange_listings</code></h2>
+    <p><code>src/data/listings.ts</code> calls <code>supabase.from("exchange_listings")</code>. That table is not in migrations 0001–0020. The live listing Room is <code>mockListings.ts</code> / drawn table <code>vaels</code>. <code>useListings.ts</code> imports the dead module; no page imports the hook. This is leftover original-plan plumbing and the source of three of the seven known TypeScript errors.</p>
+
+    <h2>7. Local verification Utility</h2>
+    <p>The repo does include developer-side inspectors: <code>npm run verify</code> (<code>dev-agent/verify.mjs</code>) and <code>npm run vael:db-verify</code> (<code>scripts/vael-db-verify.mjs</code>). SQL tests under <code>supabase/tests/</code> are design-review assertion blocks (not evidence they have been run against a live DB in this copy). They are not a substitute for CI or a deploy checklist (Milestone 4).</p>
+
+    <h2>8. Third-party risk summary</h2>
+    <div class="callout bad">
+      <div class="label">Do not connect from this milestone</div>
+      <p>The project rule is explicit: never push, publish, or connect SMS, email, push, storage, database, or hosting without separate Owner approval. This audit did not connect anything. Leftover CLI metadata naming <code>vael-media-tech-dev</code> should be treated as a credential-hygiene / Owner-confirmation item (Punch List), not as an invitation to resume that link.</p>
+    </div>
+
+    <h2>9. Utilities verdict</h2>
+    <p>In-app notifications, local file previews, and a rules-based concierge are the only “utilities” a user actually feels — and they are all in-process, not networked. Everything the PRD will eventually need for a real City (shared Foundation, storage, outbound messaging, deploy, CI) is either a drawing, a labeled demo, or absent. That is appropriate for a prototype. It is also why Milestone 4’s deployment checklist does not exist yet, and why Milestone 2 should not start with “turn on Supabase.”</p>
+    <p class="footer-note">
+      THE CITY OF VAEL · Milestone 1 Technical Audit · 04 Utilities.
+      No third-party service was contacted while producing this document.
+    </p>
+  </main>
+</body>
+</html>

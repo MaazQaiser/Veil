@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>THE CITY OF VAEL — Milestone 1 · 01 Framing</title>
+  <link rel="stylesheet" href="../assets/audit.css" />
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-kicker">Milestone 1 &nbsp;·&nbsp; Technical Audit &nbsp;·&nbsp; August 2026</div>
+    <img class="cover-medallion" src="../assets/vael-medallion.png" alt="THE CITY OF VAEL medallion" />
+    <div class="cover-center">
+      <h1>THE CITY OF VAEL</h1>
+      <div class="cover-term">Framing</div>
+      <div class="doc-title">01 &nbsp;—&nbsp; Repository and Architecture Review</div>
+      <p class="doc-sub">How the City is framed today: shell, one live district, mock stores, and a half-wired service seam.</p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Prepared for</strong>Tony Grant, Owner<br>TSG Construction LLC</div>
+      <div><strong>Prepared by</strong>Appifest — Technical Audit<br>Continuing the existing prototype</div>
+      <div><strong>Document type</strong>Milestone 1 deliverable<br>PRD acceptance pack</div>
+      <div><strong>Date / method</strong>25 August 2026<br>Read-only inspection of the live tree</div>
+    </div>
+  </section>
+  <main class="interior">
+    <h2>1. What Framing is</h2>
+    <p class="lead">Framing is the application architecture: the React/TypeScript structure, how screens are nested, and which modules are allowed to own data. This inspection found a coherent city-and-district frame. It also found a second, newer frame (the service/provider seam) sitting in front of the older one, only partly connected to the walls.</p>
+
+    <h2>2. Stack (as running)</h2>
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>UI</td><td>React 18 + TypeScript + Vite 5</td><td><code>package.json</code>. Product name in npm is still <code>media-tech-exchange</code> — leftover from the Media &amp; Technology origin.</td></tr>
+        <tr><td>Routing</td><td>react-router-dom v6</td><td>Flat route list in <code>src/App.tsx</code> — city shell, nested Media &amp; Technology, legal, legacy redirects.</td></tr>
+        <tr><td>Styling</td><td>Tailwind CSS + VAEL design tokens</td><td><code>design/VAEL_DESIGN_SYSTEM.md</code>, <code>src/index.css</code>.</td></tr>
+        <tr><td>Client state</td><td><code>AuthProvider</code> / <code>useAuth</code> only</td><td>No Redux/Zustand. TanStack Query is installed and wrapped but is not the primary data pattern.</td></tr>
+        <tr><td>Tests</td><td>vitest, logic modules only</td><td>55 <code>*.test.ts</code> files. Zero <code>.tsx</code> component tests, by established convention.</td></tr>
+        <tr><td>Backend at runtime</td><td>None</td><td>Every live write goes through a <code>mockX.ts</code> module into <code>localStorage</code>.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout info">
+      <div class="label">Lineage, not a second product</div>
+      <p>This repository was originally scaffolded from an unrelated construction-trades platform (“The Contractor Exchange”). <code>PLAN.md</code> is historical. No live code, users, or branding are shared with that product. Only patterns were carried forward. The PRD’s “continue, don’t rebuild” applies to <em>this</em> tree.</p>
+    </div>
+
+    <h2>3. Folder map</h2>
+    <table>
+      <thead><tr><th>Path</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/pages/city/*</code></td><td>City-wide Rooms: home, feed, search, go visible, districts, account, notifications, messages, Extended VAEL demo</td></tr>
+        <tr><td><code>src/pages/mediaTechnology/*</code></td><td>District layout wrapper only</td></tr>
+        <tr><td><code>src/pages/*.tsx</code> (legacy flat)</td><td>The actual Media &amp; Technology marketplace: Board, Veil, Handshake, profile, admin, community</td></tr>
+        <tr><td><code>src/components/city/*</code></td><td>City chrome (nav, district cards, homepage)</td></tr>
+        <tr><td><code>src/lib/districts.ts</code></td><td>The district registry — static data, no storage</td></tr>
+        <tr><td><code>src/lib/mock*.ts</code></td><td>One module per localStorage domain. The only legal readers/writers of those keys</td></tr>
+        <tr><td><code>src/lib/{auth,vael,connection,…}/</code></td><td>Thirteen service/provider seams prepared for a future Foundation cutover</td></tr>
+        <tr><td><code>src/lib/matching.ts</code></td><td>Percentage-fit engine — Media &amp; Technology fields, not generic</td></tr>
+        <tr><td><code>supabase/migrations/</code></td><td>Foundation drawings (0001–0020). Not what the running app uses</td></tr>
+        <tr><td><code>src/data/listings.ts</code></td><td>Dead scaffolding. Talks to a table named <code>exchange_listings</code> that does not exist in any migration. Unused by screens</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. City shell vs district Rooms</h2>
+    <p>The City is a parent shell. Districts are Rooms inside it. The registry in <code>src/lib/districts.ts</code> is the map of lots:</p>
+    <table>
+      <thead><tr><th>Slug</th><th>Name</th><th>Status</th><th>Route</th></tr></thead>
+      <tbody>
+        <tr><td><code>media-technology</code></td><td>Media &amp; Technology</td><td><span class="badge badge-live">Live</span></td><td><code>/media-technology</code></td></tr>
+        <tr><td><code>contractor</code></td><td>Contractor</td><td><span class="badge badge-soon">Coming Soon</span></td><td><code>/districts/contractor</code></td></tr>
+        <tr><td><code>trucking</code></td><td>Trucking</td><td><span class="badge badge-soon">Coming Soon</span></td><td><code>/districts/trucking</code></td></tr>
+        <tr><td><code>nursing-healthcare</code></td><td>Nursing / Healthcare</td><td><span class="badge badge-soon">Coming Soon</span></td><td><code>/districts/nursing-healthcare</code></td></tr>
+        <tr><td><code>equipment</code></td><td>Equipment</td><td><span class="badge badge-early">Early Access</span></td><td><code>/districts/equipment</code></td></tr>
+        <tr><td><code>government</code></td><td>Government</td><td><span class="badge badge-early">Early Access</span></td><td><code>/districts/government</code></td></tr>
+        <tr><td><code>real-estate</code></td><td>Real Estate</td><td><span class="badge badge-early">Early Access</span></td><td><code>/districts/real-estate</code></td></tr>
+        <tr><td><code>legal-finance</code></td><td>Legal &amp; Finance</td><td><span class="badge badge-early">Early Access</span></td><td><code>/districts/legal-finance</code></td></tr>
+      </tbody>
+    </table>
+    <p>Non-live lots all render <code>DistrictPlaceholder.tsx</code>, which states plainly: this district is not open; Media &amp; Technology is the only fully working district. Interest is stored locally via <code>mockEarlyAccess.ts</code> — not a real waitlist backend.</p>
+    <div class="callout warn">
+      <div class="label">PRD mismatch — Framing of the lots</div>
+      <p>The PRD names Construction Exchange, Residential, and Commercial. The registry names Contractor, and has no Residential or Commercial lots. Real Estate is early access, not a homeowner flow. A second live district should be a <em>new parallel folder/layout</em>, not a generic rewrite of Media &amp; Technology, unless the Owner explicitly orders that refactor. That rule is already written in the project’s own architecture file.</p>
+    </div>
+
+    <h2>5. Routing</h2>
+    <h3>City (<code>CityLayout</code>)</h3>
+    <p><code>/</code> home · <code>/feed</code> · <code>/search</code> · <code>/go-visible</code> · <code>/districts</code> · <code>/districts/:slug</code> · <code>/today</code> · <code>/concierge</code> · <code>/account</code> · <code>/account/visibility</code> · <code>/account/notifications</code> · <code>/notifications</code> · <code>/messages</code> · <code>/extended-vael</code> (plans / checkout / success)</p>
+    <h3>Media &amp; Technology (<code>MediaTechnologyLayout</code>)</h3>
+    <p><code>/media-technology</code> plus auth, join, veil, post-opportunity, board, connections, match/buyer dashboards, profile, admin, how-it-works, community.</p>
+    <h3>Legal (city chrome, not district)</h3>
+    <p><code>/legal/terms</code> · <code>/legal/privacy</code> · <code>/legal/sms-terms</code></p>
+    <h3>Legacy redirects</h3>
+    <p>Every pre-city flat path (<code>/board</code>, <code>/connections/:id</code>, <code>/profile/:username</code>, …) redirects into <code>/media-technology/…</code> so old bookmarks still work.</p>
+
+    <h2>6. The mockX.ts ownership rule</h2>
+    <p>Each <code>src/lib/mock*.ts</code> file is the only place that may read or write its localStorage key. Pages must go through that module. This rule is documented in each file header and in the project’s architecture notes. It is Framing discipline, and it is generally followed.</p>
+    <table>
+      <thead><tr><th>Module</th><th>Keys owned</th></tr></thead>
+      <tbody>
+        <tr><td><code>mockAuth.ts</code></td><td><code>mtx_mock_accounts_v1</code>, <code>mtx_mock_session_v1</code>, <code>mtx_mock_pending_reset_v1</code></td></tr>
+        <tr><td><code>mockListings.ts</code></td><td><code>mtx_mock_listings_v1</code></td></tr>
+        <tr><td><code>mockConnections.ts</code></td><td><code>mtx_mock_connections_v1</code>, <code>mtx_mock_messages_v1</code>, <code>mtx_mock_reports_v1</code></td></tr>
+        <tr><td><code>mockProfiles.ts</code></td><td><code>mtx_mock_profile_details_v1</code></td></tr>
+        <tr><td><code>mockIdentity.ts</code></td><td><code>mtx_mock_identity_v1</code></td></tr>
+        <tr><td><code>mockCommunity.ts</code></td><td>posts, comments, reactions, saves, seeded, show-samples keys</td></tr>
+        <tr><td><code>mockDocuments.ts</code></td><td><code>mtx_mock_documents_v1</code></td></tr>
+        <tr><td><code>mockAttachments.ts</code></td><td><code>mtx_mock_attachments_v1</code></td></tr>
+        <tr><td><code>mockNotifications.ts</code> + preferences + SMS consent</td><td>three separate keys</td></tr>
+        <tr><td><code>mockBlockedUsers.ts</code></td><td><code>mtx_mock_blocked_users_v1</code></td></tr>
+        <tr><td><code>mockAdmin.ts</code> / <code>mockCampaigns.ts</code></td><td>badges, activity, campaigns</td></tr>
+        <tr><td><code>mockEarlyAccess.ts</code> / <code>mockAccessIntent.ts</code></td><td>city-prefixed keys (not <code>mtx_</code>)</td></tr>
+        <tr><td><code>mockBadges.ts</code> / <code>mockSearch.ts</code></td><td>None — computed / aggregated reads only</td></tr>
+      </tbody>
+    </table>
+
+    <h2>7. The second frame: service / provider seam</h2>
+    <p>Stage 15 added a provider boundary in front of many domains so a future Foundation cutover could flip a flag instead of rewriting screens. Each domain has <code>XService.ts</code> plus local and (usually) Supabase providers. Authority is summarized in <code>src/lib/authority/registry.ts</code>.</p>
+    <table>
+      <thead><tr><th>Domain</th><th>Wired into UI today?</th><th>What screens actually call</th></tr></thead>
+      <tbody>
+        <tr><td>auth</td><td>Yes — session only</td><td><code>useAuth</code> → <code>authService</code>. Many identity/directory calls still go to <code>mockAuth</code> directly (see 03).</td></tr>
+        <tr><td>profileDirectory</td><td>Yes</td><td>Public username/identity reads</td></tr>
+        <tr><td>profile</td><td>Yes — writes only</td><td><code>ProfilePage</code> writes through <code>profileService</code>; display reads still hit <code>mockProfiles</code></td></tr>
+        <tr><td>documents</td><td>Yes</td><td><code>ProfileDocumentsTab</code></td></tr>
+        <tr><td>community</td><td>Yes</td><td>City feed save + district community composer/cards</td></tr>
+        <tr><td>vael</td><td>No</td><td>Board / VaelFlow still use <code>mockListings</code></td></tr>
+        <tr><td>connection</td><td>No</td><td>Connections / ConnectionDetail / handshake button still use <code>mockConnections</code></td></tr>
+        <tr><td>notification / messaging / media</td><td>No</td><td>Screens still use <code>mockNotifications</code>, <code>mockConnections</code> messages, <code>mockAttachments</code></td></tr>
+        <tr><td>block / report</td><td>No</td><td>Connection-level block/report on the old mock path</td></tr>
+        <tr><td>moderation</td><td>No</td><td>No local provider by design. Refuses every call without a live Foundation</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <div class="label">Framing risk</div>
+      <p>Two generations of the same walls. The new seam is real code, with tests, but most of the Rooms people actually walk through still nail into the old studs. Flipping a <code>VITE_*_PROVIDER=supabase</code> flag today would not move Board, Handshake, or Messages onto the Foundation — those screens never call the seam. Auth is the exception, and that exception is dangerous (see 03).</p>
+    </div>
+
+    <h2>8. Core Rooms as framed today</h2>
+    <h3>Veil (24-hour default)</h3>
+    <p><code>visibilityPlans.ts</code> defines Free Daily VAEL at 24 hours. <code>visibilityLifecycle.ts</code> sets <code>DEFAULT_DURATION_HOURS = 24</code>. New listings in <code>mockListings.ts</code> receive <code>expiresAt</code> at creation. The board filters with <code>isLifecycleVisible()</code>. Re-veil reconciles open connections via <code>mockConnections.reconcileConnectionsAfterReVael</code>. Extended plans are catalog + demo checkout only.</p>
+    <h3>Matching Board</h3>
+    <p><code>src/lib/matching.ts</code> scores offering vs seeking listings. Weights (when applicable, sum 100): Discipline 22, Skills 10, Tools 9, Certifications 6, Location 10, Remote/Onsite 6, Timing 11, Experience 9, Engagement 6, Budget proxy 5, Completeness proxy 6. Bands: Strong ≥80, Good ≥60, Possible ≥40. This engine is Media &amp; Technology’s, not a city-wide engine. It is a protected file — do not change weights without Owner confirmation.</p>
+    <h3>Handshake Room</h3>
+    <p>Unified model in <code>mockConnections.ts</code>: source is <code>board_match</code> or <code>handshake</code>; status pending / declined / connected / closed. Full profiles and chat live on the connection detail screen after mutual accept. <code>connectionService</code> exists and is unused by pages.</p>
+    <h3>Profiles</h3>
+    <p><code>ProfileDetails</code> holds headline, bio, disciplines, skills, tools, location, rates, portfolio links, team. License, insurance, capability statement, and related credentials live on the documents tab (<code>DOC_TYPES</code> in <code>docTypes.ts</code>), not as first-class columns on the profile record. Completeness is a heuristic, not a verified-identity workflow.</p>
+    <h3>Community</h3>
+    <p>City homepage and <code>/feed</code> mix community cards with listings via <code>homeFeed.ts</code>. District community lives at <code>/media-technology/community</code>. Both go through <code>communityService</code> for posts/saves. Sample/demo posts are local-only by design.</p>
+
+    <h2>9. Protected framing (do not casually restud)</h2>
+    <p>Observed pattern across prior stages, not a mechanical lock: <code>matching.ts</code>, <code>Board.tsx</code> sort order, <code>LiveExchangeDemo.tsx</code>, and the Extended VAEL page set. Confirm with the Owner before changing them. <code>private/patent</code> is gitignored and must not be created or referenced.</p>
+
+    <h2>10. Inspections (as designed in this repo)</h2>
+    <p>The project’s own verifier (<code>dev-agent/verify.mjs</code>) documents a vitest baseline of <strong>586 tests / 57 files</strong> and exactly <strong>7 TypeScript errors</strong> that are treated as a known fingerprint, not a license to add more:</p>
+    <ul>
+      <li>3 in <code>src/data/listings.ts</code> — dead Supabase client possibly null / <code>never[]</code></li>
+      <li>2 in <code>vite.config.ts</code> — Node <code>path</code> / <code>__dirname</code> types</li>
+      <li>2 in <code>vitest.config.ts</code> — same</li>
+    </ul>
+    <p>This audit copy of the workspace had no <code>.git</code> directory and no successful <code>npm install</code> during the inspection window, so those commands were not re-run here. The fingerprint above is what the repository itself claims. A fresh clone with dependencies should re-confirm before Milestone 2 starts.</p>
+
+    <h2>11. Framing verdict</h2>
+    <div class="callout ok">
+      <div class="label">Keep the frame</div>
+      <p>City shell + one live district + mock ownership + protected matching is a sound continue-don’t-rebuild Framing. The unfinished work is (a) connecting the new service seam to the Rooms people already use, and (b) adding PRD districts as new parallel Rooms, not by melting Media &amp; Technology into a generic blob.</p>
+    </div>
+    <p class="footer-note">
+      THE CITY OF VAEL · Milestone 1 Technical Audit · 01 Framing.
+      This document does not authorize development, connection of a live backend, or any Change Order.
+    </p>
+  </main>
+</body>
+</html>

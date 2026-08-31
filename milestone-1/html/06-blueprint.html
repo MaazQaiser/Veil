@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>THE CITY OF VAEL — Milestone 1 · 06 Blueprint</title>
+  <link rel="stylesheet" href="../assets/audit.css" />
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-kicker">Milestone 1 &nbsp;·&nbsp; Technical Audit &nbsp;·&nbsp; August 2026</div>
+    <img class="cover-medallion" src="../assets/vael-medallion.png" alt="THE CITY OF VAEL medallion" />
+    <div class="cover-center">
+      <h1>THE CITY OF VAEL</h1>
+      <div class="cover-term">Blueprint / Inspection Report</div>
+      <div class="doc-title">06 &nbsp;—&nbsp; Prioritized Finish List</div>
+      <p class="doc-sub">Recommended order for Milestones 2–4. A map, not a permit to start building.</p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Prepared for</strong>Tony Grant, Owner<br>TSG Construction LLC</div>
+      <div><strong>Prepared by</strong>Appifest — Technical Audit<br>Continuing the existing prototype</div>
+      <div><strong>Document type</strong>Milestone 1 deliverable<br>PRD acceptance pack</div>
+      <div><strong>Date / method</strong>25 August 2026<br>Read-only inspection of the live tree</div>
+    </div>
+  </section>
+  <main class="interior">
+    <h2>1. How this blueprint should be used</h2>
+    <p class="lead">The PRD requires an Owner-readable prioritized finish list after the audit, using construction vocabulary. This is that list. It recommends sequence. It does not change scope. Each later milestone still needs Owner approval before work begins. Anything that is a rebuild, a payment system, a finalized subscription model, or a district not in the PRD remains a Change Order.</p>
+    <div class="callout truth">
+      <div class="label">Governing recommendation</div>
+      <p>Finish the one live Room so it is the pattern, then copy the pattern into Construction and Trucking as new parallel Rooms. Do not melt Media &amp; Technology into a generic engine first. Do not pour the Foundation under a half-wired frame. Do not open a district lot until it has real Veil, Board, Handshake, and Profile — or keep the Coming Soon label.</p>
+    </div>
+
+    <h2>2. What “done” means for the whole engagement</h2>
+    <p>PRD success: the City functions as the product it is meant to be — availability in and out, 24-hour default veil, percentage board, Handshake before reveal, verified-style profiles, community that brings people back, Construction and Trucking as real exchanges, Residential and Commercial flows, communities integrated, structural subscription hooks, then a hardened handoff. Today that sentence is true only for Media &amp; Technology, locally, with honest empty lots beside it.</p>
+
+    <h2>3. Recommended sequence</h2>
+    <h3>Phase 0 — After this pack, before Milestone 2 code</h3>
+    <ol>
+      <li>Owner reviews this Milestone 1 pack (especially 00, 05, 06).</li>
+      <li>Owner closes or defers PL-020–025 (names, anonymous profiles, monetization remaining parked, extra districts, hosted leftover project, Slack cadence).</li>
+      <li>Restore a canonical git checkout with <code>npm install</code> and re-run Inspections (<code>npm run test</code>, <code>npx tsc -b --noEmit</code>, <code>npm run build</code>) against the known 7-error fingerprint. This audit copy could not complete that install.</li>
+      <li>Written approval of Milestone 2 scope — not a vague “keep going.”</li>
+    </ol>
+
+    <h3>Milestone 2 — Stabilize the pattern, then add two Rooms</h3>
+    <p>PRD acceptance: Profiles, Veil, Matching Board, Handshake, Construction Exchange, Trucking Exchange, consistency, regression tests.</p>
+    <table>
+      <thead><tr><th>Order</th><th>Work</th><th>Why this order</th><th>Punch List</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>2.1</td>
+          <td><strong>Wire the live Rooms to the service seam</strong> (still on local providers). Board, Veil, Handshake, messages, notifications, attachments should call <code>XService</code>, not mock modules from pages.</td>
+          <td>Otherwise every later district duplicates the old nails, and Foundation cutover remains a fantasy switch.</td>
+          <td>PL-003, PL-038</td>
+        </tr>
+        <tr>
+          <td>2.2</td>
+          <td><strong>Close identity doors</strong> so auth, handle claim, profile type, and directory do not bypass the seam. Decide admin as roles, not a simulate flag, even if still local.</td>
+          <td>Doors must be consistent before a second district or a Foundation pour.</td>
+          <td>PL-002, PL-036</td>
+        </tr>
+        <tr>
+          <td>2.3</td>
+          <td><strong>Decide the listing payload</strong> with the Owner: either add rich content to the <code>vaels</code> drawing, or reduce the form to what the drawing stores. Implement re-veil reconciliation on the same side of the seam (today SQL has a hole).</td>
+          <td>Silent data loss on cutover is worse than a visible missing field.</td>
+          <td>PL-004</td>
+        </tr>
+        <tr>
+          <td>2.4</td>
+          <td><strong>Profile completeness vs verified identity.</strong> Keep documents; add a clear verification state the PRD can point at (even if “unverified” is the only honest state). Align anonymous visibility with PL-021.</td>
+          <td>PRD calls profiles verified. Shipping more fields without a state machine still fails the sentence.</td>
+          <td>PL-014, PL-021</td>
+        </tr>
+        <tr>
+          <td>2.5</td>
+          <td><strong>File story (structural).</strong> One attachment pipeline. If Foundation is not poured yet, keep local bytes but stop adding a second media store. Do not connect a cloud bucket without a Change Order / Owner approval.</td>
+          <td>Utilities stay dark until approved; Framing should still be single-hose.</td>
+          <td>PL-005</td>
+        </tr>
+        <tr>
+          <td>2.6</td>
+          <td><strong>Construction Exchange as a new parallel Room</strong> after 2.1–2.4. New folder/layout, own fields (licenses, trades, job type — Owner-approved list), own matching weights or a documented sibling of <code>matching.ts</code>. Do not retune Media &amp; Technology weights to fake construction fit. Honest Coming Soon until the Board actually matches construction people.</td>
+          <td>PRD Room. Pattern reuse, not a generic rewrite.</td>
+          <td>PL-010, PL-006, PL-020</td>
+        </tr>
+        <tr>
+          <td>2.7</td>
+          <td><strong>Trucking Exchange</strong> the same way (loads, routes, availability — Owner-approved fields). Same Handshake and Profile spine.</td>
+          <td>PRD Room. Same Framing rule.</td>
+          <td>PL-011</td>
+        </tr>
+        <tr>
+          <td>2.8</td>
+          <td><strong>Inspections.</strong> Logic tests for new scoring and veil rules. Regression on Media &amp; Technology Board/Handshake. No claim of “district consistency” if Construction is a copy-paste with leftover media fields.</td>
+          <td>PRD Milestone 2 last row.</td>
+          <td>PL-016 as far as Handshake safety (block/report) is required for a real room</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <div class="label">What not to do in Milestone 2</div>
+      <p>Do not migrate off React/TypeScript/Supabase-as-drawn. Do not implement Stripe. Do not apply migrations to production. Do not open Healthcare, Government, or Real Estate as live Rooms. Do not change protected matching weights for Media &amp; Technology to “make them generic.”</p>
+    </div>
+
+    <h3>Milestone 3 — Residential, Commercial, Community as one City</h3>
+    <table>
+      <thead><tr><th>Order</th><th>Work</th><th>Notes</th><th>Punch List</th></tr></thead>
+      <tbody>
+        <tr><td>3.1</td><td>Residential flow (homeowner / civilian need → available contractors)</td><td>Only after Owner names the lot (new district vs a mode inside Construction). Do not pretend Real Estate early-access is this.</td><td>PL-012, PL-020</td></tr>
+        <tr><td>3.2</td><td>Commercial flow</td><td>Same: named Room, same Handshake spine, different intake.</td><td>PL-013</td></tr>
+        <tr><td>3.3</td><td>Structural subscription hooks</td><td>Gate a capability (e.g. visibility duration or lead access) behind a flag/plan id with demo pricing still labeled. No billing vendor.</td><td>PL-015, PL-022</td></tr>
+        <tr><td>3.4</td><td>Communities inside each live district + city-wide feed</td><td>Reuse the already-wired <code>communityService</code>. Feed must not invent posts for unfinished districts.</td><td>PL-017</td></tr>
+        <tr><td>3.5</td><td>City-wide integration pass</td><td>One identity, one notification center, district switcher that does not dump you into a fake Board.</td><td>PL-001 still in force until Foundation is poured — say so honestly</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Milestone 4 — Hardening, documentation, handoff</h3>
+    <table>
+      <thead><tr><th>Order</th><th>Work</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>4.1</td><td>Full regression across every delivered district</td><td>Automated logic tests + a real click-through Inspection. Component tests remain optional unless the Owner asks to change that convention.</td></tr>
+        <tr><td>4.2</td><td>Punch List closure or explicit deferral</td><td>Every open PL item: done, or signed off as deferred.</td></tr>
+        <tr><td>4.3</td><td>Runbooks in both vocabularies</td><td>How to run locally; what each mock key is; how the seam flags work; how the Foundation drawings relate. Keep Owner-readable operational notes in the existing Stage 15 style.</td></tr>
+        <tr><td>4.4</td><td>Deployment checklist</td><td>Host, env, never putting service-role keys in <code>VITE_*</code>, storage, Auth redirects. Verify only after Owner approves a host. This repo has no deploy config today (PL-034).</td></tr>
+        <tr><td>4.5</td><td>Optional hygiene</td><td>Dead listings module, package display name, restore <code>.env.example</code> without secrets, drop or archive orphan tables — only with approval, not as drive-by.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. When to pour the Foundation</h2>
+    <p>Pouring (creating/linking a Supabase project, applying 0001–0020, setting env flags) is <strong>not</strong> a Milestone 2 prerequisite in this recommendation. It is a Change-control event under the existing “never connect without Owner approval” rule. Suggested earliest responsible moment: after 2.1–2.4 so screens actually hit the seam, after PL-004/005 have an Owner-accepted answer, and after a dedicated Doors Inspection against a throwaway project — not against production, and not using leftover CLI metadata as the project.</p>
+    <p>If the Owner wants Foundation first, that is their call. The honest cost: you will be debugging empty <code>richContent</code>, pending media, false <code>isAdmin</code>, and unwired screens at the same time.</p>
+
+    <h2>5. Change Orders (do not sneak in)</h2>
+    <ul>
+      <li>Full rebuild or leaving React / TypeScript / the drawn Supabase Foundation.</li>
+      <li>Stripe or any in-platform commission/transaction handling.</li>
+      <li>Final prices, ads, or “the” subscription SKU.</li>
+      <li>Live SMS/email/push vendors.</li>
+      <li>New districts beyond Construction, Trucking, Residential, Commercial, Communities, shared Profiles, Matching Board.</li>
+      <li>Rewriting Media &amp; Technology matching weights to be generic without Owner confirmation.</li>
+    </ul>
+
+    <h2>6. Suggested status language for Slack</h2>
+    <p>Examples matching the PRD reporting rule:</p>
+    <ul>
+      <li>“Framing review is complete. One live Room (Media &amp; Technology). Contractor and Trucking lots are labeled Coming Soon.”</li>
+      <li>“Foundation drawings exist through 0020. They are not poured under the running app.”</li>
+      <li>“Doors &amp; Locks: prototype door works; Foundation lockset is drawn; do not swap the front door yet.”</li>
+      <li>“Utilities: only in-app is connected. SMS/email/storage/payments are NOT YET CONNECTED.”</li>
+      <li>“Punch List: six items block a real multi-user City; Construction and Trucking are still empty lots.”</li>
+    </ul>
+
+    <h2>7. Milestone 1 acceptance against the PRD table</h2>
+    <table>
+      <thead><tr><th>PRD deliverable</th><th>This pack</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Repository and architecture review</td><td>01 Framing</td><td>Complete as inspection</td></tr>
+        <tr><td>Data model and Supabase review</td><td>02 Foundation</td><td>Complete as inspection (not a live DB test)</td></tr>
+        <tr><td>Auth and RLS review</td><td>03 Doors &amp; Locks</td><td>Complete as inspection (RLS as written)</td></tr>
+        <tr><td>APIs and integrations review</td><td>04 Utilities</td><td>Complete as inspection</td></tr>
+        <tr><td>Bug and gap assessment</td><td>05 Punch List</td><td>Complete as inspection</td></tr>
+        <tr><td>Owner-readable prioritized plan</td><td>00 Brief + 06 Blueprint</td><td>Complete as inspection</td></tr>
+      </tbody>
+    </table>
+    <div class="callout ok">
+      <div class="label">Inspection complete — permit not issued</div>
+      <p>Milestone 1, as defined in the PRD, is this pack. Development milestones begin only when Tony Grant accepts it and approves the next scope. Appifest should bring recommendations (this blueprint is one) and wait.</p>
+    </div>
+    <p class="footer-note">
+      THE CITY OF VAEL · Milestone 1 Technical Audit · 06 Blueprint.
+      Continue, don’t rebuild. Owner has final say. No Change Order is implied.
+    </p>
+  </main>
+</body>
+</html>

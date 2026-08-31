@@ -1,0 +1,443 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   THE CITY OF VAEL — design tokens
+   Editorial / SF Pro Display / warm paper. Semantic tokens only in product UI.
+   ========================================================================== */
+
+:root {
+  --vael-background: #fdfcf9;
+  --vael-surface: #ffffff;
+  --vael-surface-muted: #f7f6f2;
+  --vael-surface-tertiary: #f2f1ed;
+  --vael-ink: #111111;
+  --vael-text-secondary: #687385;
+  --vael-text-muted: #8a8f98;
+  --vael-text-disabled: #a7abb1;
+  --vael-border: #e7e5df;
+  --vael-border-subtle: #efeee9;
+  --vael-primary-hover: #242424;
+  --vael-accent: #66758a;
+  --vael-accent-light: #e9edf2;
+  --vael-accent-hover: #586779;
+  --vael-ok: #2f6b4f;
+  --vael-ok-bg: #eaf3ed;
+  --vael-warn: #8a6a2b;
+  --vael-warn-bg: #f7f0de;
+  --vael-bad: #a44747;
+  --vael-bad-bg: #f8eaea;
+
+  --font-sans: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* Editorial serif kept for product pages that still reference --font-display. */
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  --shadow-sm: 0 2px 12px rgba(17, 17, 17, 0.035);
+  --shadow-md: 0 12px 40px rgba(17, 17, 17, 0.08);
+
+  --space-page: 1.25rem;
+  --space-section: 4rem;
+  --space-card: 1.5rem;
+  --space-form: 1.25rem;
+  --space-nav: 4.5rem;
+  --duration: 180ms;
+  --ease: ease-out;
+
+  /* Semantic — Tailwind reads these as r g b. */
+  --color-background: 253 252 249;
+  --color-foreground: 17 17 17;
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 255 255 255;
+  --color-surface-muted: 247 246 242;
+  --color-surface-tertiary: 242 241 237;
+  --color-border: 231 229 223;
+  --color-border-strong: 17 17 17;
+  --color-border-subtle: 239 238 233;
+  --color-primary: 17 17 17;
+  --color-primary-hover: 36 36 36;
+  --color-primary-pressed: 0 0 0;
+  --color-primary-foreground: 255 255 255;
+  --color-secondary: 255 255 255;
+  --color-secondary-foreground: 17 17 17;
+  --color-accent: 102 117 138;
+  --color-accent-hover: 88 103 121;
+  --color-accent-muted: 233 237 242;
+  --color-success: 47 107 79;
+  --color-success-foreground: 47 107 79;
+  --color-success-muted: 234 243 237;
+  --color-warning: 138 106 43;
+  --color-warning-foreground: 138 106 43;
+  --color-warning-muted: 247 240 222;
+  --color-destructive: 164 71 71;
+  --color-destructive-foreground: 164 71 71;
+  --color-destructive-muted: 248 234 234;
+  --color-info: 102 117 138;
+  --color-info-foreground: 102 117 138;
+  --color-info-muted: 233 237 242;
+  --color-muted: 104 115 133;
+  --color-quiet: 138 143 152;
+  --color-disabled: 167 171 177;
+  --color-ring: 17 17 17;
+}
+
+/* Public marketing site: cream paper, near-black, VAEL gold. */
+[data-surface="site"] {
+  --color-background: 245 243 238;
+  --color-foreground: 11 12 12;
+  --color-surface: 250 249 246;
+  --color-surface-elevated: 255 255 255;
+  --color-surface-muted: 237 233 223;
+  --color-border: 217 213 203;
+  --color-border-subtle: 226 222 213;
+  --color-border-strong: 11 12 12;
+  --color-primary: 11 12 12;
+  --color-primary-hover: 21 22 23;
+  --color-primary-foreground: 245 243 238;
+  /* Outline buttons should read as an outline on paper, not as a white chip. */
+  --color-secondary: 245 243 238;
+  --color-secondary-foreground: 11 12 12;
+  --color-accent: 201 154 40;
+  --color-accent-hover: 168 126 28;
+  --color-muted: 102 100 95;
+  --color-quiet: 138 134 125;
+  --color-ring: 11 12 12;
+}
+
+/* Inverted bands inside the marketing site. */
+[data-surface="site-dark"] {
+  --color-background: 11 12 12;
+  --color-foreground: 245 243 238;
+  --color-surface: 21 22 22;
+  --color-surface-elevated: 21 22 22;
+  --color-surface-muted: 21 22 22;
+  --color-border: 47 48 48;
+  --color-border-subtle: 34 35 35;
+  --color-border-strong: 245 243 238;
+  --color-primary: 245 243 238;
+  --color-primary-hover: 250 249 246;
+  --color-primary-foreground: 11 12 12;
+  --color-secondary: 11 12 12;
+  --color-secondary-foreground: 245 243 238;
+  --color-accent: 201 154 40;
+  --color-accent-hover: 217 172 58;
+  --color-muted: 154 150 141;
+  --color-quiet: 122 119 112;
+  --color-ring: 245 243 238;
+}
+
+/* City chrome uses the same warm paper language as Rooms. */
+[data-surface="city"] {
+  --color-background: 253 252 249;
+  --color-foreground: 17 17 17;
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 255 255 255;
+  --color-surface-muted: 247 246 242;
+  --color-border: 231 229 223;
+  --color-border-strong: 17 17 17;
+  --color-primary: 17 17 17;
+  --color-primary-hover: 36 36 36;
+  --color-primary-foreground: 255 255 255;
+  --color-secondary: 255 255 255;
+  --color-secondary-foreground: 17 17 17;
+  --color-accent: 102 117 138;
+  --color-muted: 104 115 133;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: rgb(var(--color-background));
+    color: rgb(var(--color-foreground));
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(var(--color-ring) / 0.06);
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  ::selection {
+    background: rgb(var(--color-accent-muted));
+    color: rgb(var(--color-foreground));
+  }
+}
+
+@layer components {
+  .vael-display {
+    font-family: var(--font-sans);
+    font-size: 2.5rem;
+    line-height: 1.05;
+    letter-spacing: -0.045em;
+    font-weight: 600;
+    max-width: 47.5rem;
+  }
+
+  .vael-h1 {
+    font-family: var(--font-sans);
+    font-size: 2.25rem;
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+  }
+
+  .vael-h2 {
+    font-family: var(--font-sans);
+    font-size: 1.75rem;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    font-weight: 600;
+  }
+
+  .vael-h3 {
+    font-family: var(--font-sans);
+    font-size: 1.375rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  .vael-h4 {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+  }
+
+  .vael-kicker {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    letter-spacing: 0;
+    font-weight: 500;
+    text-transform: none;
+    color: rgb(var(--color-accent));
+  }
+
+  .vael-hero-copy {
+    max-width: 37.5rem;
+  }
+
+  .vael-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 45rem;
+  }
+
+  .vael-focus {
+    outline: none;
+  }
+
+  .vael-focus:focus-visible {
+    border-color: rgb(var(--color-foreground));
+    box-shadow: 0 0 0 3px rgb(var(--color-ring) / 0.06);
+  }
+
+  .vael-container,
+  .vael-container-narrow,
+  .vael-container-wide {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  .vael-container {
+    max-width: 85rem;
+  }
+
+  .vael-container-narrow {
+    max-width: 45rem;
+  }
+
+  .vael-container-wide {
+    max-width: 85rem;
+  }
+
+  @media (min-width: 768px) {
+    .vael-container,
+    .vael-container-narrow,
+    .vael-container-wide {
+      padding-inline: 1.5rem;
+    }
+
+    .vael-display {
+      font-size: 3rem;
+      line-height: 1.05;
+    }
+
+    .vael-h1 {
+      font-size: 2.5rem;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+
+    .vael-h2 {
+      font-size: 1.875rem;
+    }
+
+    .vael-h3 {
+      font-size: 1.375rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .vael-container,
+    .vael-container-narrow,
+    .vael-container-wide {
+      padding-inline: 2rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .vael-display {
+      font-size: 3.5rem;
+    }
+
+    .vael-h1 {
+      font-size: 3rem;
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+
+    .vael-h2 {
+      font-size: 2rem;
+    }
+
+    .vael-h3 {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .vael-container,
+    .vael-container-narrow,
+    .vael-container-wide {
+      padding-inline: 3rem;
+    }
+  }
+}
+
+/* ==========================================================================
+   Public marketing site — editorial type + grid.
+   Prefixed `site-` so product `vael-` classes are untouched.
+   ========================================================================== */
+
+@layer components {
+  .site-container {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  .site-eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: rgb(var(--color-accent));
+  }
+
+  .site-meta {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .site-display,
+  .site-h1 {
+    font-family: var(--font-sans);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 500;
+  }
+
+  .site-h2 {
+    font-family: var(--font-sans);
+    font-size: clamp(2.25rem, 5vw, 4rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+  }
+
+  .site-h3 {
+    font-family: var(--font-sans);
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+
+  .site-lede {
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .site-card {
+    overflow: hidden;
+    border-radius: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .site-container {
+      padding-inline: 2rem;
+    }
+
+    .site-lede {
+      font-size: 1.125rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .site-container {
+      padding-inline: 3rem;
+    }
+  }
+}

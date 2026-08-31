@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>THE CITY OF VAEL — Milestone 1 · 05 Punch List</title>
+  <link rel="stylesheet" href="../assets/audit.css" />
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-kicker">Milestone 1 &nbsp;·&nbsp; Technical Audit &nbsp;·&nbsp; August 2026</div>
+    <img class="cover-medallion" src="../assets/vael-medallion.png" alt="THE CITY OF VAEL medallion" />
+    <div class="cover-center">
+      <h1>THE CITY OF VAEL</h1>
+      <div class="cover-term">Punch List</div>
+      <div class="doc-title">05 &nbsp;—&nbsp; Defects, Gaps, and Incomplete Rooms</div>
+      <p class="doc-sub">Numbered remaining work. Severity is about the PRD product, not about how hard the fix is.</p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Prepared for</strong>Tony Grant, Owner<br>TSG Construction LLC</div>
+      <div><strong>Prepared by</strong>Appifest — Technical Audit<br>Continuing the existing prototype</div>
+      <div><strong>Document type</strong>Milestone 1 deliverable<br>PRD acceptance pack</div>
+      <div><strong>Date / method</strong>25 August 2026<br>Read-only inspection of the live tree</div>
+    </div>
+  </section>
+  <main class="interior">
+    <h2>1. How to read this list</h2>
+    <p class="lead">Items are gaps between the PRD’s City and this repository. They are not all bugs. Many are unfinished Rooms. Owner decisions are called out so engineering does not invent policy.</p>
+    <table>
+      <thead><tr><th>Badge</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-block">Blocks product</span></td><td>The City cannot function as the PRD product for real users until this is faced (usually Foundation + identity).</td></tr>
+        <tr><td><span class="badge badge-gap">Blocks a PRD Room</span></td><td>A named Milestone 2/3 deliverable does not exist or does not work as specified.</td></tr>
+        <tr><td><span class="badge badge-owner">Owner decision</span></td><td>Not an engineering default. Wait.</td></tr>
+        <tr><td><span class="badge badge-polish">Stabilize / polish</span></td><td>Prototype works; seam, docs, or hygiene should be cleaned before or during cutover.</td></tr>
+      </tbody>
+    </table>
+    <p>Milestone tags: <span class="badge badge-m2">M2</span> core + Construction + Trucking · <span class="badge badge-m3">M3</span> Residential / Commercial / Communities · <span class="badge badge-m4">M4</span> harden / docs / handoff. Change Orders stay out of these tags.</p>
+
+    <h2>2. Blocks the product as a real City</h2>
+
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-001</span><h4>Runtime Foundation is browser storage, not a shared database</h4><span class="badge badge-block">Blocks product</span> <span class="badge badge-m2">M2+</span></div>
+      <p>Two users cannot share a Handshake, listing, or message across devices. This is the prototype’s nature, not a crash. It is still the reason the City is not yet the product for a real market.</p>
+      <p class="evidence">src/lib/mock*.ts · src/integrations/supabase/client.ts (supabase = null) · supabase/README.md</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-002</span><h4>Auth cutover would authenticate people and then lose them</h4><span class="badge badge-block">Blocks product</span> <span class="badge badge-m2">M2</span></div>
+      <p>Handle claim, join profile-type, waitlist, team search, and admin rosters still read <code>mockAuth</code> by user id. A real Auth uuid is not in that book. <code>isAdmin</code> would be hardcoded false.</p>
+      <p class="evidence">HandleClaimGate.tsx · ClaimHandleDialog.tsx · JoinNetwork.tsx · supabaseAuthProvider.ts:64-70 · Document 03</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-003</span><h4>VAEL / Handshake / messaging seams are built and not attached to the walls</h4><span class="badge badge-block">Blocks product</span> <span class="badge badge-m2">M2</span></div>
+      <p>Board, VaelFlow, Connections, ConnectionDetail, Messages, notification bell still nail into mock modules. Flipping provider flags is a no-op for those Rooms. A later “just connect Supabase” would not move the product.</p>
+      <p class="evidence">src/lib/authority/registry.ts WIRED_INTO_UI · mockVaelProvider / mockConnectionProvider headers</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-004</span><h4>Foundation drawing cannot store the listing body people already type</h4><span class="badge badge-block">Blocks product</span> <span class="badge badge-m2">M2</span></div>
+      <p><code>vaels</code> has side, category, discipline, location, plan, expiry — not description, contact, requirements, budget, timeline. The Supabase provider accepts <code>richContent</code> and never sends it. Re-veil reconciliation has no SQL function (returns empty arrays).</p>
+      <p class="evidence">supabaseVaelProvider.ts:11-24 · supabaseConnectionProvider.ts reconcileAfterRevael · 0003_vael_foundation.sql</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-005</span><h4>No file Utility — documents and chat attachments cannot live on the Foundation as-is</h4><span class="badge badge-block">Blocks product</span> <span class="badge badge-m2">M2</span></div>
+      <p>Media stays <code>pending</code>; nothing marks stored; storage disabled in config. Document bytes exist only as local data URLs. Messaging provider returns no attachment ids. Block checks on send exist in mock messaging and not in the Supabase messaging provider (safety gap if wired).</p>
+      <p class="evidence">supabaseMediaProvider.ts:11-23 · supabaseDocumentsProvider.ts:6-11 · supabaseMessagingProvider.ts:137-140 · notificationChannels.ts</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-006</span><h4>Matching engine is Media &amp; Technology only</h4><span class="badge badge-block">Blocks product</span> <span class="badge badge-m2">M2</span></div>
+      <p>Percentage fit is real for editors/developers/studios. Construction and Trucking cannot reuse those weights honestly (tools, certifications, media disciplines). <code>matching.ts</code> is protected — district-specific engines or an Owner-approved generalization is required before those Boards are “the same Room.”</p>
+      <p class="evidence">src/lib/matching.ts · src/lib/requirements.ts · CLAUDE.md §2</p>
+    </div>
+
+    <h2>3. Blocks a named PRD Room</h2>
+
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-010</span><h4>Construction Exchange does not exist</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m2">M2</span></div>
+      <p>Registry lot is named Contractor, status coming soon. Placeholder + local interest form only. No trades fields, no construction matching, no Handshake for that district.</p>
+      <p class="evidence">src/lib/districts.ts contractor · DistrictPlaceholder.tsx · App.tsx /districts/:slug</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-011</span><h4>Trucking Exchange does not exist</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m2">M2</span></div>
+      <p>Coming soon placeholder. PRD example (load/route availability) has no model, screens, or scoring.</p>
+      <p class="evidence">src/lib/districts.ts trucking</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-012</span><h4>Residential flow does not exist</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m3">M3</span></div>
+      <p>No homeowner/civilian Room. Real Estate is a different early-access placeholder, not this flow.</p>
+      <p class="evidence">districts.ts — no residential slug</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-013</span><h4>Commercial flow does not exist</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m3">M3</span></div>
+      <p>No business/civilian need-posting Room as specified in the PRD.</p>
+      <p class="evidence">districts.ts — no commercial slug</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-014</span><h4>Verified profile is partial</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m2">M2</span></div>
+      <p>PRD: verified, resume-like identity with licensing, insurance, capability statement, portfolio, reputation. Portfolio links and a documents tab exist (those doc types are in the list). There is no verification workflow, no reputation model, and profile details omit license fields as first-class data. Admin document review is a mock admin console, not the SQL moderation/document status path.</p>
+      <p class="evidence">mockProfiles.ts ProfileDetails · docTypes.ts · ProfileDocumentsTab.tsx</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-015</span><h4>Subscription gating is demo theater</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m3">M3</span></div>
+      <p>Milestone 3 asks for structural hooks without pricing. Extended VAEL pages exist as a local demo. There is no hook that actually gates homeowner leads or premium visibility in a live district other than showing demo plan cards.</p>
+      <p class="evidence">visibilityPlans.ts DEMO_PRICING_LABEL · ExtendedVaelCheckout.tsx · PRD out-of-scope payments</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-016</span><h4>Block, report, and moderation services are scaffolding</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m2">M2</span></div>
+      <p>Connection-level block/report still uses Stage 14 mocks. Platform report/moderation services are unimplemented in the UI. Moderation cannot run locally at all.</p>
+      <p class="evidence">registry.ts block/report/moderation: false · moderationService.ts supabase-only</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-017</span><h4>Communities are live but not district-complete</h4><span class="badge badge-gap">Blocks a PRD Room</span> <span class="badge badge-m3">M3</span></div>
+      <p>City feed + Media &amp; Technology community work. There is no Construction/Trucking community because those districts have no Rooms. Cross-platform feed mixes M&amp;T data and placeholders — honest, but not “every district’s community.”</p>
+      <p class="evidence">CommunityFeed.tsx · homeFeed.ts · DistrictPlaceholder.tsx</p>
+    </div>
+
+    <h2>4. Owner decisions (do not code around these)</h2>
+
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-020</span><h4>Lot names: Construction vs Contractor; Residential/Commercial missing</h4><span class="badge badge-owner">Owner decision</span></div>
+      <p>PRD language vs registry language. Confirm names before framing those Rooms.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-021</span><h4>Anonymous visitors seeing profile details</h4><span class="badge badge-owner">Owner decision</span></div>
+      <p>Drawing: district profiles authenticated-only (already recorded as closed in 0019). Prototype details pane still open to visitors. Confirm the door for the product, then align ProfilePage.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-022</span><h4>Monetization / advertising / premium visibility pricing</h4><span class="badge badge-owner">Owner decision</span></div>
+      <p>PRD open item. Engineering must not finalize a business model.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-023</span><h4>Priority of extra districts (Healthcare, Government, etc.)</h4><span class="badge badge-owner">Owner decision</span></div>
+      <p>Out of PRD scope unless Change Order. Registry already shows them as coming soon / early access.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-024</span><h4>Hosted project leftover named vael-media-tech-dev</h4><span class="badge badge-owner">Owner decision</span></div>
+      <p>CLI metadata exists; README says never linked. Confirm whether that project is in scope, abandoned, or must be disconnected. Do not resume the link from this audit.</p>
+      <p class="evidence">supabase/.temp/linked-project.json · 0017 vs 0020 header disagreement</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-025</span><h4>Communications cadence</h4><span class="badge badge-owner">Owner decision</span></div>
+      <p>PRD proposal: Slack, updates every day or two, milestone demos. Still open.</p>
+    </div>
+
+    <h2>5. Stabilize / hygiene (should not surprise Milestone 2)</h2>
+
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-030</span><h4>Orphan <code>handshake_requests</code> table</h4><span class="badge badge-polish">Stabilize</span> <span class="badge badge-m2">M2</span></div>
+      <p>Superseded by <code>connections</code>. Dropping it is a Change Order-level schema decision; documenting it as dead is enough until then.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-031</span><h4>Empty generated Database types</h4><span class="badge badge-polish">Stabilize</span> <span class="badge badge-m2">M2</span></div>
+      <p>Providers cast around the stub. Inspections will not catch column mistakes.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-032</span><h4>Dead <code>src/data/listings.ts</code> / seven baseline TypeScript errors</h4><span class="badge badge-polish">Stabilize</span> <span class="badge badge-m4">M4</span></div>
+      <p>Known fingerprint. Do not add new errors. Cleaning the dead module is optional and should not be bundled with product work unless asked.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-033</span><h4>Stale comments (profileDirectory “not wired”; audit 06 on the auth trigger)</h4><span class="badge badge-polish">Stabilize</span></div>
+      <p>Code headers and older audit notes can lie. Trust the grep/registry. 0001’s user bootstrap trigger is active in the drawing; audit 06 said it was a sketch.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-034</span><h4>No CI, no deploy, no component tests, no git in this copy</h4><span class="badge badge-polish">Stabilize</span> <span class="badge badge-m4">M4</span></div>
+      <p>Milestone 4 explicitly asks for a deployment checklist. It cannot be “verified” until a host exists (Owner approval). This workspace copy had no <code>.git</code> and no successful <code>npm install</code> during inspection — restore a canonical clone before treating test counts as freshly proven.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-035</span><h4><code>.env.example</code> missing; npm package name still media-tech-exchange</h4><span class="badge badge-polish">Stabilize</span></div>
+      <p>Docs describe a file that is not here. Harmless for mock mode; confusing for the next engineer.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-036</span><h4>Admin bulk reads not on the profile/documents seam</h4><span class="badge badge-polish">Stabilize</span> <span class="badge badge-m2">M2</span></div>
+      <p>UsersPanel / DocumentsPanel still call mocks. Services are self-only by design — admin needs a separate, locked door, not a widened self API.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-037</span><h4>Notification deliveries table can never fill</h4><span class="badge badge-polish">Stabilize</span></div>
+      <p>Expected until a vendor is approved. Do not treat an empty table as a test failure.</p>
+    </div>
+    <div class="punch">
+      <div class="punch-head"><span class="punch-id">PL-038</span><h4>Parallel media keys</h4><span class="badge badge-polish">Stabilize</span> <span class="badge badge-m2">M2</span></div>
+      <p><code>mockAttachments</code> vs unused <code>mediaService</code> local store. Two plumbing stacks for one hose.</p>
+    </div>
+
+    <h2>6. Counts</h2>
+    <div class="two-col">
+      <div class="stat"><div class="n">6</div><div class="k">Block the real City</div></div>
+      <div class="stat"><div class="n">8</div><div class="k">Block a PRD Room</div></div>
+      <div class="stat"><div class="n">6</div><div class="k">Owner decisions</div></div>
+      <div class="stat"><div class="n">9</div><div class="k">Stabilize / hygiene</div></div>
+    </div>
+    <p>Numbering is sparse on purpose (room for insertions). Closing PL-010/011 without PL-001–006 would ship empty Construction/Trucking lots that look open. That would violate the honest-label rule already in the district registry.</p>
+    <p class="footer-note">
+      THE CITY OF VAEL · Milestone 1 Technical Audit · 05 Punch List.
+      Items are not authorized work until the Owner approves the matching milestone or Change Order.
+    </p>
+  </main>
+</body>
+</html>

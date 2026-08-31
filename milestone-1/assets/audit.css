@@ -1,0 +1,387 @@
+/* THE CITY OF VAEL — Milestone 1 Technical Audit
+   Print stylesheet. Interior is warm paper for Owner readability.
+   Cover pages stay charcoal/gold per the design system. */
+
+@page {
+  size: letter;
+  margin: 0.7in 0.72in 0.88in 0.72in;
+}
+
+@page :first {
+  margin: 0;
+}
+
+:root {
+  --gold: #c4890a;
+  --gold-bright: #e9a20b;
+  --gold-deep: #8a5a00;
+  --ink: #12161a;
+  --ink-soft: #3a4148;
+  --muted: #5c646c;
+  --rule: #d9c9a0;
+  --paper: #f7f4ec;
+  --paper-2: #efe8d6;
+  --navy: #0a1015;
+  --navy-2: #141c24;
+  --ok: #1f6b43;
+  --warn: #9a5b00;
+  --bad: #8b1e1e;
+  --info: #1d4a6e;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ---------- COVER ---------- */
+
+.cover {
+  page-break-after: always;
+  break-after: page;
+  min-height: 11in;
+  margin: 0;
+  padding: 0.85in 0.9in 0.75in;
+  background:
+    radial-gradient(ellipse at 50% 28%, rgba(233, 162, 11, 0.16), transparent 52%),
+    linear-gradient(180deg, #05080b 0%, #0a1015 55%, #05080b 100%);
+  color: #f4f4f2;
+  position: relative;
+  overflow: hidden;
+}
+
+.cover::before {
+  content: "";
+  position: absolute;
+  inset: 0.38in;
+  border: 1px solid rgba(233, 162, 11, 0.35);
+  pointer-events: none;
+}
+
+.cover::after {
+  content: "";
+  position: absolute;
+  inset: 0.48in;
+  border: 1px solid rgba(233, 162, 11, 0.12);
+  pointer-events: none;
+}
+
+.cover-kicker {
+  font-size: 9pt;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+
+.cover-medallion {
+  display: block;
+  width: 168px;
+  height: auto;
+  margin: 1.15in auto 0.55in;
+  filter: drop-shadow(0 0 28px rgba(233, 162, 11, 0.28));
+}
+
+.cover h1 {
+  font-family: Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif;
+  font-size: 28pt;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  margin: 0 0 0.18in;
+  color: #f4f4f2;
+  line-height: 1.15;
+}
+
+.cover .doc-title {
+  text-align: center;
+  font-size: 16pt;
+  font-weight: 500;
+  color: var(--gold-bright);
+  letter-spacing: 0.04em;
+  margin: 0.15in 0 0;
+}
+
+.cover .doc-sub {
+  text-align: center;
+  color: #a5a8ab;
+  font-size: 11pt;
+  margin: 0.18in 0 0;
+  max-width: 5.8in;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cover-meta {
+  position: absolute;
+  left: 0.9in;
+  right: 0.9in;
+  bottom: 0.95in;
+  border-top: 1px solid rgba(233, 162, 11, 0.35);
+  padding-top: 0.28in;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.18in 0.4in;
+  font-size: 9pt;
+  color: #c8cbc8;
+}
+
+.cover-meta strong {
+  display: block;
+  color: var(--gold-bright);
+  font-size: 7.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 0.04in;
+}
+
+.cover-term {
+  display: inline-block;
+  margin: 0.32in auto 0;
+  padding: 0.08in 0.22in;
+  border: 1px solid rgba(233, 162, 11, 0.55);
+  color: var(--gold-bright);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 8pt;
+  font-weight: 600;
+}
+
+.cover-center { text-align: center; }
+
+/* ---------- INTERIOR ---------- */
+
+.interior {
+  padding: 0;
+}
+
+h1, h2, h3, h4 {
+  font-family: Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif;
+  color: var(--navy);
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+h2 {
+  font-size: 16pt;
+  font-weight: 600;
+  margin: 0.42in 0 0.14in;
+  padding-bottom: 0.08in;
+  border-bottom: 1.5px solid var(--gold);
+}
+
+h3 {
+  font-size: 12.5pt;
+  margin: 0.28in 0 0.1in;
+  color: var(--navy-2);
+}
+
+h4 {
+  font-size: 11pt;
+  margin: 0.2in 0 0.08in;
+  letter-spacing: 0.02em;
+}
+
+p { margin: 0 0 0.12in; }
+
+.lead {
+  font-size: 11.5pt;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+ul, ol { margin: 0 0 0.14in; padding-left: 0.22in; }
+li { margin: 0 0 0.05in; }
+
+a { color: var(--gold-deep); text-decoration: none; }
+
+.muted { color: var(--muted); }
+.small { font-size: 9pt; color: var(--muted); }
+
+/* ---------- CALLOUTS ---------- */
+
+.callout {
+  margin: 0.16in 0 0.2in;
+  padding: 0.13in 0.16in 0.13in 0.18in;
+  border-left: 4px solid var(--gold);
+  background: var(--paper-2);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.callout.truth { border-left-color: var(--gold); }
+.callout.ok { border-left-color: var(--ok); background: #e8f3ec; }
+.callout.warn { border-left-color: var(--warn); background: #f8eedc; }
+.callout.bad { border-left-color: var(--bad); background: #f6e8e6; }
+.callout.info { border-left-color: var(--info); background: #e7eef4; }
+
+.callout .label {
+  font-size: 7.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--gold-deep);
+  margin-bottom: 0.04in;
+}
+
+.callout.warn .label { color: var(--warn); }
+.callout.bad .label { color: var(--bad); }
+.callout.ok .label { color: var(--ok); }
+.callout.info .label { color: var(--info); }
+
+.callout p:last-child { margin-bottom: 0; }
+
+/* ---------- TABLES ---------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.1in 0 0.2in;
+  font-size: 9pt;
+  page-break-inside: auto;
+}
+
+thead { display: table-header-group; }
+
+th {
+  background: var(--navy);
+  color: #f4f4f2;
+  text-align: left;
+  font-weight: 600;
+  padding: 0.07in 0.08in;
+  letter-spacing: 0.04em;
+  font-size: 8pt;
+  text-transform: uppercase;
+}
+
+td {
+  padding: 0.065in 0.08in;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+tr:nth-child(even) td { background: rgba(10, 16, 21, 0.035); }
+
+td code, p code, li code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 8.4pt;
+  background: rgba(10, 16, 21, 0.06);
+  padding: 0 0.04in;
+}
+
+/* ---------- BADGES ---------- */
+
+.badge {
+  display: inline-block;
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.02in 0.07in;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.badge-live { background: #1f6b43; color: #fff; }
+.badge-soon { background: #9a5b00; color: #fff; }
+.badge-early { background: #1d4a6e; color: #fff; }
+.badge-block { background: #8b1e1e; color: #fff; }
+.badge-gap { background: #9a5b00; color: #fff; }
+.badge-owner { background: #1d4a6e; color: #fff; }
+.badge-polish { background: #5c646c; color: #fff; }
+.badge-m2 { background: #0a1015; color: var(--gold-bright); }
+.badge-m3 { background: #1d4a6e; color: #fff; }
+.badge-m4 { background: #3a4148; color: #fff; }
+
+/* ---------- PUNCH ITEMS ---------- */
+
+.punch {
+  margin: 0 0 0.16in;
+  padding: 0.12in 0.14in;
+  border: 1px solid var(--rule);
+  background: #fff;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.punch-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.1in;
+  margin-bottom: 0.06in;
+}
+
+.punch-id {
+  font-weight: 700;
+  color: var(--gold-deep);
+  font-family: Palatino, Georgia, serif;
+  font-size: 11pt;
+}
+
+.punch h4 { margin: 0; flex: 1; }
+
+.punch .evidence {
+  font-size: 8.5pt;
+  color: var(--muted);
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* ---------- MISC ---------- */
+
+.toc ol { padding-left: 0.28in; }
+.toc li { margin: 0.06in 0; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.18in;
+  margin: 0.1in 0 0.18in;
+}
+
+.stat {
+  background: #fff;
+  border: 1px solid var(--rule);
+  padding: 0.12in 0.14in;
+  page-break-inside: avoid;
+}
+
+.stat .n {
+  font-family: Palatino, Georgia, serif;
+  font-size: 18pt;
+  color: var(--gold-deep);
+  line-height: 1;
+}
+
+.stat .k {
+  font-size: 8pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.04in;
+}
+
+.footer-note {
+  margin-top: 0.3in;
+  padding-top: 0.12in;
+  border-top: 1px solid var(--rule);
+  font-size: 8.5pt;
+  color: var(--muted);
+}
+
+.keep { page-break-inside: avoid; break-inside: avoid; }
+
+hr.gold {
+  border: 0;
+  border-top: 1px solid var(--gold);
+  margin: 0.22in 0;
+}

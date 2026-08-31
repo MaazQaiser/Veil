@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>THE CITY OF VAEL — Milestone 1 · 03 Doors and Locks</title>
+  <link rel="stylesheet" href="../assets/audit.css" />
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-kicker">Milestone 1 &nbsp;·&nbsp; Technical Audit &nbsp;·&nbsp; August 2026</div>
+    <img class="cover-medallion" src="../assets/vael-medallion.png" alt="THE CITY OF VAEL medallion" />
+    <div class="cover-center">
+      <h1>THE CITY OF VAEL</h1>
+      <div class="cover-term">Doors &amp; Locks</div>
+      <div class="doc-title">03 &nbsp;—&nbsp; Auth and RLS Review</div>
+      <p class="doc-sub">Who can enter the City today, and what the locks on the Foundation drawing would do if they were installed.</p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Prepared for</strong>Tony Grant, Owner<br>TSG Construction LLC</div>
+      <div><strong>Prepared by</strong>Appifest — Technical Audit<br>Continuing the existing prototype</div>
+      <div><strong>Document type</strong>Milestone 1 deliverable<br>PRD acceptance pack</div>
+      <div><strong>Date / method</strong>25 August 2026<br>Read-only inspection of the live tree</div>
+    </div>
+  </section>
+  <main class="interior">
+    <h2>1. Two locksets</h2>
+    <p class="lead">Doors &amp; Locks means authentication, permissions, and row-level security. The prototype has a working front door (sign up, sign in, session). The Foundation drawing has a much stricter lockset (RLS policies, roles, function-only writes). They are not the same lockset. This inspection did not execute RLS against a live database — none is attached to the running app. What follows is the prototype path as coded, and the drawing as written.</p>
+
+    <h2>2. The door people actually use</h2>
+    <p><code>useAuth</code> → <code>authService</code> → by default <code>mockAuthProvider</code> wrapping <code>mockAuth.ts</code>. Accounts and session live in localStorage. Password reset is simulated. A “verify email” control in development calls <code>simulateVerifyEmail()</code>.</p>
+    <p>The Supabase auth provider is implemented, not stubbed: sign up, sign in, sign out, session, password reset, resend verification. It is <strong>inert</strong> unless both of these are true:</p>
+    <ol>
+      <li>Someone sets <code>VITE_AUTH_PROVIDER=supabase</code> on purpose (not merely because env vars exist).</li>
+      <li><code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> are present so the client is not <code>null</code>.</li>
+    </ol>
+    <p>No <code>.env</code> exists in this tree. The product README still mentions <code>.env.example</code>; that file is <strong>missing</strong> from this copy. Default mode is mock. That dual-flag rule is good Doors discipline — the City will not silently switch production authority because a URL happened to be in the environment.</p>
+
+    <h2>3. What would break if the live door were swapped today</h2>
+    <p>The session seam itself would keep working: <code>user.id</code>, email, sign-in/out. The break is every screen that still asks <code>mockAuth</code> for identity using that id. A real Auth uuid is not in the mock account book.</p>
+    <table>
+      <thead><tr><th>Door / Room</th><th>Call</th><th>Failure</th></tr></thead>
+      <tbody>
+        <tr><td>Handle claim gate</td><td><code>mockAuth.getProfile(user.id)</code></td><td>Null for every real user — username gate breaks</td></tr>
+        <tr><td>Claim handle dialog</td><td>availability / claim on mock store</td><td>Checks the wrong book</td></tr>
+        <tr><td>Join network</td><td><code>updateProfile(user.id, { profileType })</code></td><td>Onboarding type write no-ops</td></tr>
+        <tr><td>Waitlist form</td><td><code>getUserById</code></td><td>Lookup fails</td></tr>
+        <tr><td>Team tab</td><td><code>searchAccounts</code></td><td>Searches the mock list, not real users</td></tr>
+        <tr><td>Admin users / badges</td><td><code>getAllAccountsForAdmin</code></td><td>Shows mock accounts, not the real roster</td></tr>
+        <tr><td>Dev nav admin toggle</td><td><code>simulateGrantAdmin</code></td><td>Unrelated to <code>user_roles</code></td></tr>
+      </tbody>
+    </table>
+    <p>Broader grep: dozens of files still reach <code>mockAuth</code> for directory/enrichment. Same id-mismatch class of bug. Auth is the one seam that <em>is</em> wired — which makes leftover direct calls more dangerous than in VAEL/Connection, where flipping the flag currently changes nothing because screens never call those services.</p>
+
+    <h2>4. Admin is a flag, not a role, in the prototype</h2>
+    <p>Mock mode: <code>isAdmin</code> boolean, flipped by a development simulate function. Foundation drawing: six roles on <code>user_roles</code> — <strong>owner, admin, manager, developer, moderator, member</strong>. Last remaining Owner cannot be revoked. Grants go through security-definer functions, not a column the user can update on themselves.</p>
+    <p>The Supabase auth provider hardcodes <code>isAdmin: false</code> and says so in its own comments: reading real roles needs a round-trip this provider does not perform. Even a true Owner account would look like a member in the UI after a naive cutover. There is no <code>src/lib/governance/</code> module. Moderation RPCs require owner/admin/moderator exactly — manager and developer are excluded. The moderation service has <strong>no local provider</strong>; without a live Foundation it refuses every operation.</p>
+
+    <h2>5. Handshake as a lock, not only a Room</h2>
+    <p>The PRD: full profiles revealed only after both parties accept. In the prototype, connection rows are party-private in practice because they live in that browser’s storage and the UI only shows “your” connections. On the Foundation drawing, <code>connections</code> SELECT is party-only; lifecycle fields are not generally updatable — accept/decline/connect/expire go through named functions (0006). That is the correct lock for a Handshake Room. It is drawn, not installed on the running app.</p>
+    <p>Messages: participant-only SELECT; send via <code>send_message()</code>. Blocks: blocker-only SELECT; the blocked party has no row access. Reports: reporter or staff; the target does not read the report. These are strong locks on paper.</p>
+
+    <h2>6. The open (now closed) profile door</h2>
+    <p><code>profiles</code> (username, display name) is publicly readable. <code>district_profiles</code> (type + JSON) is authenticated-only. Migration 0019 records an Owner decision: that authenticated-only rule stays. Anonymous visitors get no table privilege on <code>district_profiles</code>.</p>
+    <p>The prototype <code>ProfilePage</code> still displays profile details to anonymous visitors by reading <code>mockProfiles</code> directly. The directory service already withholds district profile data when there is no viewer id. So the City currently has two answers to the same door: the new directory lock matches the drawing; the old details pane does not. That is why profile <em>writes</em> were migrated and profile <em>reads</em> were deliberately left on the old path — migrating the read would silently change visitor visibility. Closing it is a product decision about the door, then a small Framing change, not a surprise lock change in SQL.</p>
+    <div class="callout info">
+      <div class="label">Directory safety</div>
+      <p>Public directory types exclude email, phone, and isAdmin. On the Foundation, those columns are not on <code>profiles</code> at all (structural). In local mode, safety depends on one adapter discarding <code>MockUser</code> private fields (conventional). Currently correct; weaker than the SQL shape.</p>
+    </div>
+
+    <h2>7. RLS and privilege hardening (as drawn)</h2>
+    <p>PostgreSQL checks table privileges <em>before</em> RLS. 0001–0016 wrote careful row policies, then revoked some rights, but did not always grant the base rights those revokes assumed. Local CLI stacks and hosted Supabase projects start from opposite defaults. 0017 exists to force one end state. 0020 then strips <code>service_role</code> blanket table DML so privileged work must go through security-definer functions. This audit confirms those files exist and say that; it does not certify they have been applied anywhere this app is running.</p>
+    <p>0018 fixes a real locksmith defect: <code>ensure_conversation_for_connection()</code> used an <code>ON CONFLICT</code> column list that was ambiguous with an output parameter, which would have failed the first time the function ran. 0019 adds a narrow owner-only function to read document admin notes without widening column grants — so a rejected document owner can see what to fix, without handing internal notes to the public.</p>
+
+    <h2>8. SMS / marketing consent locks</h2>
+    <p><code>sms_consents.phone_verified</code> has no legitimate writer in the drawing. Transactional and marketing consent go through dedicated functions. The UI labels non-in-app channels <strong>NOT YET CONNECTED</strong>. Consent records can exist locally; no message is sent. That is honest. Connecting Twilio or similar is a Change Order and a new lock review, not a toggle.</p>
+
+    <h2>9. Doors &amp; Locks verdict</h2>
+    <div class="callout warn">
+      <div class="label">Do not swap the front door yet</div>
+      <p>The prototype door works for a single-device demo. The Foundation lockset is substantially better — and currently unreachable. Cut over auth alone, and Handshake, handle claim, admin, and onboarding break. Cut over nothing until identity/directory either moves through the seam or a bridge maps Auth ids onto the remaining mock stores. Owner/Admin in the UI must read <code>user_roles</code>, not a boolean, before anyone treats the City as a real multi-user building.</p>
+    </div>
+    <p class="footer-note">
+      THE CITY OF VAEL · Milestone 1 Technical Audit · 03 Doors &amp; Locks.
+      RLS was reviewed as written, not executed on a live project.
+    </p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>THE CITY OF VAEL — Milestone 1 · 00 Owner Brief</title>
+  <link rel="stylesheet" href="../assets/audit.css" />
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-kicker">Milestone 1 &nbsp;·&nbsp; Technical Audit &nbsp;·&nbsp; August 2026</div>
+    <img class="cover-medallion" src="../assets/vael-medallion.png" alt="THE CITY OF VAEL medallion" />
+    <div class="cover-center">
+      <h1>THE CITY OF VAEL</h1>
+      <div class="cover-term">Inspection Report</div>
+      <div class="doc-title">00 &nbsp;—&nbsp; Owner Brief</div>
+      <p class="doc-sub">How to read this audit, and the current state of the City, without needing a software background.</p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Prepared for</strong>Tony Grant, Owner<br>TSG Construction LLC</div>
+      <div><strong>Prepared by</strong>Appifest — Technical Audit<br>Continuing the existing prototype</div>
+      <div><strong>Document type</strong>Milestone 1 deliverable<br>PRD acceptance pack</div>
+      <div><strong>Date / method</strong>25 August 2026<br>Read-only inspection of the live tree</div>
+    </div>
+  </section>
+  <main class="interior">
+    <h2>1. Why this pack exists</h2>
+    <p class="lead">The PRD for THE CITY OF VAEL (August 2026) says Milestone 1 must be finished and reviewed with the Owner before any development milestone begins. This pack is that milestone. It is an inspection of the building that already stands — not a rebuild, and not permission to start pouring new Rooms.</p>
+    <p>VAEL is an availability network, not a job board. A person or business veils in when they are available, or veils out when they need someone available. Matching is by percentage fit. Full profiles stay hidden until both parties accept in a Handshake Room. That is the product this City is meant to be. The success question in the PRD is simple: <strong>does the City function as that product?</strong> This audit answers: <em>parts of it do, in one district, on one device, in a prototype.</em> The rest is labeled on the lot, drawn on the blueprint, or not built yet.</p>
+
+    <div class="callout truth">
+      <div class="label">How to read this pack</div>
+      <p>Document 00 is for you. Documents 01–04 are the inspection of Framing, Foundation, Doors &amp; Locks, and Utilities. Document 05 is the Punch List. Document 06 is the recommended finish order for Milestones 2–4. Nothing in this pack changes the product. Owner approval of Milestone 1 means “the map is accepted,” not “start building Construction tomorrow.”</p>
+    </div>
+
+    <h2>2. Shared vocabulary</h2>
+    <p>The PRD maps construction language onto the platform so status can be discussed without a technical background. Every document in this pack uses these terms.</p>
+    <table>
+      <thead>
+        <tr><th>Construction term</th><th>What it means here</th><th>Plain example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Foundation</strong></td><td>Database and core data structure</td><td>The tables that would hold accounts, VAELs, Handshakes, messages</td></tr>
+        <tr><td><strong>Framing</strong></td><td>Application architecture</td><td>How the City shell, districts, and screens are organized</td></tr>
+        <tr><td><strong>Utilities</strong></td><td>APIs, services, integrations</td><td>SMS, email, file storage, payments, live database connection</td></tr>
+        <tr><td><strong>Doors &amp; Locks</strong></td><td>Authentication, permissions, row security</td><td>Who can sign in, who can see whose profile, who is Owner/Admin</td></tr>
+        <tr><td><strong>Rooms</strong></td><td>Features and districts</td><td>Construction Exchange, Matching Board, Community Feed</td></tr>
+        <tr><td><strong>Inspections</strong></td><td>Testing and verification</td><td>Automated tests, type checks, production build</td></tr>
+        <tr><td><strong>Punch List</strong></td><td>Defects and incomplete work</td><td>Numbered gaps that still need closing</td></tr>
+        <tr><td><strong>Change Orders</strong></td><td>Approved changes to scope or architecture</td><td>Payments, a new district, or a stack migration</td></tr>
+      </tbody>
+    </table>
+
+    <h2>3. The three truths to take from this inspection</h2>
+    <div class="callout warn">
+      <div class="label">Truth 1 — The City runs in the browser today</div>
+      <p>Every account, listing, Handshake, and message lives in that visitor’s own browser storage. Two phones do not share a City. There is no live Foundation connected to the running app. A full database blueprint exists as drawings (SQL migrations 0001–0020) and has never been the thing the product actually stands on at runtime.</p>
+    </div>
+    <div class="callout warn">
+      <div class="label">Truth 2 — Only one district is a real Room</div>
+      <p>Media &amp; Technology is <span class="badge badge-live">Live</span>. Contractor (the closest thing to Construction) and Trucking are <span class="badge badge-soon">Coming Soon</span> placeholders: a landing page and a local interest form, zero listings, zero matching, zero Handshake. Residential and Commercial, as named in the PRD, are not districts in the registry at all. Real Estate is <span class="badge badge-early">Early Access</span> — also not a working Room.</p>
+    </div>
+    <div class="callout info">
+      <div class="label">Truth 3 — Continue, don’t rebuild, is the right call</div>
+      <p>The prototype is real. Veil in/out, 24-hour visibility, percentage matching, Handshake, profiles, documents, community, and city-wide navigation all exist and work for Media &amp; Technology on a single device. The Framing is coherent. The Foundation drawings are serious. The job is to stabilize that, then add the PRD Rooms on the same pattern — not to start over.</p>
+    </div>
+
+    <h2>4. What is standing vs what is labeled on the lot</h2>
+    <table>
+      <thead>
+        <tr><th>PRD Room</th><th>Status in this inspection</th><th>What a user actually gets</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Profiles</td>
+          <td>Partial — standing in Media &amp; Technology</td>
+          <td>Resume-like profile, portfolio links, documents tab (license, insurance, capability statement, etc.). Not a fully verified identity system. Anonymous visitors can still see profile details in the prototype; the Foundation drawing would hide district details from unsigned visitors.</td>
+        </tr>
+        <tr>
+          <td>Veil In / Veil Out</td>
+          <td>Standing in Media &amp; Technology</td>
+          <td>24-hour default visibility is enforced on new listings. Re-veil exists. Extended plans exist as a labeled demo — not purchasable.</td>
+        </tr>
+        <tr>
+          <td>Matching Board</td>
+          <td>Standing in Media &amp; Technology only</td>
+          <td>Live board ranked by percentage fit. Scoring weights are built for media/tech fields (discipline, tools, certifications). Not a generic engine for Construction or Trucking.</td>
+        </tr>
+        <tr>
+          <td>Handshake Room</td>
+          <td>Standing in Media &amp; Technology</td>
+          <td>Mutual accept before the private room. Board-match and profile-handshake both exist. The newer “service layer” built for a future live Foundation is not what the screens actually call.</td>
+        </tr>
+        <tr>
+          <td>Construction Exchange</td>
+          <td>Not built</td>
+          <td>Registry name is <em>Contractor</em>, coming soon. Placeholder only.</td>
+        </tr>
+        <tr>
+          <td>Trucking Exchange</td>
+          <td>Not built</td>
+          <td>Coming soon. Placeholder only.</td>
+        </tr>
+        <tr>
+          <td>Residential flow</td>
+          <td>Not built</td>
+          <td>No homeowner/civilian Room. Closest registry entry is Real Estate (early access), which is also a placeholder.</td>
+        </tr>
+        <tr>
+          <td>Commercial flow</td>
+          <td>Not built</td>
+          <td>No business/civilian Room as specified in the PRD.</td>
+        </tr>
+        <tr>
+          <td>Communities + Community Feed</td>
+          <td>Standing (city + Media &amp; Technology)</td>
+          <td>City homepage feed and district community both work. This is one of the more complete Rooms.</td>
+        </tr>
+        <tr>
+          <td>Subscription gating (structural only)</td>
+          <td>Demo hooks only</td>
+          <td>Extended VAEL pages exist as a local demo. No Stripe, no billing, no premium homeowner-lead gating. Matches the PRD: do not finalize monetization yet.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. How the other six documents map to the PRD</h2>
+    <table>
+      <thead>
+        <tr><th>File</th><th>PRD deliverable</th><th>Term</th><th>Read if you want…</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>01 Framing</td><td>Repository and architecture review</td><td>Framing</td><td>How the City shell and the one live district are framed</td></tr>
+        <tr><td>02 Foundation</td><td>Data model and Supabase review</td><td>Foundation</td><td>The blueprint vs what actually holds water today</td></tr>
+        <tr><td>03 Doors &amp; Locks</td><td>Auth and RLS review</td><td>Doors &amp; Locks</td><td>Who can enter, and what the locks would do if the Foundation were poured</td></tr>
+        <tr><td>04 Utilities</td><td>APIs and integrations review</td><td>Utilities</td><td>What is not connected: SMS, email, storage, payments, hosting</td></tr>
+        <tr><td>05 Punch List</td><td>Bug and gap assessment</td><td>Punch List</td><td>The numbered list of remaining work</td></tr>
+        <tr><td>06 Blueprint</td><td>Owner-readable prioritized finish list</td><td>Blueprint</td><td>Recommended order for Milestones 2–4</td></tr>
+      </tbody>
+    </table>
+
+    <h2>6. What this inspection did and did not do</h2>
+    <div class="two-col">
+      <div class="stat">
+        <div class="n">Did</div>
+        <p class="small" style="margin-top:0.1in">Read the live application tree, the district registry, the Foundation drawings (migrations 0001–0020), auth and permission design, and the existing engineer notes in <code>docs/audit/</code>. Re-checked those notes against the current files. Recorded PRD-vs-repo disagreements as findings instead of smoothing them over.</p>
+      </div>
+      <div class="stat">
+        <div class="n">Did not</div>
+        <p class="small" style="margin-top:0.1in">Change product code. Connect a live database. Build Construction or Trucking. Prove row-security against a running server (none is attached to the app). Sign off Milestones 2–4. This copy of the workspace also had no git history and no successful dependency install during the audit window — Inspections cite the project’s own documented baseline rather than a fresh test run.</p>
+      </div>
+    </div>
+
+    <h2>7. Open items that only the Owner can close</h2>
+    <p>These are already listed in the PRD. They remain Owner decisions. Engineering should not invent an answer.</p>
+    <ol>
+      <li><strong>Monetization.</strong> Advertising, premium visibility, homeowner-lead gating, pricing. Structural hooks only until you say otherwise.</li>
+      <li><strong>District order beyond the PRD list.</strong> The live registry also shows Nursing/Healthcare, Equipment, Government, Real Estate, Legal &amp; Finance. Building any of those is a Change Order unless you add them to scope.</li>
+      <li><strong>Naming.</strong> The PRD says Construction Exchange. The City currently labels that lot <em>Contractor</em>. Residential/Commercial are not lots on the map. You should confirm the names before Milestone 2 frames those Rooms.</li>
+      <li><strong>Anonymous profile visibility.</strong> Prototype screens show profile details to visitors who are not signed in. The Foundation drawing would hide district profile details from those visitors. That is a product door, not a coding preference.</li>
+      <li><strong>Communications cadence.</strong> PRD proposal: Slack, updates every day or two, milestone demos. Still to confirm.</li>
+    </ol>
+
+    <h2>8. Recommended Owner reading order</h2>
+    <ol class="toc">
+      <li>This brief (you are here).</li>
+      <li>Document 05 Punch List — skim the “Blocks the product / Blocks a PRD Room” items.</li>
+      <li>Document 06 Blueprint — the recommended finish order.</li>
+      <li>Documents 01–04 as needed when a Punch List item cites them.</li>
+    </ol>
+    <div class="callout ok">
+      <div class="label">Bottom line</div>
+      <p>THE CITY OF VAEL is a real, working prototype of the product in the PRD — for one district, on one device, with honest labels on every unfinished lot. Milestone 1 is complete when you have reviewed this pack. Milestone 2 should not start until you approve that next scope in writing.</p>
+    </div>
+    <p class="footer-note">
+      THE CITY OF VAEL · Milestone 1 Technical Audit · 00 Owner Brief.
+      Construction vocabulary: Foundation = database, Framing = application architecture,
+      Utilities = APIs and integrations, Doors &amp; Locks = auth and RLS, Rooms = features and districts,
+      Inspections = testing, Punch List = defects and gaps, Change Orders = approved scope changes.
+      This document does not authorize development, connection of a live backend, or any Change Order.
+    </p>
+  </main>
+</body>
+</html>

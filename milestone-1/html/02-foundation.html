@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>THE CITY OF VAEL — Milestone 1 · 02 Foundation</title>
+  <link rel="stylesheet" href="../assets/audit.css" />
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-kicker">Milestone 1 &nbsp;·&nbsp; Technical Audit &nbsp;·&nbsp; August 2026</div>
+    <img class="cover-medallion" src="../assets/vael-medallion.png" alt="THE CITY OF VAEL medallion" />
+    <div class="cover-center">
+      <h1>THE CITY OF VAEL</h1>
+      <div class="cover-term">Foundation</div>
+      <div class="doc-title">02 &nbsp;—&nbsp; Data Model and Supabase Review</div>
+      <p class="doc-sub">The blueprint is drawn. The building today still sits on compacted soil: each visitor’s browser.</p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Prepared for</strong>Tony Grant, Owner<br>TSG Construction LLC</div>
+      <div><strong>Prepared by</strong>Appifest — Technical Audit<br>Continuing the existing prototype</div>
+      <div><strong>Document type</strong>Milestone 1 deliverable<br>PRD acceptance pack</div>
+      <div><strong>Date / method</strong>25 August 2026<br>Read-only inspection of the live tree</div>
+    </div>
+  </section>
+  <main class="interior">
+    <h2>1. Two Foundations, one City</h2>
+    <p class="lead">If you only remember one thing from this document: <strong>the running City does not use the database drawings.</strong> Those drawings are real, sequential, and carefully locked. They are not poured under the app the Owner can click today.</p>
+    <table>
+      <thead><tr><th></th><th>Live prototype (today)</th><th>Drawn Foundation (SQL)</th></tr></thead>
+      <tbody>
+        <tr><td>Where data lives</td><td>Browser <code>localStorage</code> via <code>mockX.ts</code></td><td>Postgres tables in <code>supabase/migrations/0001</code>–<code>0020</code></td></tr>
+        <tr><td>Shared between devices?</td><td>No</td><td>Would be, if applied and connected</td></tr>
+        <tr><td>Who can tamper</td><td>Anyone with the browser’s storage</td><td>Row-level locks + privilege baseline (see 03)</td></tr>
+        <tr><td>Connected to UI?</td><td>Yes — this is the product</td><td>Providers exist; most screens do not call them</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <div class="label">Docs vs leftover link metadata</div>
+      <p><code>supabase/README.md</code> and the product README say: nothing applied, no project linked, runtime client is <code>null</code>. That last part is true in this tree — there is no <code>.env</code>, so <code>src/integrations/supabase/client.ts</code> exports <code>supabase = null</code>. Separate leftover CLI files under <code>supabase/.temp/</code> name a hosted development project <code>vael-media-tech-dev</code>. Migration comments 0017 and 0020 disagree with each other about how much of the schema was ever applied there (0017: only 0001/0002; 0020: 0001–0019). This audit did <em>not</em> connect to that project. Treating “runtime is mock” as fact, and “hosted leftover exists” as a Punch List item to reconcile with the Owner before any connection work.</p>
+    </div>
+
+    <h2>2. Migration map (the drawings, in order)</h2>
+    <table>
+      <thead><tr><th>#</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>0001</td><td>Private <code>users</code>, <code>user_roles</code>, auth→users bootstrap trigger</td></tr>
+        <tr><td>0002</td><td>Public <code>profiles</code>; authenticated-only <code>district_profiles</code></td></tr>
+        <tr><td>0003</td><td><code>visibility_plans</code>, <code>vaels</code>, vael lifecycle events</td></tr>
+        <tr><td>0004</td><td>Orphan <code>handshake_requests</code>; real <code>connections</code> table</td></tr>
+        <tr><td>0005</td><td>Conversations and participants (no messages yet)</td></tr>
+        <tr><td>0006</td><td>Atomic Handshake/connection lifecycle functions</td></tr>
+        <tr><td>0007</td><td>Expiry processor for VAELs</td></tr>
+        <tr><td>0008</td><td>First-admin bootstrap; lock sensitive columns</td></tr>
+        <tr><td>0009</td><td>Full role hierarchy + admin audit log</td></tr>
+        <tr><td>0010</td><td>Audit actor type (user / service / system)</td></tr>
+        <tr><td>0011</td><td>Notification events + unused deliveries table</td></tr>
+        <tr><td>0012</td><td>Notification preferences; SMS consent records</td></tr>
+        <tr><td>0013</td><td>Messages; attachment table reserved</td></tr>
+        <tr><td>0014</td><td>Media objects lifecycle</td></tr>
+        <tr><td>0015</td><td>Blocks, reports, moderation cases</td></tr>
+        <tr><td>0016</td><td>Profile documents + community posts/comments/reactions/saves</td></tr>
+        <tr><td>0017</td><td>Explicit table privileges so locks actually apply on both local CLI and hosted defaults</td></tr>
+        <tr><td>0018</td><td>Bugfix: ambiguous column in conversation ensure-function</td></tr>
+        <tr><td>0019</td><td>Owner can read admin notes on their own documents</td></tr>
+        <tr><td>0020</td><td>Strip service-role blanket table access; harden function execute</td></tr>
+      </tbody>
+    </table>
+    <p>0001–0016 each still carry a header that says they are local design-only and not applied. 0017–0020 are written as corrections against a real development project. The drawings matured past the original “design only” stamp. The running app did not follow them.</p>
+
+    <h2>3. Table inventory (29 tables)</h2>
+    <p>All 29 tables are created in 0001–0016. Later files adjust privileges and functions; they do not add tables. RLS is enabled on every table. Most writes are not “update the row from the browser” — they go through named server functions.</p>
+    <table>
+      <thead><tr><th>Table</th><th>What it holds</th><th>Who may see it (design)</th></tr></thead>
+      <tbody>
+        <tr><td><code>users</code></td><td>Private account row (email, phone, status)</td><td>Self; Owner/Admin all. No client INSERT</td></tr>
+        <tr><td><code>user_roles</code></td><td>owner / admin / manager / developer / moderator / member</td><td>Self; Owner/Admin all. Writes via functions only</td></tr>
+        <tr><td><code>profiles</code></td><td>Username, display name</td><td><strong>Public</strong> select</td></tr>
+        <tr><td><code>district_profiles</code></td><td>Per-district type + JSON payload</td><td><strong>Signed-in only</strong> (Owner decision, ratified in 0019)</td></tr>
+        <tr><td><code>visibility_plans</code></td><td>Duration catalog; purchasable stays false</td><td>Public select; no client writes</td></tr>
+        <tr><td><code>vaels</code></td><td>Availability / need listings</td><td>Active rows public; owner sees all statuses</td></tr>
+        <tr><td><code>vael_lifecycle_events</code></td><td>Append-only history</td><td>Owner of that VAEL</td></tr>
+        <tr><td><code>handshake_requests</code></td><td>Early drawing, never used by product code</td><td>Requester or VAEL owner</td></tr>
+        <tr><td><code>connections</code></td><td>The real Handshake / match record (largest table)</td><td>The two parties only</td></tr>
+        <tr><td><code>connection_lifecycle_events</code></td><td>Append-only history</td><td>Parties</td></tr>
+        <tr><td><code>conversations</code> / <code>conversation_participants</code></td><td>Thread per connection</td><td>Participants</td></tr>
+        <tr><td><code>messages</code></td><td>Chat, including system notices</td><td>Participants; writes via <code>send_message()</code></td></tr>
+        <tr><td><code>message_attachments</code></td><td>Reserved; client never reads them back</td><td>Participants</td></tr>
+        <tr><td><code>media_objects</code></td><td>File metadata; bytes not stored here</td><td>Owner or participant of linked message</td></tr>
+        <tr><td><code>notification_events</code></td><td>In-app notification records</td><td>Owner only</td></tr>
+        <tr><td><code>notification_deliveries</code></td><td>SMS/email/push log — <strong>no insert path exists</strong></td><td>Owner via join</td></tr>
+        <tr><td><code>notification_preferences</code> / <code>sms_consents</code></td><td>Channel toggles; consent flags</td><td>Owner</td></tr>
+        <tr><td><code>blocks</code></td><td>Block list (soft-revoke in SQL)</td><td>Blocker only — blocked party sees nothing</td></tr>
+        <tr><td><code>reports</code> / <code>moderation_cases</code> / <code>moderation_actions</code></td><td>Trust &amp; safety</td><td>Reporter or Owner/Admin/Moderator</td></tr>
+        <tr><td><code>admin_action_audit</code></td><td>Governance log</td><td>Owner/Admin; no TypeScript reader</td></tr>
+        <tr><td><code>profile_documents</code></td><td>License, insurance, capability statement, etc.</td><td>Owner, or public if flagged</td></tr>
+        <tr><td><code>community_posts</code> / comments / reactions</td><td>Discussion</td><td>Public select</td></tr>
+        <tr><td><code>community_saves</code></td><td>Saved posts</td><td>Owner of the save only</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. How a person would get a Foundation row</h2>
+    <p>Client INSERT into <code>public.users</code> is intentionally forbidden. Migration 0001 creates trigger <code>on_auth_user_created</code> on <code>auth.users</code> calling <code>handle_new_auth_user()</code>, which inserts the matching <code>public.users</code> row. A leftover commented duplicate of that trigger sits underneath — noise, not a second path.</p>
+    <p>A prior engineer note (<code>docs/audit/06-schema.md</code>) said this trigger was only a commented sketch. <strong>That note is stale.</strong> In the current 0001 file the trigger is active in the drawing. What remains true: the <em>running app</em> never creates <code>public.users</code> rows, because it never talks to this database. Nearly every other table foreign-keys to <code>users(id)</code>. Connecting screens to Supabase without this bootstrap working would fail the first real write.</p>
+
+    <h2>5. Rooms drawn but not used</h2>
+    <table>
+      <thead><tr><th>Table</th><th>Why it is empty in practice</th></tr></thead>
+      <tbody>
+        <tr><td><code>handshake_requests</code></td><td>0004 itself says foundation-only. Product folded handshake state into <code>connections</code>. Table was never dropped.</td></tr>
+        <tr><td><code>notification_deliveries</code></td><td>No function inserts a row. Waiting for a real SMS/email/push vendor (Change Order).</td></tr>
+        <tr><td><code>user_roles</code> / <code>admin_action_audit</code></td><td>No TypeScript governance module. Roles exist only in SQL.</td></tr>
+        <tr><td><code>visibility_plans</code></td><td>Catalog; client never selects it. Duration is also hardcoded in the app’s plan list.</td></tr>
+        <tr><td><code>message_attachments</code></td><td>SQL can attach; the messaging provider always returns <code>attachmentIds: []</code>.</td></tr>
+        <tr><td><code>users</code></td><td>No provider queries it. Identity goes through Auth + <code>profiles</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>6. Where the drawing is thinner than the prototype</h2>
+    <p>If the City were cut over onto this Foundation as written, these prototype capabilities would silently shrink:</p>
+    <table>
+      <thead><tr><th>Room</th><th>Prototype keeps</th><th>Foundation drawing drops or cannot do</th></tr></thead>
+      <tbody>
+        <tr><td>Veil</td><td>Description, contact, requirements, budget, timeline</td><td><code>vaels</code> has no columns for that rich content. Provider accepts it and never sends it.</td></tr>
+        <tr><td>Re-veil</td><td>Reconciles open connections after a new VAEL</td><td>Supabase <code>reconcileAfterRevael()</code> is a documented no-op (empty arrays).</td></tr>
+        <tr><td>Messages</td><td>Real attachment metadata</td><td>Always <code>[]</code> on the Supabase provider.</td></tr>
+        <tr><td>Media</td><td>Instant local preview; status “stored”</td><td>Row stays <code>pending</code> forever. Nothing calls the service-role “stored” mark. No bucket.</td></tr>
+        <tr><td>Documents</td><td>Actual file bytes as a data URL</td><td>Metadata only. File bytes would vanish.</td></tr>
+        <tr><td>Auth admin</td><td>Local <code>isAdmin</code> flag</td><td>Hardcoded <code>false</code> in the Supabase auth provider.</td></tr>
+        <tr><td>Community</td><td>Seeded demo posts</td><td>No sample posts — by design.</td></tr>
+        <tr><td>Block history</td><td>Unblock deletes the row</td><td>SQL soft-revokes and keeps history (SQL is stricter here).</td></tr>
+      </tbody>
+    </table>
+    <p>Generated TypeScript database types (<code>src/integrations/supabase/types.ts</code>) are still an empty stub. Providers cast past the type checker. A misspelled column would not fail Inspections; it would fail at runtime against a live project.</p>
+
+    <h2>7. Live storage map (what actually holds water)</h2>
+    <p>Twenty-four-plus keys, all device-local. See Document 01 for the ownership table. Nothing in <code>src/pages</code> should write these keys except through the owning module. Community, documents, and some profile writes now go through the service seam, which in local mode still ends in the same keys.</p>
+
+    <h2>8. Cross-provider consistency</h2>
+    <p>Re-checked against current providers: each table is owned by one domain’s TypeScript provider (profile + profile-directory both read <code>profiles</code> / <code>district_profiles</code> with compatible partial shapes). No two providers fight over the same columns. Every <code>.from("…")</code> / <code>.rpc("…")</code> name in those providers resolves to a table or function the migrations create. <code>exchange_listings</code> in dead <code>src/data/listings.ts</code> is the exception — it is not in the Foundation at all.</p>
+
+    <h2>9. Foundation verdict</h2>
+    <div class="callout truth">
+      <div class="label">Blueprint quality vs pour status</div>
+      <p>This is a serious Foundation drawing: 29 tables, function-mediated writes, privilege hardening through 0020, SQL tests sitting beside the migrations. It is not a live basement. Pouring it is a later, explicitly approved step — and it cannot be poured “as the product” until the field gaps in §6 are either added to the drawing or accepted as product reductions, and until screens are actually framed onto the seam (Document 01 §7).</p>
+    </div>
+    <p class="footer-note">
+      THE CITY OF VAEL · Milestone 1 Technical Audit · 02 Foundation.
+      This document does not authorize creating or linking a Supabase project.
+    </p>
+  </main>
+</body>
+</html>
