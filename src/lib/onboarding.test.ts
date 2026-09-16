@@ -77,17 +77,15 @@ describe("handle claim", () => {
 });
 
 describe("onboarding resume", () => {
-  it("starts at Welcome after sign-up and advances by completed step", () => {
+  it("starts at Intent after sign-up and advances by completed step", () => {
     startOnboarding("maaz");
+    expect(onboardingStep("maaz")).toBe("Intent");
+    completeOnboardingStep("maaz", "Intent");
     expect(onboardingStep("maaz")).toBe("Welcome");
     expect(onboardingRoute("maaz")).toBe("/join/welcome");
     completeOnboardingStep("maaz", "Welcome");
-    expect(onboardingStep("maaz")).toBe("Handle");
-    completeOnboardingStep("maaz", "Handle");
-    expect(onboardingStep("maaz")).toBe("Profile Type");
-    completeOnboardingStep("maaz", "Profile Type");
-    expect(onboardingStep("maaz")).toBe("District");
-    completeOnboardingStep("maaz", "District");
+    expect(onboardingStep("maaz")).toBe("Profile Setup");
+    completeOnboardingStep("maaz", "Profile Setup");
     expect(onboardingStep("maaz")).toBe("Identity");
     expect(onboardingRoute("maaz")).toBe("/join/identity");
   });
@@ -112,7 +110,7 @@ describe("onboarding resume", () => {
 
   it("hands Construction off to that district's profile editor", () => {
     startOnboarding("maaz");
-    patchOnboarding("maaz", { districtId: "construction", completedStep: "District" });
+    patchOnboarding("maaz", { districtId: "construction", completedStep: "Profile Setup" });
     expect(onboardingRoute("maaz")).toBe("/districts/contractor/profile/maaz/edit");
   });
 

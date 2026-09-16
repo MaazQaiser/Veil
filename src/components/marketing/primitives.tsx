@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { FilterChip } from "@/components/ui/search";
@@ -6,6 +7,49 @@ import {
   AVAILABILITY_LABEL,
   type DirectoryPerson,
 } from "@/lib/marketingDirectory";
+
+export function PillCta({
+  to,
+  children,
+  tone = "light",
+  className,
+}: {
+  to: string;
+  children: ReactNode;
+  tone?: "light" | "dark" | "accent";
+  className?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "group inline-flex h-14 items-center gap-3 rounded-full py-1 pl-7 pr-1.5 text-[0.9375rem] font-medium motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-none",
+        tone === "light" && "bg-white text-[#0B0C0C]",
+        tone === "dark" && "bg-[#0B0C0C] text-white",
+        tone === "accent" && "bg-[#FACC15] text-[#0B0C0C]",
+        className,
+      )}
+    >
+      {children}
+      <span
+        className={cn(
+          "flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5",
+          tone === "accent" ? "bg-[#0B0C0C] text-white" : tone === "light" ? "bg-[#0B0C0C] text-white" : "bg-white text-[#0B0C0C]",
+        )}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M7 17L17 7M17 7H9M17 7V15"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    </Link>
+  );
+}
 
 export function MatchBadge({ percent, className }: { percent: number; className?: string }) {
   return (
@@ -16,6 +60,20 @@ export function MatchBadge({ percent, className }: { percent: number; className?
       )}
     >
       {percent}% Match
+    </span>
+  );
+}
+
+export function PillEyebrow({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border border-border bg-surface-muted px-4 py-1.5 text-[0.75rem] font-medium uppercase tracking-[0.12em] text-muted",
+        className,
+      )}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-[#CA8A04]" aria-hidden />
+      {children}
     </span>
   );
 }

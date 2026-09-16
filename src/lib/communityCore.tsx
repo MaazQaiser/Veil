@@ -6,17 +6,22 @@ import {
   deleteCommunityPost,
   getCommunityComments,
   getCommunityPost,
+  getFollowedCommunityIds,
   getSavedCommunityPosts,
   getVisibleCommunityPosts,
+  isFollowingCommunity,
   subscribeCommunity,
+  toggleCommunityFollow,
   toggleCommunityLike,
   toggleCommunitySave,
   viewCommunityPost,
   type CommunityDistrictId,
   type CommunityPost,
+  type CommunityPostKind,
   type CommunityPostView,
 } from "./communityStore";
 import { pushNotice } from "./vaelStore";
+import { ensureDemoCommunityFeed } from "./demoJourney";
 
 type Ctx = {
   handle: string;
@@ -25,11 +30,14 @@ type Ctx = {
   saved: () => CommunityPostView[];
   post: (id: string) => CommunityPostView | undefined;
   comments: typeof getCommunityComments;
-  publish: (input: { districtId: CommunityDistrictId; body: string }) => CommunityPost;
+  publish: (input: { districtId: CommunityDistrictId; body: string; kind?: CommunityPostKind; title?: string }) => CommunityPost;
   remove: (id: string) => void;
   like: (id: string) => void;
   save: (id: string) => void;
   comment: (postId: string, body: string) => void;
+  followedCommunities: () => CommunityDistrictId[];
+  isFollowingCommunity: (districtId: CommunityDistrictId) => boolean;
+  followCommunity: (districtId: CommunityDistrictId) => void;
 };
 
 const CommunityContext = createContext<Ctx | null>(null);
@@ -39,6 +47,9 @@ export function CommunityCoreProvider({ children }: { children: ReactNode }) {
   const [tick, setTick] = useState(0);
 
   useEffect(() => subscribeCommunity(() => setTick((n) => n + 1)), []);
+  useEffect(() => {
+    ensureDemoCommunityFeed();
+  }, []);
 
   const handle = session.signedIn ? session.handle : "";
 
@@ -78,6 +89,12 @@ export function CommunityCoreProvider({ children }: { children: ReactNode }) {
           pushNotice(post.handle, "New comment", `@${handle} commented on your post.`);
         }
         return record;
+      },
+      followedCommunities: () => (handle ? getFollowedCommunityIds(handle) : []),
+      isFollowingCommunity: (districtId) => (handle ? isFollowingCommunity(districtId, handle) : false),
+      followCommunity: (districtId) => {
+        if (!handle) throw new Error("Continue locally to follow a Community.");
+        toggleCommunityFollow(districtId, handle);
       },
     }),
     [handle, tick],

@@ -35,8 +35,8 @@ export const VISIBILITY_PLANS: VisibilityPlan[] = [
     purchasable: false,
     included: [
       "Appear on the Matching Board in a live Room",
-      "Veil In (available) or Veil Out (need someone)",
-      "Re-veil starts a new 24-hour window on this device",
+      "Vael In (available) or Vael Out (need someone)",
+      "Re-vael starts a new 24-hour window on this device",
     ],
     notIncluded: [
       "Identity verification",

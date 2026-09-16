@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonClassName } from "@/components/ui/button";
 import { Card, CardBody, CardFooter, CardHeader, CardMeta, CardTitle } from "@/components/ui/card";
-import { DistrictStatus, VeilStatus, type DistrictLotStatus, type VeilKind } from "./status";
+import { DistrictStatus, VaelStatus, type DistrictLotStatus, type VaelKind } from "./status";
 import { MatchPercent } from "./match";
 import { Avatar } from "@/components/ui/avatar";
 import { IconDocument, IconLock } from "@/components/ui/icons";
@@ -17,7 +17,7 @@ export function ListingCard({
   expired,
 }: {
   title: string;
-  side: VeilKind;
+  side: VaelKind;
   location: string;
   summary: string;
   hoursLeft?: number;
@@ -26,7 +26,7 @@ export function ListingCard({
   return (
     <Card className={expired ? "opacity-70" : undefined}>
       <CardHeader>
-        <VeilStatus kind={expired ? "expired" : side} hoursLeft={hoursLeft} />
+        <VaelStatus kind={expired ? "expired" : side} hoursLeft={hoursLeft} />
         <CardTitle>{title}</CardTitle>
         <CardMeta>{location}</CardMeta>
       </CardHeader>

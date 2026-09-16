@@ -2,7 +2,7 @@ import { createContext, createElement, useContext, useEffect, useMemo, useState,
 import { useCitySession } from "./citySession";
 import {
   addCxDocument,
-  cxVeilKind,
+  cxVaelKind,
   ensureCxProfile,
   expireOwnCxListing,
   getActiveCxListing,
@@ -13,6 +13,7 @@ import {
   hoursLeft,
   publishCxListing,
   rankConstructionMatches,
+  resetCxProfile,
   saveCxProfile,
   subscribeConstruction,
   type ConstructionListing,
@@ -45,6 +46,7 @@ type Ctx = {
   matches: RankedConstructionMatch[];
   saveListing: (input: Omit<ConstructionListing, "id" | "createdAt" | "expiresAt" | "plan">) => ConstructionListing;
   clearListing: () => void;
+  resetDistrict: () => void;
   profile: (name: string) => ConstructionProfile | undefined;
   ensureMine: () => ConstructionProfile | undefined;
   writeProfile: (next: ConstructionProfile) => void;
@@ -65,13 +67,13 @@ type Ctx = {
   send: typeof sendMessage;
   readThread: typeof markThreadRead;
   hoursLeft: typeof hoursLeft;
-  veilKind: ReturnType<typeof cxVeilKind>;
+  vaelKind: ReturnType<typeof cxVaelKind>;
 };
 
 const ConstructionContext = createContext<Ctx | null>(null);
 
 export function ConstructionCoreProvider({ children }: { children: ReactNode }) {
-  const { session, setVeil } = useCitySession();
+  const { session, setVael } = useCitySession();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -100,11 +102,14 @@ export function ConstructionCoreProvider({ children }: { children: ReactNode }) 
       matches: listing ? rankConstructionMatches(listing) : [],
       saveListing: (input) => {
         const published = publishCxListing(input);
-        setVeil(published.side);
+        setVael(published.side);
         return published;
       },
       clearListing: () => {
         if (handle) expireOwnCxListing(handle);
+      },
+      resetDistrict: () => {
+        if (handle) resetCxProfile(handle);
       },
       profile: getCxProfile,
       ensureMine: () => (handle ? ensureCxProfile(handle) : undefined),
@@ -126,9 +131,9 @@ export function ConstructionCoreProvider({ children }: { children: ReactNode }) 
       send: sendMessage,
       readThread: markThreadRead,
       hoursLeft,
-      veilKind: cxVeilKind(listing),
+      vaelKind: cxVaelKind(listing),
     }),
-    [handle, listing, latestListing, session.veil],
+    [handle, listing, latestListing, session.vael],
   );
 
   return createElement(ConstructionContext.Provider, { value }, children);

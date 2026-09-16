@@ -51,6 +51,12 @@ export type CommercialProfile = {
   rates: string;
   history: { label: string; url: string }[];
   sample?: boolean;
+  /** District Profile — role/profession within the district, separate from capability. */
+  specialization?: string;
+  /** What you can offer in this District. */
+  offers?: string[];
+  /** What you're looking for in this District. */
+  lookingFor?: string[];
 };
 
 export type CommercialDocument = {
@@ -76,6 +82,11 @@ export const CM_CAPABILITIES = [
 ] as const;
 
 export const CM_TIMING = ["This cycle", "Next two weeks", "Flexible"] as const;
+
+/** District Profile option catalogs — the values change per District, the editor shape does not. */
+export const CM_SKILLS = ["Vendor management", "Budgeting", "Operations", "Procurement", "Compliance"];
+export const CM_OFFERS = ["Consulting", "Managed services", "Project support", "Staffing"];
+export const CM_CREDENTIAL_TYPES = ["Licensed", "Insured", "Bonded", "Certified"];
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -145,7 +156,7 @@ export function toCommercialMatchable(listing: CommercialListing): CommercialMat
   };
 }
 
-export function cmVeilKind(listing: CommercialListing | undefined) {
+export function cmVaelKind(listing: CommercialListing | undefined) {
   if (!listing) return "none" as const;
   if (!isCmVisible(listing)) return "expired" as const;
   if (hoursLeft(listing.expiresAt) <= EXPIRING_HOURS) return "expiring" as const;
@@ -312,6 +323,21 @@ export function saveCmProfile(next: CommercialProfile) {
 
 export function getCmDocuments(handle: string) {
   return read<CommercialDocument[]>(KEYS.documents, []).filter((item) => item.handle === handle);
+}
+
+/** Leaving the district: drop the profile, documents, and any active listing for this handle. */
+export function resetCmProfile(handle: string) {
+  write(KEYS.profiles, getCmProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<CommercialDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  expireOwnCmListing(handle);
+  return ensureCmProfile(handle);
+}
+
+/** Full removal for one handle: profile, documents, and every listing (not just expired). Used by the demo reset. */
+export function purgeCmHandle(handle: string) {
+  write(KEYS.profiles, getCmProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<CommercialDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  write(KEYS.listings, getCmListings().filter((item) => item.handle !== handle));
 }
 
 export function addCmDocument(doc: Omit<CommercialDocument, "id">) {

@@ -42,6 +42,12 @@ export type ConstructionListing = {
   plan: "daily";
 };
 
+export type ConstructionProject = {
+  id: string;
+  title: string;
+  status: string;
+};
+
 export type ConstructionProfile = {
   handle: string;
   displayName: string;
@@ -57,7 +63,28 @@ export type ConstructionProfile = {
   rates: string;
   portfolio: { label: string; url: string }[];
   sample?: boolean;
+  avatar?: string;
+  coverImage?: string;
+  website: string;
+  location: string;
+  /** Labels only — this kit does not verify licenses, insurance, or membership claims. */
+  verifications: string[];
+  /** Not modeled. Kept at 0 until a real reputation system exists. */
+  vaelScore: number;
+  availableNow: boolean;
+  projects: ConstructionProject[];
+  accomplishments: string[];
+  certifications: string[];
+  /** What you can offer in this District. */
+  offers?: string[];
+  /** What you're looking for in this District. */
+  lookingFor?: string[];
 };
+
+/** District Profile option catalogs — the values change per District, the editor shape does not. */
+export const CX_SKILLS = ["Framing", "Electrical rough-in", "Plumbing rough-in", "Finishes", "Project management", "Estimating"];
+export const CX_OFFERS = ["General contracting", "Subcontracting", "Project management", "Consulting", "Crew supply"];
+export const CX_CREDENTIAL_TYPES = ["Licensed contractor", "Insured", "Bonded", "OSHA certified", "Trade license"];
 
 export type ConstructionDocument = {
   id: string;
@@ -156,7 +183,7 @@ export function toConstructionMatchable(listing: ConstructionListing): Construct
   };
 }
 
-export function cxVeilKind(listing: ConstructionListing | undefined) {
+export function cxVaelKind(listing: ConstructionListing | undefined) {
   if (!listing) return "none" as const;
   if (!isCxVisible(listing)) return "expired" as const;
   if (hoursLeft(listing.expiresAt) <= EXPIRING_HOURS) return "expiring" as const;
@@ -227,6 +254,17 @@ function seedIfNeeded() {
       rates: "Discussed after Handshake.",
       portfolio: [{ label: "Recent work", url: "https://example.com/ridgeworks" }],
       sample: true,
+      website: "https://example.com/ridgeworks",
+      location: "Atlanta, GA",
+      verifications: ["Identity verified", "Business verified", "Licensed contractor", "Insured"],
+      vaelScore: 0,
+      availableNow: true,
+      projects: [
+        { id: "cxproj_1", title: "Sample renovation — panel upgrade", status: "Completed" },
+        { id: "cxproj_2", title: "Sample renovation — lighting retrofit", status: "In progress" },
+      ],
+      accomplishments: [],
+      certifications: ["Trade license on file"],
     },
     {
       handle: "lotnorth",
@@ -243,6 +281,14 @@ function seedIfNeeded() {
       rates: "Scope after Handshake.",
       portfolio: [],
       sample: true,
+      website: "",
+      location: "Atlanta, GA",
+      verifications: [],
+      vaelScore: 0,
+      availableNow: false,
+      projects: [],
+      accomplishments: [],
+      certifications: [],
     },
   ];
   write(KEYS.listings, listings);
@@ -317,6 +363,14 @@ export function ensureCxProfile(handle: string): ConstructionProfile {
     credentials: [],
     rates: "",
     portfolio: [],
+    website: "",
+    location: "",
+    verifications: [],
+    vaelScore: 0,
+    availableNow: false,
+    projects: [],
+    accomplishments: [],
+    certifications: [],
   };
   write(KEYS.profiles, [...getCxProfiles(), created]);
   return created;
@@ -330,6 +384,21 @@ export function saveCxProfile(next: ConstructionProfile) {
 
 export function getCxDocuments(handle: string) {
   return read<ConstructionDocument[]>(KEYS.documents, []).filter((item) => item.handle === handle);
+}
+
+/** Leaving the district: drop the profile, documents, and any active listing for this handle. */
+export function resetCxProfile(handle: string) {
+  write(KEYS.profiles, getCxProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<ConstructionDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  expireOwnCxListing(handle);
+  return ensureCxProfile(handle);
+}
+
+/** Full removal for one handle: profile, documents, and every listing (not just expired). Used by the demo reset. */
+export function purgeCxHandle(handle: string) {
+  write(KEYS.profiles, getCxProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<ConstructionDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  write(KEYS.listings, getCxListings().filter((item) => item.handle !== handle));
 }
 
 export function addCxDocument(doc: Omit<ConstructionDocument, "id">) {

@@ -51,6 +51,12 @@ export type TruckingProfile = {
   rates: string;
   history: { label: string; url: string }[];
   sample?: boolean;
+  /** District Profile — role/profession within the district, separate from equipment. */
+  specialization?: string;
+  /** What you can offer in this District. */
+  offers?: string[];
+  /** What you're looking for in this District. */
+  lookingFor?: string[];
 };
 
 export type TruckingDocument = {
@@ -69,6 +75,11 @@ export const TX_EQUIPMENT = ["Dry van", "Flatbed", "Reefer", "Box", "Other"] as 
 export const TX_CAPACITY = ["Full", "Partial", "Dedicated"] as const;
 
 export const TX_AVAILABILITY = ["This cycle", "Next two weeks", "Flexible"] as const;
+
+/** District Profile option catalogs — the values change per District, the editor shape does not. */
+export const TX_SKILLS = ["Long haul", "Regional", "Local delivery", "Hazmat", "Team driving", "Dispatch"];
+export const TX_OFFERS = ["Available capacity", "Dedicated lane", "Owner-operator services", "Dispatch support"];
+export const TX_CREDENTIAL_TYPES = ["CDL", "DOT number", "Insured", "Hazmat endorsement", "Safety rating on file"];
 
 export function laneLabel(origin: string, destination: string) {
   if (!origin && !destination) return "Lane not listed";
@@ -146,7 +157,7 @@ export function toTruckingMatchable(listing: TruckingListing): TruckingMatchable
   };
 }
 
-export function txVeilKind(listing: TruckingListing | undefined) {
+export function txVaelKind(listing: TruckingListing | undefined) {
   if (!listing) return "none" as const;
   if (!isTxVisible(listing)) return "expired" as const;
   if (hoursLeft(listing.expiresAt) <= EXPIRING_HOURS) return "expiring" as const;
@@ -308,6 +319,21 @@ export function saveTxProfile(next: TruckingProfile) {
 
 export function getTxDocuments(handle: string) {
   return read<TruckingDocument[]>(KEYS.documents, []).filter((item) => item.handle === handle);
+}
+
+/** Leaving the district: drop the profile, documents, and any active listing for this handle. */
+export function resetTxProfile(handle: string) {
+  write(KEYS.profiles, getTxProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<TruckingDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  expireOwnTxListing(handle);
+  return ensureTxProfile(handle);
+}
+
+/** Full removal for one handle: profile, documents, and every listing (not just expired). Used by the demo reset. */
+export function purgeTxHandle(handle: string) {
+  write(KEYS.profiles, getTxProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<TruckingDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  write(KEYS.listings, getTxListings().filter((item) => item.handle !== handle));
 }
 
 export function addTxDocument(doc: Omit<TruckingDocument, "id">) {

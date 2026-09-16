@@ -17,9 +17,30 @@ const KEYS = {
   comments: "vael_community_comments_v1",
   reactions: "vael_community_reactions_v1",
   saves: "vael_community_saves_v1",
+  follows: "vael_community_follows_v1",
 } as const;
 
 export type CommunityDistrictId = VaelDistrictId | "city";
+
+export type CommunityPostKind =
+  | "opportunity"
+  | "looking-for"
+  | "offering"
+  | "collaboration"
+  | "discussion"
+  | "update";
+
+export const COMMUNITY_POST_KIND_LABEL: Record<CommunityPostKind, string> = {
+  opportunity: "Opportunity",
+  "looking-for": "Looking For",
+  offering: "Offering",
+  collaboration: "Collaboration",
+  discussion: "Discussion",
+  update: "Update",
+};
+
+/** The five kinds surfaced in Create Post — "collaboration" stays a valid legacy kind but isn't offered as a choice. */
+export const COMPOSER_POST_KINDS: CommunityPostKind[] = ["discussion", "opportunity", "looking-for", "offering", "update"];
 
 export type CommunityPost = {
   id: string;
@@ -28,7 +49,34 @@ export type CommunityPost = {
   body: string;
   createdAt: string;
   deletedAt?: string;
+  kind?: CommunityPostKind;
+  title?: string;
+  location?: string;
 };
+
+export function inferCommunityPostKind(body: string): CommunityPostKind {
+  const text = body.toLowerCase();
+  if (/\bcollaborat/.test(text)) return "collaboration";
+  if (/\boffer(ing)?\b|\bavailable (for|this|to)\b/.test(text)) return "offering";
+  if (/\blooking for\b|\bseeking\b|\bneed someone\b/.test(text)) return "looking-for";
+  if (/\bneed\b|\bhiring\b|\bengagement\b|\bopening a\b|\bproject\b/.test(text)) return "opportunity";
+  return "discussion";
+}
+
+export function communityPostKind(post: Pick<CommunityPost, "kind" | "body">): CommunityPostKind {
+  return post.kind ?? inferCommunityPostKind(post.body);
+}
+
+export function communityPostKindLabel(kind: CommunityPostKind): string {
+  return COMMUNITY_POST_KIND_LABEL[kind];
+}
+
+export function communityPostTitle(post: Pick<CommunityPost, "title" | "body">): string {
+  if (post.title?.trim()) return post.title.trim();
+  const sentence = post.body.split(/[.!?]/)[0]?.trim() ?? post.body.trim();
+  if (sentence.length <= 80) return sentence;
+  return `${sentence.slice(0, 77).trim()}…`;
+}
 
 export type CommunityComment = {
   id: string;
@@ -47,6 +95,11 @@ export type CommunityReaction = {
 export type CommunitySave = {
   postId: string;
   handle: string;
+};
+
+export type CommunityFollow = {
+  handle: string;
+  districtId: CommunityDistrictId;
 };
 
 type Listener = () => void;
@@ -162,17 +215,61 @@ export function getCommunityPost(idValue: string) {
   return getCommunityPosts().find((item) => item.id === idValue);
 }
 
-/** Demo-only. Adds missing posts by id. Does not overwrite member posts. */
+/** Demo-only. Adds missing posts by id. Refreshes labeled demo posts; does not overwrite member posts. */
 export function ensureCommunityPosts(posts: CommunityPost[]) {
   if (typeof localStorage === "undefined") return;
   const existing = getCommunityPosts();
-  const ids = new Set(existing.map((item) => item.id));
-  const add = posts.filter((item) => !ids.has(item.id));
-  if (add.length === 0) return;
-  write(KEYS.posts, [...existing, ...add]);
+  const byId = new Map(existing.map((item) => [item.id, item]));
+  let changed = false;
+
+  for (const post of posts) {
+    const current = byId.get(post.id);
+    if (!current) {
+      byId.set(post.id, post);
+      changed = true;
+      continue;
+    }
+    if (!post.id.startsWith("cpost_demo_")) continue;
+    const next: CommunityPost = {
+      ...current,
+      handle: post.handle,
+      districtId: post.districtId,
+      body: post.body,
+      createdAt: post.createdAt,
+      kind: post.kind ?? current.kind,
+      title: post.title ?? current.title,
+      location: post.location ?? current.location,
+    };
+    byId.set(post.id, next);
+    changed = true;
+  }
+
+  if (!changed) return;
+
+  const nextList: CommunityPost[] = [];
+  const seen = new Set<string>();
+  for (const item of existing) {
+    const updated = byId.get(item.id);
+    if (updated) {
+      nextList.push(updated);
+      seen.add(item.id);
+    }
+  }
+  for (const post of posts) {
+    if (seen.has(post.id)) continue;
+    nextList.push(post);
+    seen.add(post.id);
+  }
+  write(KEYS.posts, nextList);
 }
 
-export function createCommunityPost(input: { handle: string; districtId: CommunityDistrictId; body: string }) {
+export function createCommunityPost(input: {
+  handle: string;
+  districtId: CommunityDistrictId;
+  body: string;
+  kind?: CommunityPostKind;
+  title?: string;
+}) {
   const body = input.body.trim();
   if (!body) throw new Error("Write something to share.");
   if (!isLiveCommunityDistrict(input.districtId)) {
@@ -184,6 +281,8 @@ export function createCommunityPost(input: { handle: string; districtId: Communi
     districtId: input.districtId,
     body,
     createdAt: new Date().toISOString(),
+    kind: input.kind,
+    title: input.title?.trim() || undefined,
   };
   write(KEYS.posts, [...getCommunityPosts(), post]);
   return post;
@@ -198,6 +297,15 @@ export function deleteCommunityPost(idValue: string, handle: string) {
       item.id === idValue ? { ...item, deletedAt: new Date().toISOString() } : item,
     ),
   );
+}
+
+/** Fully removes one handle's posts, comments, reactions, saves, and follows. Used by the demo reset. */
+export function purgeHandleFromCommunity(handle: string) {
+  write(KEYS.posts, read<CommunityPost[]>(KEYS.posts, []).filter((item) => item.handle !== handle));
+  write(KEYS.comments, read<CommunityComment[]>(KEYS.comments, []).filter((item) => item.handle !== handle));
+  write(KEYS.reactions, read<CommunityReaction[]>(KEYS.reactions, []).filter((item) => item.handle !== handle));
+  write(KEYS.saves, read<CommunitySave[]>(KEYS.saves, []).filter((item) => item.handle !== handle));
+  write(KEYS.follows, read<CommunityFollow[]>(KEYS.follows, []).filter((item) => item.handle !== handle));
 }
 
 export function getCommunityComments(postId: string) {
@@ -269,12 +377,36 @@ export function getSavedCommunityPosts(handle: string) {
   return getVisibleCommunityPosts().filter((item) => ids.has(item.id));
 }
 
+/** Following a Community (Facebook-page style) is separate from joining a District's own profile/matching. */
+export function getFollowedCommunityIds(handle: string): CommunityDistrictId[] {
+  return read<CommunityFollow[]>(KEYS.follows, [])
+    .filter((item) => item.handle === handle)
+    .map((item) => item.districtId);
+}
+
+export function isFollowingCommunity(districtId: CommunityDistrictId, handle: string): boolean {
+  return getFollowedCommunityIds(handle).includes(districtId);
+}
+
+export function toggleCommunityFollow(districtId: CommunityDistrictId, handle: string): boolean {
+  const all = read<CommunityFollow[]>(KEYS.follows, []);
+  const exists = all.some((item) => item.handle === handle && item.districtId === districtId);
+  write(
+    KEYS.follows,
+    exists
+      ? all.filter((item) => !(item.handle === handle && item.districtId === districtId))
+      : [...all, { handle, districtId }],
+  );
+  return !exists;
+}
+
 export type CommunityPostView = {
   post: CommunityPost;
   likeCount: number;
   commentCount: number;
   liked: boolean;
   saved: boolean;
+  followingCommunity: boolean;
 };
 
 export function viewCommunityPost(post: CommunityPost, handle?: string): CommunityPostView {
@@ -284,5 +416,6 @@ export function viewCommunityPost(post: CommunityPost, handle?: string): Communi
     commentCount: getCommunityComments(post.id).length,
     liked: handle ? hasLikedCommunityPost(post.id, handle) : false,
     saved: handle ? hasSavedCommunityPost(post.id, handle) : false,
+    followingCommunity: handle ? isFollowingCommunity(post.districtId, handle) : false,
   };
 }

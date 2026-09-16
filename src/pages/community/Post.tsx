@@ -5,20 +5,30 @@ import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { Button, buttonClassName } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Select, Textarea } from "@/components/ui/controls";
+import { Avatar } from "@/components/ui/avatar";
+import { IconChevronLeft, IconHeart } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
 import { CityPage } from "@/components/city/CityShell";
 import { useCitySession } from "@/lib/citySession";
 import { useCommunity } from "@/lib/communityCore";
 import {
   LIVE_COMMUNITY_DISTRICTS,
-  communityBoardHref,
   communityDistrictLabel,
   communityHref,
+  communityPostKind,
+  communityPostKindLabel,
+  communityPostTitle,
   communityProfileHref,
-  communityRoomHref,
   formatCommunityTime,
   isLiveCommunityDistrict,
   type CommunityDistrictId,
 } from "@/lib/communityStore";
+import {
+  communityHandshakeHref,
+  communityPostImage,
+  communityPostLocation,
+  resolveCommunityAuthor,
+} from "@/lib/communityPresent";
 
 export function CreatePostPage() {
   const { session, signIn } = useCitySession();
@@ -155,6 +165,14 @@ export function PostDetailPage() {
   const { post } = view;
   const unavailable = Boolean(post.deletedAt);
   const mine = session.signedIn && session.handle === post.handle;
+  const author = resolveCommunityAuthor(post.handle, post.districtId);
+  const kind = communityPostKind(post);
+  const kindLabel = communityPostKindLabel(kind);
+  const title = communityPostTitle(post);
+  const location = communityPostLocation(post, author);
+  const image = communityPostImage(post, author);
+  const handshakeTo = kind === "discussion" ? undefined : communityHandshakeHref(post.handle, post.districtId);
+  const districtLabel = communityDistrictLabel(post.districtId);
 
   if (unavailable) {
     return (
@@ -187,138 +205,176 @@ export function PostDetailPage() {
   }
 
   return (
-    <CityPage width="narrow">
-      <PageHeader
-        kicker={communityDistrictLabel(post.districtId)}
-        title="Post"
-        description={formatCommunityTime(post.createdAt)}
-        crumbs={[
-          { label: "Feed", href: "/feed" },
-          { label: communityDistrictLabel(post.districtId), href: communityHref(post.districtId) },
-          { label: "Post" },
-        ]}
-      />
+    <CityPage width="wide" className="-mt-4 sm:-mt-6">
+      <Link
+        to={communityHref(post.districtId)}
+        className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
+      >
+        <IconChevronLeft className="h-3.5 w-3.5" />
+        Back to {districtLabel}
+      </Link>
 
-      <article className="mt-8">
-        <p className="text-body-sm">
-          <Link
-            to={communityProfileHref(post.districtId, post.handle)}
-            className="font-semibold hover:underline"
-          >
-            @{post.handle}
-          </Link>
-          <span className="text-muted"> · </span>
-          <Link to={communityHref(post.districtId)} className="text-label text-muted hover:underline">
-            {communityDistrictLabel(post.districtId)}
-          </Link>
-        </p>
-        <p className="mt-4 text-body">{post.body}</p>
-        <p className="mt-4 text-caption text-muted">
-          Private profile details stay closed until Handshake. Community only shows the handle.
-        </p>
-      </article>
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        {session.signedIn ? (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => community.like(post.id)}
-              aria-pressed={view.liked}
+      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to={communityHref(post.districtId)}
+              className="text-body-sm font-semibold text-foreground hover:underline"
             >
-              {view.liked ? "Liked" : "Like"} · {view.likeCount}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => community.save(post.id)} aria-pressed={view.saved}>
-              {view.saved ? "Saved" : "Save"}
-            </Button>
-          </>
-        ) : (
-          <Button variant="outline" size="sm" onClick={() => signIn("member")}>
-            Continue locally to like or save
-          </Button>
-        )}
-        {mine ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              community.remove(post.id);
-            }}
-          >
-            Remove post
-          </Button>
-        ) : null}
-      </div>
+              {districtLabel}
+            </Link>
+            <span className="inline-flex items-center rounded-full bg-[#FFC555]/15 px-2.5 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+              {kindLabel}
+            </span>
+          </div>
 
-      {post.districtId !== "city" ? (
-        <div className="mt-8 space-y-2 text-body-sm">
-          <p className="vael-kicker">This Room</p>
-          <p>
-            <Link to={communityRoomHref(post.districtId)} className="underline">
-              Open {communityDistrictLabel(post.districtId)}
-            </Link>
-            {" · "}
-            <Link to={communityBoardHref(post.districtId)} className="underline">
-              Matching Board
-            </Link>
-          </p>
+          {title ? <h1 className="mt-3 text-h4 font-semibold text-foreground">{title}</h1> : null}
+          <p className="mt-3 text-body whitespace-pre-wrap">{post.body}</p>
+
+          {image ? (
+            <div className="mt-5 aspect-[21/9] max-h-64 overflow-hidden rounded-2xl bg-surface-muted">
+              <img src={image} alt="" className="h-full w-full object-cover" />
+            </div>
+          ) : null}
+
+          <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-border-subtle pt-4 text-body-sm">
+            {session.signedIn ? (
+              <>
+                <button
+                  type="button"
+                  aria-pressed={view.liked}
+                  onClick={() => community.like(post.id)}
+                  className="inline-flex items-center gap-1.5 font-medium text-muted hover:text-destructive aria-pressed:text-destructive"
+                >
+                  <IconHeart className={cn("h-4 w-4", view.liked && "fill-current")} aria-hidden />
+                  {view.likeCount}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard?.writeText(window.location.href).catch(() => undefined)}
+                  className="inline-flex items-center gap-1.5 font-medium text-muted hover:text-foreground"
+                >
+                  <span aria-hidden>↗</span>
+                  Share
+                </button>
+                {mine ? (
+                  <Button variant="ghost" size="sm" className="ml-auto" onClick={() => community.remove(post.id)}>
+                    Remove post
+                  </Button>
+                ) : null}
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => signIn("member")}>
+                Continue locally to like or save
+              </Button>
+            )}
+          </div>
+
+          <section className="mt-8">
+            <p className="vael-kicker">Comments</p>
+            {comments.length === 0 ? (
+              <p className="mt-3 text-body-sm text-muted">No comments yet.</p>
+            ) : (
+              <ul className="mt-4 space-y-4">
+                {comments.map((item) => (
+                  <li key={item.id}>
+                    <p className="text-caption">
+                      <Link
+                        to={communityProfileHref(post.districtId, item.handle)}
+                        className="font-semibold hover:underline"
+                      >
+                        @{item.handle}
+                      </Link>
+                      <span className="text-muted"> · {formatCommunityTime(item.createdAt)}</span>
+                    </p>
+                    <p className="mt-1 text-body-sm">{item.body}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {session.signedIn ? (
+              <form
+                className="mt-6 space-y-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  sendComment();
+                }}
+              >
+                <label htmlFor="comment" className="sr-only">
+                  Comment
+                </label>
+                <Textarea
+                  id="comment"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  rows={3}
+                  placeholder="What are your thoughts?"
+                />
+                {commentError ? (
+                  <p role="alert" className="text-caption text-destructive">
+                    {commentError}
+                  </p>
+                ) : null}
+                <Button type="submit" size="sm" className="rounded-full" loading={commentStatus === "posting"}>
+                  Comment
+                </Button>
+              </form>
+            ) : (
+              <p className="mt-4 text-body-sm text-muted">Continue locally to comment.</p>
+            )}
+          </section>
         </div>
-      ) : (
-        <p className="mt-8 text-body-sm">
-          <Link to="/districts" className="underline">
-            View districts
-          </Link>
-        </p>
-      )}
 
-      <section className="mt-10">
-        <p className="vael-kicker">Comments</p>
-        {comments.length === 0 ? (
-          <p className="mt-3 text-body-sm text-muted">No comments yet.</p>
-        ) : (
-          <ul className="mt-4 space-y-4">
-            {comments.map((item) => (
-              <li key={item.id}>
-                <p className="text-caption">
-                  <Link
-                    to={communityProfileHref(post.districtId, item.handle)}
-                    className="font-semibold hover:underline"
-                  >
-                    @{item.handle}
-                  </Link>
-                  <span className="text-muted"> · {formatCommunityTime(item.createdAt)}</span>
+        <aside className="space-y-4 lg:sticky lg:top-24">
+          <div className="rounded-2xl border border-border bg-white p-5 dark:bg-white/[0.05] dark:backdrop-blur-xl">
+            <div className="flex items-center gap-3 border-b border-border-subtle pb-4">
+              <Avatar name={author.name} src={author.avatarUrl} size="lg" className="ring-2 ring-[#FFC555]/30" />
+              <div className="min-w-0">
+                <Link
+                  to={communityProfileHref(post.districtId, post.handle)}
+                  className="block truncate text-body-sm font-semibold text-foreground hover:underline"
+                >
+                  {author.name}
+                </Link>
+                {author.headline ? <p className="truncate text-caption text-muted">{author.headline}</p> : null}
+                <p className="text-caption text-quiet">
+                  Posted {formatCommunityTime(post.createdAt)}
+                  {location ? ` · ${location}` : ""}
                 </p>
-                <p className="mt-1 text-body-sm">{item.body}</p>
-              </li>
-            ))}
-          </ul>
-        )}
+              </div>
+            </div>
 
-        {session.signedIn ? (
-          <form
-            className="mt-6 space-y-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              sendComment();
-            }}
-          >
-            <Field label="Comment" htmlFor="comment">
-              <Textarea id="comment" value={draft} onChange={(event) => setDraft(event.target.value)} />
-            </Field>
-            {commentError ? (
-              <p role="alert" className="text-caption text-destructive">
-                {commentError}
-              </p>
-            ) : null}
-            <Button type="submit" size="sm" loading={commentStatus === "posting"}>
-              Comment
-            </Button>
-          </form>
-        ) : (
-          <p className="mt-4 text-body-sm text-muted">Continue locally to comment.</p>
-        )}
-      </section>
+            <div className="mt-4">
+            {session.signedIn ? (
+              <div className="space-y-2">
+                {!mine && handshakeTo ? (
+                  <Link to={handshakeTo} className={buttonClassName({ className: "w-full rounded-full" })}>
+                    Request Handshake
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  aria-pressed={view.saved}
+                  onClick={() => community.save(post.id)}
+                  className={buttonClassName({
+                    variant: "outline",
+                    className: "w-full rounded-full",
+                  })}
+                >
+                  {view.saved ? "Saved" : "Save post"}
+                </button>
+              </div>
+            ) : (
+              <Button variant="outline" className="w-full" onClick={() => signIn("member")}>
+                Continue locally
+              </Button>
+            )}
+            </div>
+          </div>
+
+        </aside>
+      </div>
     </CityPage>
   );
 }

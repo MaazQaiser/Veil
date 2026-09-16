@@ -56,7 +56,7 @@ import {
   ProfileCard,
   ProfileCompleteness,
   TrustSummary,
-  VeilStatus,
+  VaelStatus,
   VerificationState,
   VisibilityStatus,
 } from "@/components/vael";
@@ -231,13 +231,13 @@ export function DesignSystemGallery() {
                 <option value="contractor">Contractor</option>
               </Select>
             </Field>
-            <Field htmlFor="need" label="Need" error="Describe what you need before veiling out.">
+            <Field htmlFor="need" label="Need" error="Describe what you need before vaeling out.">
               <Textarea id="need" aria-invalid defaultValue="" />
             </Field>
             <div className="flex flex-col gap-3 pt-6">
               <Checkbox label="Show sample community posts" defaultChecked />
-              <Radio name="side" label="Veil In — I am available" defaultChecked />
-              <Radio name="side" label="Veil Out — I need someone" />
+              <Radio name="side" label="Vael In — I am available" defaultChecked />
+              <Radio name="side" label="Vael Out — I need someone" />
               <Switch label="Extended visibility (demo)" checked={switchOn} onCheckedChange={setSwitchOn} />
             </div>
           </TwoCol>
@@ -260,7 +260,7 @@ export function DesignSystemGallery() {
             <DistrictCard
               name="Media & Technology"
               status="live"
-              summary="The only fully working district. Enter for Board, Veil, Handshake."
+              summary="The only fully working district. Enter for Board, Vael, Handshake."
             />
             <DistrictCard
               name="Contractor"
@@ -274,7 +274,7 @@ export function DesignSystemGallery() {
               title="Editor available this cycle"
               side="in"
               location="Remote · Atlanta"
-              summary="24-hour Veil In. Discipline and tools stay Media & Technology-specific."
+              summary="24-hour Vael In. Discipline and tools stay Media & Technology-specific."
               hoursLeft={11}
             />
             <MatchCard
@@ -292,11 +292,11 @@ export function DesignSystemGallery() {
             />
             <DocumentCard title="General liability" type="Insurance" status="review" />
             <NotificationCard title="Handshake pending" body="Both parties must accept before the private room opens." unread />
-            <NotificationCard title="Veil expired" body="Re-veil to become visible again." />
+            <NotificationCard title="Vael expired" body="Re-vael to become visible again." />
           </div>
         </GallerySection>
 
-        <GallerySection id="vael" kicker="Product patterns" title="Match, Veil, Handshake, trust">
+        <GallerySection id="vael" kicker="Product patterns" title="Match, Vael, Handshake, trust">
           <div className="flex flex-wrap items-start gap-8">
             <MatchPercent value={84} size="lg" />
             <MatchPercent value={67} />
@@ -313,10 +313,10 @@ export function DesignSystemGallery() {
             </div>
           </div>
           <div className="mt-8 flex flex-col gap-3">
-            <VeilStatus kind="in" hoursLeft={18} />
-            <VeilStatus kind="out" hoursLeft={6} />
-            <VeilStatus kind="expiring" hoursLeft={1} />
-            <VeilStatus kind="expired" />
+            <VaelStatus kind="in" hoursLeft={18} />
+            <VaelStatus kind="out" hoursLeft={6} />
+            <VaelStatus kind="expiring" hoursLeft={1} />
+            <VaelStatus kind="expired" />
             <HandshakeStatus kind="pending" />
             <HandshakeStatus kind="connected" />
             <HandshakeStatus kind="declined" />
@@ -349,7 +349,7 @@ export function DesignSystemGallery() {
             <Card>
               <EmptyState
                 title="No matches in band yet"
-                description="Veil In or Out to appear on the Board. Empty is honest, not decorative."
+                description="Vael In or Out to appear on the Board. Empty is honest, not decorative."
                 action={<Button size="sm">Create VAEL</Button>}
               />
             </Card>
@@ -379,8 +379,8 @@ export function DesignSystemGallery() {
           <div className="mt-6">
             <FilterBar count={12}>
               <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
-              <FilterChip label="Veil In" active={filter === "in"} onClick={() => setFilter("in")} />
-              <FilterChip label="Veil Out" active={filter === "out"} onClick={() => setFilter("out")} />
+              <FilterChip label="Vael In" active={filter === "in"} onClick={() => setFilter("in")} />
+              <FilterChip label="Vael Out" active={filter === "out"} onClick={() => setFilter("out")} />
               <Button size="sm" variant="ghost">
                 <IconFilter /> Filters
               </Button>
@@ -393,7 +393,7 @@ export function DesignSystemGallery() {
 
         <GallerySection id="layout" kicker="Structure" title="Split, tabs, stats">
           <div className="grid gap-4 sm:grid-cols-3">
-            <Stat label="Visibility" value="24h" hint="Default Veil" />
+            <Stat label="Visibility" value="24h" hint="Default Vael" />
             <Stat label="Live district" value="1" hint="Media & Technology" />
             <Stat label="Match band" value="≥80" hint="Strong" />
           </div>

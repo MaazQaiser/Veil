@@ -177,7 +177,7 @@ export function DistrictPlaceholderPage() {
         tone="warning"
         title={district.status === "future" ? "Future Room" : district.status === "early" ? "Early Access" : "Coming Soon"}
       >
-        This lot is not a working exchange. There is no Board, Veil form, or Handshake for {district.name} in this
+        This lot is not a working exchange. There is no Board, Vael form, or Handshake for {district.name} in this
         milestone.
         {district.registryName ? ` The original registry names this lot ${district.registryName}.` : null}
         {district.id === "real-estate"

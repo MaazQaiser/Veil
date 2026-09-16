@@ -26,7 +26,7 @@ export const districts: CityDistrict[] = [
     name: "Media & Technology",
     status: "live",
     route: "/media-technology",
-    summary: "Live Room. Board, Veil, and Handshake for media and technology availability.",
+    summary: "Live Room. Board, Vael, and Handshake for media and technology availability.",
     blurb: "Technology, design, media, and digital professionals.",
     primary: true,
   },

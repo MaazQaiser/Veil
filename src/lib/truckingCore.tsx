@@ -12,9 +12,10 @@ import {
   hoursLeft,
   publishTxListing,
   rankTruckingMatches,
+  resetTxProfile,
   saveTxProfile,
   subscribeTrucking,
-  txVeilKind,
+  txVaelKind,
   type RankedTruckingMatch,
   type TruckingListing,
   type TruckingProfile,
@@ -45,6 +46,7 @@ type Ctx = {
   matches: RankedTruckingMatch[];
   saveListing: (input: Omit<TruckingListing, "id" | "createdAt" | "expiresAt" | "plan">) => TruckingListing;
   clearListing: () => void;
+  resetDistrict: () => void;
   profile: (name: string) => TruckingProfile | undefined;
   ensureMine: () => TruckingProfile | undefined;
   writeProfile: (next: TruckingProfile) => void;
@@ -70,13 +72,13 @@ type Ctx = {
   send: typeof sendMessage;
   readThread: typeof markThreadRead;
   hoursLeft: typeof hoursLeft;
-  veilKind: ReturnType<typeof txVeilKind>;
+  vaelKind: ReturnType<typeof txVaelKind>;
 };
 
 const TruckingContext = createContext<Ctx | null>(null);
 
 export function TruckingCoreProvider({ children }: { children: ReactNode }) {
-  const { session, setVeil } = useCitySession();
+  const { session, setVael } = useCitySession();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -105,11 +107,14 @@ export function TruckingCoreProvider({ children }: { children: ReactNode }) {
       matches: listing ? rankTruckingMatches(listing) : [],
       saveListing: (input) => {
         const published = publishTxListing(input);
-        setVeil(published.side);
+        setVael(published.side);
         return published;
       },
       clearListing: () => {
         if (handle) expireOwnTxListing(handle);
+      },
+      resetDistrict: () => {
+        if (handle) resetTxProfile(handle);
       },
       profile: getTxProfile,
       ensureMine: () => (handle ? ensureTxProfile(handle) : undefined),
@@ -131,9 +136,9 @@ export function TruckingCoreProvider({ children }: { children: ReactNode }) {
       send: sendMessage,
       readThread: markThreadRead,
       hoursLeft,
-      veilKind: txVeilKind(listing),
+      vaelKind: txVaelKind(listing),
     }),
-    [handle, listing, latestListing, session.veil],
+    [handle, listing, latestListing, session.vael],
   );
 
   return createElement(TruckingContext.Provider, { value }, children);

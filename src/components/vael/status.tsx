@@ -1,17 +1,17 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 
-export type VeilKind = "in" | "out" | "expiring" | "expired";
+export type VaelKind = "in" | "out" | "expiring" | "expired";
 
-const veilCopy: Record<VeilKind, { label: string; hint: string; tone: "live" | "early" | "soon" | "muted" }> = {
-  in: { label: "Veil In", hint: "Available now", tone: "live" },
-  out: { label: "Veil Out", hint: "Needs someone", tone: "early" },
+const vaelCopy: Record<VaelKind, { label: string; hint: string; tone: "live" | "early" | "soon" | "muted" }> = {
+  in: { label: "Vael In", hint: "Available now", tone: "live" },
+  out: { label: "Vael Out", hint: "Needs someone", tone: "early" },
   expiring: { label: "Expiring", hint: "Visibility ending", tone: "soon" },
   expired: { label: "Expired", hint: "No longer visible", tone: "muted" },
 };
 
-export function VeilStatus({ kind, hoursLeft, className }: { kind: VeilKind; hoursLeft?: number; className?: string }) {
-  const copy = veilCopy[kind];
+export function VaelStatus({ kind, hoursLeft, className }: { kind: VaelKind; hoursLeft?: number; className?: string }) {
+  const copy = vaelCopy[kind];
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <Badge tone={copy.tone}>{copy.label}</Badge>

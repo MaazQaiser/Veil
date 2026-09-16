@@ -3,7 +3,7 @@ import { Card, CardBody, CardFooter } from "@/components/ui/card";
 import { buttonClassName } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
-import { VeilStatus } from "./status";
+import { VaelStatus } from "./status";
 import {
   visibilityHours,
   visibilityKindFromListing,
@@ -12,21 +12,21 @@ import {
 
 const noneCopy = { label: "Not visible", hint: "No active VAEL on the Board" };
 
-function veilMainState(kind: VisibilityKind, side?: "in" | "out") {
+function vaelMainState(kind: VisibilityKind, side?: "in" | "out") {
   if (kind === "in" || (kind === "expiring" && side !== "out")) return "Available";
   if (kind === "out" || (kind === "expiring" && side === "out")) return "Needs someone";
   return "Not available";
 }
 
-function veilStateLabel(kind: VisibilityKind) {
-  if (kind === "in") return "Veil In";
-  if (kind === "out") return "Veil Out";
+function vaelStateLabel(kind: VisibilityKind) {
+  if (kind === "in") return "Vael In";
+  if (kind === "out") return "Vael Out";
   if (kind === "expiring") return "Ending";
   if (kind === "expired") return "Ended";
   return "Inactive";
 }
 
-export function VeilStatePanel({
+export function VaelStatePanel({
   kind,
   hoursLeft,
   side,
@@ -40,14 +40,14 @@ export function VeilStatePanel({
   const active = kind === "in" || kind === "out" || kind === "expiring";
   return (
     <div className={cn("rounded-2xl px-6 py-6", active ? "bg-accent-muted" : "border border-border bg-surface", className)}>
-      <p className="text-label font-medium text-accent">{veilStateLabel(kind)}</p>
+      <p className="text-label font-medium text-accent">{vaelStateLabel(kind)}</p>
       <p
         className={cn(
           "mt-2 font-sans text-h2 font-semibold tracking-[-0.025em]",
           active ? "text-accent" : "text-foreground",
         )}
       >
-        {veilMainState(kind, side)}
+        {vaelMainState(kind, side)}
       </p>
       {typeof hoursLeft === "number" && active ? (
         <p className="mt-2 text-body-sm text-muted">{hoursLeft}h left</p>
@@ -86,7 +86,7 @@ export function VisibilityStatus({
       </span>
     );
   }
-  return <VeilStatus kind={kind} hoursLeft={hoursLeft} className={className} />;
+  return <VaelStatus kind={kind} hoursLeft={hoursLeft} className={className} />;
 }
 
 export function VisibilityCard({
@@ -117,18 +117,18 @@ export function VisibilityCard({
             ? "Expired"
             : "Not visible";
   const action =
-    kind === "none" ? "Set availability" : kind === "expired" ? "Veil In again" : "Manage availability";
+    kind === "none" ? "Set availability" : kind === "expired" ? "Vael In again" : "Manage availability";
 
   return (
     <Card className={kind === "in" || kind === "out" || kind === "expiring" ? "bg-accent-muted border-transparent shadow-none" : undefined}>
-      <p className="text-label font-medium text-accent">{veilStateLabel(kind)}</p>
+      <p className="text-label font-medium text-accent">{vaelStateLabel(kind)}</p>
       <p
         className={cn(
           "mt-2 font-sans text-h2 font-semibold tracking-[-0.025em]",
           kind === "in" || kind === "out" || kind === "expiring" ? "text-accent" : "text-foreground",
         )}
       >
-        {veilMainState(kind, listing?.side)}
+        {vaelMainState(kind, listing?.side)}
       </p>
       {typeof hours === "number" && (kind === "in" || kind === "out" || kind === "expiring") ? (
         <p className="mt-2 text-body-sm text-muted">{hours}h left</p>
@@ -141,7 +141,7 @@ export function VisibilityCard({
           ? " · Free Daily VAEL (24 hours)"
           : kind === "expired"
             ? " · The previous 24-hour window has ended"
-            : " · Veil In or Veil Out to appear on the Board"}
+            : " · Vael In or Vael Out to appear on the Board"}
       </CardBody>
       <CardFooter>
         <Link

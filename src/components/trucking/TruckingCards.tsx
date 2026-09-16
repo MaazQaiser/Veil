@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardFooter, CardMeta } from "@/components/ui/card";
 import { MatchPercent } from "@/components/vael/match";
-import { VeilStatus } from "@/components/vael/status";
+import { VaelStatus } from "@/components/vael/status";
 import { buttonClassName } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -127,7 +127,7 @@ export function TruckingAvailabilityCard({
 }) {
   return (
     <Card>
-      <VeilStatus kind={side} hoursLeft={hours} />
+      <VaelStatus kind={side} hoursLeft={hours} />
       <p className="vael-h4 mt-3">{side === "out" || side === "expired" ? "Needs someone" : "Available"}</p>
       <CardMeta className="mt-1">
         {laneLabel(origin, destination)} · {equipment} · {capacity} · {availability}
@@ -153,7 +153,7 @@ export function TruckingMatchCard({
         <p className="mt-1 text-caption text-muted">{match.percent}% match</p>
       </div>
       <div className="min-w-0">
-        <VeilStatus kind={listing.side} hoursLeft={hoursLeft(listing.expiresAt)} />
+        <VaelStatus kind={listing.side} hoursLeft={hoursLeft(listing.expiresAt)} />
         <p className="vael-h4 mt-2">{laneLabel(listing.origin, listing.destination)}</p>
         <CardMeta className="mt-1">
           {listing.availability} · {listing.capacity} · {listing.equipment}

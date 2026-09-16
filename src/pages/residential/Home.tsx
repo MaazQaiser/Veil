@@ -14,10 +14,10 @@ const BASE = "/districts/residential";
 
 export function ResidentialHomePage() {
   const district = districtBySlug("residential")!;
-  const { listing, latestListing, veilKind, signedIn, myConnections } = useResidential();
+  const { listing, latestListing, vaelKind, signedIn, myConnections } = useResidential();
   const pending = myConnections.filter((item) => item.status === "pending").length;
   const connected = myConnections.filter((item) => item.status === "connected" && !item.blocked).length;
-  const hasRequest = Boolean(listing && (veilKind === "in" || veilKind === "out" || veilKind === "expiring"));
+  const hasRequest = Boolean(listing && (vaelKind === "in" || vaelKind === "out" || vaelKind === "expiring"));
 
   return (
     <CityPage>
@@ -28,8 +28,8 @@ export function ResidentialHomePage() {
         crumbs={[{ label: "City", href: "/" }, { label: "Residential" }]}
         actions={<DistrictStatus status={district.status} />}
         primaryAction={
-          <Link to={`${BASE}/veil`} className={buttonClassName()}>
-            {hasRequest ? "Update need" : "Post a Need"}
+          <Link to={`${BASE}/vael`} className={buttonClassName()}>
+            {hasRequest ? "Update need" : "Create VAEL"}
           </Link>
         }
         secondaryAction={
@@ -44,7 +44,7 @@ export function ResidentialHomePage() {
           {hasRequest && listing ? (
             <div className="mt-3 max-w-xl space-y-3">
               <ResidentialAvailabilityCard
-                side={veilKind === "expiring" ? "expiring" : listing.side}
+                side={vaelKind === "expiring" ? "expiring" : listing.side}
                 hours={hoursLeft(listing.expiresAt)}
                 service={listing.service}
                 area={listing.area}
@@ -60,7 +60,7 @@ export function ResidentialHomePage() {
                 district="Residential"
                 listing={latestListing}
                 context={latestListing?.service}
-                manageHref={`${BASE}/veil`}
+                manageHref={`${BASE}/vael`}
                 boardHref="/matches?district=residential"
               />
               <p className="text-body-sm text-muted">
@@ -169,10 +169,10 @@ export function ResidentialHowItWorksPage() {
         </li>
       </ol>
       <p className="mt-8 text-caption text-muted">
-        If you are available for home work, you can still veil in from the same form. The primary path is a homeowner
+        If you are available for home work, you can still vael in from the same form. The primary path is a homeowner
         need.
       </p>
-      <Link to={`${BASE}/veil`} className={buttonClassName({ className: "mt-6" })}>
+      <Link to={`${BASE}/vael`} className={buttonClassName({ className: "mt-6" })}>
         Post a Need
       </Link>
     </CityPage>

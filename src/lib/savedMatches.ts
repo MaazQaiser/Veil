@@ -32,3 +32,11 @@ export function toggleSavedListing(handle: string, listingId: string): boolean {
   write({ ...read(), [handle]: nextIds });
   return !saved;
 }
+
+/** Removes one handle's saved-matches record entirely. Used by the demo reset. */
+export function clearSavedMatches(handle: string) {
+  const store = read();
+  if (!(handle in store)) return;
+  const { [handle]: _removed, ...rest } = store;
+  write(rest);
+}

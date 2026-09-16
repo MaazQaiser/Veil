@@ -14,7 +14,7 @@ const BASE = "/districts/contractor";
 
 export function ConstructionHomePage() {
   const district = districtBySlug("contractor")!;
-  const { listing, latestListing, veilKind, signedIn } = useConstruction();
+  const { listing, latestListing, vaelKind, signedIn } = useConstruction();
   return (
     <CityPage>
       <PageHeader
@@ -24,7 +24,7 @@ export function ConstructionHomePage() {
         crumbs={[{ label: "City", href: "/" }, { label: "Construction" }]}
         actions={<DistrictStatus status={district.status} />}
         primaryAction={
-          <Link to={`${BASE}/veil`} className={buttonClassName()}>
+          <Link to={`${BASE}/vael`} className={buttonClassName()}>
             Create VAEL
           </Link>
         }
@@ -37,10 +37,10 @@ export function ConstructionHomePage() {
       <div className="mt-8 space-y-10">
         <section>
           <p className="vael-kicker">Your status</p>
-          {listing && (veilKind === "in" || veilKind === "out" || veilKind === "expiring") ? (
+          {listing && (vaelKind === "in" || vaelKind === "out" || vaelKind === "expiring") ? (
             <div className="mt-3 max-w-xl">
               <ConstructionAvailabilityCard
-                side={veilKind === "expiring" ? "expiring" : listing.side}
+                side={vaelKind === "expiring" ? "expiring" : listing.side}
                 hours={hoursLeft(listing.expiresAt)}
                 trade={listing.trade}
                 serviceArea={listing.serviceArea}
@@ -53,11 +53,11 @@ export function ConstructionHomePage() {
                 district="Construction"
                 listing={latestListing}
                 context={latestListing?.trade}
-                manageHref={`${BASE}/veil`}
+                manageHref={`${BASE}/vael`}
                 boardHref="/matches?district=construction"
               />
               {!signedIn ? (
-                <p className="mt-3 text-body-sm text-muted">Continue locally, then Veil In or Veil Out in this Room.</p>
+                <p className="mt-3 text-body-sm text-muted">Continue locally, then Vael In or Vael Out in this Room.</p>
               ) : null}
             </div>
           )}
@@ -73,7 +73,7 @@ export function ConstructionHomePage() {
           <p className="vael-kicker mt-6">Who it is for</p>
           <p>People or companies available for construction work, and people or businesses who need that work.</p>
           <p className="vael-kicker mt-6">What you can do</p>
-          <p>Keep a Construction profile. Veil for 24 hours. See percentage fit. Request a Handshake. Message after both accept.</p>
+          <p>Keep a Construction profile. Vael for 24 hours. See percentage fit. Request a Handshake. Message after both accept.</p>
           <p className="vael-kicker mt-6">How matching works</p>
           <p>
             Opposite-side VAELs rank by Construction criteria: trade, job type, capabilities, service area, availability,
@@ -123,8 +123,8 @@ export function ConstructionHowItWorksPage() {
           <p className="mt-1">Trade, service area, credentials, documents. Rates and portfolio stay closed until Handshake.</p>
         </li>
         <li>
-          <p className="vael-kicker">2. Veil</p>
-          <p className="mt-1">Veil In — I am available for construction work. Veil Out — I need construction capability. 24 hours.</p>
+          <p className="vael-kicker">2. Vael</p>
+          <p className="mt-1">Vael In — I am available for construction work. Vael Out — I need construction capability. 24 hours.</p>
         </li>
         <li>
           <p className="vael-kicker">3. Board</p>
@@ -135,7 +135,7 @@ export function ConstructionHowItWorksPage() {
           <p className="mt-1">Same lock as the rest of the City. Both accept, then the private room opens.</p>
         </li>
       </ol>
-      <Link to={`${BASE}/veil`} className={buttonClassName({ className: "mt-8" })}>
+      <Link to={`${BASE}/vael`} className={buttonClassName({ className: "mt-8" })}>
         Create VAEL
       </Link>
     </CityPage>

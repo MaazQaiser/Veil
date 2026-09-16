@@ -6,7 +6,7 @@ import { Button, buttonClassName } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/controls";
 import { CityPage } from "@/components/city/CityShell";
-import { VeilStatePanel } from "@/components/vael/visibility";
+import { VaelStatePanel } from "@/components/vael/visibility";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { useConstruction } from "@/lib/constructionCore";
 import {
@@ -28,16 +28,16 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
-export function ConstructionVeilPage() {
+export function ConstructionVaelPage() {
   return (
-    <RequireMember title="Construction Veil">
-      <VeilInner />
+    <RequireMember title="Construction Vael">
+      <VaelInner />
     </RequireMember>
   );
 }
 
-function VeilInner() {
-  const { listing, latestListing, saveListing, clearListing, handle, veilKind, ensureMine } = useConstruction();
+function VaelInner() {
+  const { listing, latestListing, saveListing, clearListing, handle, vaelKind, ensureMine } = useConstruction();
   const [step, setStep] = useState<"intent" | "form" | "saving" | "saved" | "error">(listing ? "form" : "intent");
   const [error, setError] = useState("");
   const profile = ensureMine();
@@ -106,17 +106,17 @@ function VeilInner() {
       <PageHeader
         kicker="Construction Exchange"
         title="Create VAEL"
-        description="Veil In if you are available for construction work. Veil Out if you need construction capability. Free Daily VAEL lasts 24 hours."
+        description="Vael In if you are available for construction work. Vael Out if you need construction capability. Free Daily VAEL lasts 24 hours."
         crumbs={[
           { label: "Construction", href: BASE },
-          { label: "Veil" },
+          { label: "Vael" },
         ]}
       />
 
-      {listing && (veilKind === "in" || veilKind === "out" || veilKind === "expiring") ? (
+      {listing && (vaelKind === "in" || vaelKind === "out" || vaelKind === "expiring") ? (
         <div className="mt-8">
-          <VeilStatePanel
-            kind={veilKind === "expiring" ? "expiring" : listing.side}
+          <VaelStatePanel
+            kind={vaelKind === "expiring" ? "expiring" : listing.side}
             hoursLeft={hoursLeft(listing.expiresAt)}
             side={listing.side}
           />
@@ -127,9 +127,9 @@ function VeilInner() {
         </div>
       ) : latestListing ? (
         <div className="mt-8">
-          <VeilStatePanel kind="expired" />
+          <VaelStatePanel kind="expired" />
           <p className="mt-4 text-body-sm text-muted">
-            The previous 24-hour window has ended. Re-veil to appear on the Construction Board again.
+            The previous 24-hour window has ended. Re-vael to appear on the Construction Board again.
           </p>
         </div>
       ) : null}
@@ -142,7 +142,7 @@ function VeilInner() {
               setStep("form");
             }}
           >
-            Veil In — I am available for construction work
+            Vael In — I am available for construction work
           </Button>
           <Button
             variant="outline"
@@ -151,7 +151,7 @@ function VeilInner() {
               setStep("form");
             }}
           >
-            Veil Out — I need construction capability
+            Vael Out — I need construction capability
           </Button>
         </div>
       ) : null}
@@ -168,10 +168,10 @@ function VeilInner() {
             <p className="vael-kicker">Intent</p>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant={form.side === "in" ? "primary" : "outline"} onClick={() => set("side", "in")}>
-                Veil In
+                Vael In
               </Button>
               <Button type="button" variant={form.side === "out" ? "primary" : "outline"} onClick={() => set("side", "out")}>
-                Veil Out
+                Vael Out
               </Button>
             </div>
             <p className="text-caption text-muted">
@@ -290,7 +290,7 @@ function VeilInner() {
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" loading={step === "saving"}>
-              {listing ? "Re-veil" : "Create a VAEL"}
+              {listing ? "Re-vael" : "Create a VAEL"}
             </Button>
             {listing ? (
               <Button type="button" variant="ghost" onClick={clearListing}>

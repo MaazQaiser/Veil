@@ -8,7 +8,7 @@ import { Input, Select, Textarea } from "@/components/ui/controls";
 import { TagField } from "@/components/ui/tags";
 import { CityPage } from "@/components/city/CityShell";
 import { JourneyProgress } from "@/components/city/setup";
-import { VeilStatePanel } from "@/components/vael/visibility";
+import { VaelStatePanel } from "@/components/vael/visibility";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { useVael } from "@/lib/vaelCore";
 import {
@@ -29,27 +29,26 @@ import {
   M_T_ENGAGEMENTS,
   M_T_TIMING,
   type VaelListing,
-  type VaelSide,
 } from "@/lib/vaelStore";
 
-export function VeilPage() {
+export function VaelPage() {
   return (
     <RequireMember title="Set availability">
-      <VeilInner />
+      <VaelInner />
     </RequireMember>
   );
 }
 
-export function ActiveVeilPage() {
+export function ActiveVaelPage() {
   return (
     <RequireMember title="You're visible">
-      <ActiveVeilInner />
+      <ActiveVaelInner />
     </RequireMember>
   );
 }
 
 export function PostOpportunityPage() {
-  return <Navigate to="/media-technology/veil?side=out" replace />;
+  return <Navigate to="/media-technology/vael?side=out" replace />;
 }
 
 /**
@@ -57,7 +56,7 @@ export function PostOpportunityPage() {
  * comes from their own profile. Only the walkthrough persona sees Alex Morgan's
  * seeded answers.
  */
-const BLANK_VEIL_DEFAULTS: typeof ALEX_VAEL_DEFAULTS = {
+const BLANK_VAEL_DEFAULTS: typeof ALEX_VAEL_DEFAULTS = {
   side: "in",
   category: "",
   discipline: "",
@@ -83,29 +82,29 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
-function VeilInner() {
+function VaelInner() {
   const { listing, saveListing, handle, ensureMine } = useVael();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const creating = params.get("create") === "1";
+  const requestedSide = params.get("side") === "out" ? "out" : params.get("side") === "in" ? "in" : undefined;
+  /** Creating with an explicit side different from the active listing switches sides instead of just viewing status. */
+  const switchingSide = Boolean(listing && creating && requestedSide && requestedSide !== listing.side);
 
-  if (listing && creating) {
-    return <Navigate to="/media-technology/veil/active" replace />;
-  }
-  if (listing && !creating) {
-    return <Navigate to="/media-technology/veil/active" replace />;
+  if (listing && !switchingSide) {
+    return <Navigate to="/media-technology/vael/active" replace />;
   }
 
   const profile = ensureMine();
   const draft = loadDemoDraft(handle);
-  const fallback = handle === DEMO_HANDLE ? ALEX_VAEL_DEFAULTS : BLANK_VEIL_DEFAULTS;
-  /** Opens on the form — success moves to /veil/active. */
+  const fallback = handle === DEMO_HANDLE ? ALEX_VAEL_DEFAULTS : BLANK_VAEL_DEFAULTS;
+  /** Opens on the form — success moves to /vael/active. */
   const [step, setStep] = useState<"form" | "saving" | "error">("form");
   const [error, setError] = useState("");
   const [draftSaved, setDraftSaved] = useState(false);
   /** Kept out of `step` so a validation error cannot expand unrelated optional fields. */
   const [showMore, setShowMore] = useState(false);
-  const initialSide = (params.get("side") === "out" ? "out" : listing?.side ?? "in") as VaelSide;
+  const initialSide = requestedSide ?? listing?.side ?? "in";
 
   const [form, setForm] = useState(() => ({
     side: initialSide,
@@ -188,7 +187,7 @@ function VeilInner() {
       saveListing(payload);
       clearDemoDraft(handle);
       setError("");
-      navigate("/media-technology/veil/active");
+      navigate("/media-technology/vael/active");
     } catch {
       setError("The VAEL could not be stored on this device.");
       setStep("error");
@@ -197,7 +196,7 @@ function VeilInner() {
 
   return (
     <CityPage width="narrow">
-      <JourneyProgress step="Veil In" />
+      <JourneyProgress step="Vael In" />
       <PageHeader
         kicker="Media & Technology"
         title={available ? "Set your availability" : "Say what you need"}
@@ -337,7 +336,7 @@ function VeilInner() {
           <p className="vael-kicker">You’ll be visible for</p>
           <p className="mt-2 vael-h3">{DEFAULT_DURATION_HOURS} hours</p>
           <p className="mt-2 text-body-sm text-muted">
-            After that your VAEL ends and you stop appearing to matches. You can Veil In again any time.
+            After that your VAEL ends and you stop appearing to matches. You can Vael In again any time.
           </p>
           <p className="vael-kicker mt-6">Matching will consider</p>
           <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-body-sm text-muted">
@@ -366,7 +365,7 @@ function VeilInner() {
 
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" size="lg" loading={step === "saving"}>
-            {available ? "Veil In" : "Veil Out"}
+            {available ? "Vael In" : "Vael Out"}
           </Button>
           {!showMore ? (
             <Button type="button" variant="ghost" onClick={() => setShowMore(true)}>
@@ -390,12 +389,12 @@ function VeilInner() {
   );
 }
 
-function ActiveVeilInner() {
-  const { listing, veilKind, clearListing } = useVael();
+function ActiveVaelInner() {
+  const { listing, vaelKind, clearListing } = useVael();
   const navigate = useNavigate();
 
   if (!listing) {
-    return <Navigate to="/media-technology/veil?create=1" replace />;
+    return <Navigate to="/media-technology/vael?create=1" replace />;
   }
 
   const hours = hoursLeft(listing.expiresAt);
@@ -417,8 +416,8 @@ function ActiveVeilInner() {
         ]}
       />
       <div className="mt-8 space-y-6">
-        <VeilStatePanel
-          kind={veilKind === "expiring" ? "expiring" : listing.side === "out" ? "out" : "in"}
+        <VaelStatePanel
+          kind={vaelKind === "expiring" ? "expiring" : listing.side === "out" ? "out" : "in"}
           hoursLeft={hours}
           side={listing.side}
         />
@@ -437,7 +436,7 @@ function ActiveVeilInner() {
           size="lg"
           onClick={() => {
             clearListing();
-            navigate("/media-technology/veil?create=1");
+            navigate("/media-technology/vael?create=1");
           }}
         >
           End availability

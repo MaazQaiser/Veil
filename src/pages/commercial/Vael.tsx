@@ -6,19 +6,19 @@ import { Button, buttonClassName } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/controls";
 import { CityPage } from "@/components/city/CityShell";
-import { VeilStatePanel } from "@/components/vael/visibility";
+import { VaelStatePanel } from "@/components/vael/visibility";
 import { RequireMember } from "@/components/mt/RequireMember";
-import { useResidential } from "@/lib/residentialCore";
+import { useCommercial } from "@/lib/commercialCore";
 import {
+  CM_CAPABILITIES,
+  CM_TIMING,
   DEFAULT_DURATION_HOURS,
   hoursLeft,
-  RX_SERVICES,
-  RX_TIMING,
-  type ResidentialListing,
-} from "@/lib/residentialStore";
+  type CommercialListing,
+} from "@/lib/commercialStore";
 import type { VaelSide } from "@/lib/vaelStore";
 
-const BASE = "/districts/residential";
+const BASE = "/districts/commercial";
 
 function splitList(value: string) {
   return value
@@ -27,16 +27,16 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
-export function ResidentialVeilPage() {
+export function CommercialVaelPage() {
   return (
-    <RequireMember title="Residential Need">
-      <VeilInner />
+    <RequireMember title="Commercial Need">
+      <VaelInner />
     </RequireMember>
   );
 }
 
-function VeilInner() {
-  const { listing, latestListing, saveListing, clearListing, handle, veilKind, ensureMine } = useResidential();
+function VaelInner() {
+  const { listing, latestListing, saveListing, clearListing, handle, vaelKind, ensureMine } = useCommercial();
   const profile = ensureMine();
   const [step, setStep] = useState<"intent" | "need" | "place" | "details">(listing ? "need" : "intent");
   const [status, setStatus] = useState<"default" | "saving" | "saved" | "error">("default");
@@ -44,9 +44,9 @@ function VeilInner() {
 
   const [form, setForm] = useState(() => ({
     side: (listing?.side || "out") as VaelSide,
-    service: listing?.service || profile?.service || "General home repair",
+    capability: listing?.capability || profile?.capability || "Facilities",
+    context: listing?.context || "",
     area: listing?.area || profile?.area || "",
-    postalCode: listing?.postalCode || "",
     availability: listing?.availability || "This cycle",
     capabilities: listing?.capabilities.join(", ") || profile?.capabilities.join(", ") || "",
     experienceYears: String(listing?.experienceYears || 0),
@@ -54,7 +54,7 @@ function VeilInner() {
     description: listing?.description || "",
     requirements: listing?.requirements || "",
     contact: listing?.contact || "",
-    extraNote: listing?.extraNote || "",
+    scopeNote: listing?.scopeNote || "",
   }));
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -62,12 +62,12 @@ function VeilInner() {
   }
 
   const payload = useMemo(
-    (): Omit<ResidentialListing, "id" | "createdAt" | "expiresAt" | "plan"> => ({
+    (): Omit<CommercialListing, "id" | "createdAt" | "expiresAt" | "plan"> => ({
       handle,
       side: form.side,
-      service: form.service,
+      capability: form.capability,
+      context: form.context,
       area: form.area,
-      postalCode: form.postalCode,
       availability: form.availability,
       capabilities: splitList(form.capabilities),
       experienceYears: Number(form.experienceYears) || 0,
@@ -75,14 +75,14 @@ function VeilInner() {
       description: form.description,
       requirements: form.requirements,
       contact: form.contact,
-      extraNote: form.extraNote,
+      scopeNote: form.scopeNote,
     }),
     [form, handle],
   );
 
   function publish() {
-    if (!form.service || !form.area || !form.description) {
-      setError("Service, area, and a short description are required.");
+    if (!form.capability || !form.area || !form.description) {
+      setError("Capability, area, and a short description are required.");
       setStatus("error");
       return;
     }
@@ -103,36 +103,36 @@ function VeilInner() {
   return (
     <CityPage width="narrow">
       <PageHeader
-        kicker="Residential"
-        title={isNeed ? "Post a Need" : "I'm available"}
+        kicker="Commercial"
+        title={isNeed ? "Create a Need" : "List availability"}
         description={
           isNeed
-            ? "Say what you need, where, and when. Free Daily VAEL lasts 24 hours."
-            : "You will appear as available for home work. Free Daily VAEL lasts 24 hours."
+            ? "Say what capability you need, where, and when. Free Daily VAEL lasts 24 hours."
+            : "You will appear as a company or provider who can fulfill a commercial need. Free Daily VAEL lasts 24 hours."
         }
         crumbs={[
-          { label: "Residential", href: BASE },
-          { label: isNeed ? "Need" : "Veil" },
+          { label: "Commercial", href: BASE },
+          { label: isNeed ? "Need" : "Vael" },
         ]}
       />
 
-      {listing && (veilKind === "in" || veilKind === "out" || veilKind === "expiring") ? (
+      {listing && (vaelKind === "in" || vaelKind === "out" || vaelKind === "expiring") ? (
         <div className="mt-8">
-          <VeilStatePanel
-            kind={veilKind === "expiring" ? "expiring" : listing.side}
+          <VaelStatePanel
+            kind={vaelKind === "expiring" ? "expiring" : listing.side}
             hoursLeft={hoursLeft(listing.expiresAt)}
             side={listing.side}
           />
           <p className="mt-4 text-body-sm text-muted">
-            {listing.side === "out" ? "You have an active need." : "You are listed as available."} {listing.service} ·{" "}
-            {listing.area}. Publishing again starts a new 24-hour window.
+            {listing.side === "out" ? "You have an active commercial need." : "You are listed as available."}{" "}
+            {listing.capability} · {listing.area}. Publishing again starts a new 24-hour window.
           </p>
         </div>
       ) : latestListing ? (
         <div className="mt-8">
-          <VeilStatePanel kind="expired" />
+          <VaelStatePanel kind="expired" />
           <p className="mt-4 text-body-sm text-muted">
-            The previous 24-hour window has ended. Publish again to appear on the Residential Board.
+            The previous 24-hour window has ended. Publish again to appear on the Commercial Board.
           </p>
         </div>
       ) : null}
@@ -145,7 +145,7 @@ function VeilInner() {
               setStep("need");
             }}
           >
-            I need someone
+            I need a business capability
           </Button>
           <Button
             variant="ghost"
@@ -154,7 +154,7 @@ function VeilInner() {
               setStep("need");
             }}
           >
-            I am available for home work
+            I can fulfill a commercial need
           </Button>
         </div>
       ) : (
@@ -163,8 +163,8 @@ function VeilInner() {
           onSubmit={(event) => {
             event.preventDefault();
             if (step === "need") {
-              if (!form.service || !form.description) {
-                setError("Choose a service and write a short description.");
+              if (!form.capability || !form.description) {
+                setError("Choose a capability and write a short description.");
                 setStatus("error");
                 return;
               }
@@ -191,15 +191,27 @@ function VeilInner() {
 
           {step === "need" ? (
             <section className="space-y-5">
-              <p className="vael-kicker">{isNeed ? "What do you need?" : "What can you help with?"}</p>
-              <Field label="Service" htmlFor="service" required hint="Kit starter list. Owner may replace this taxonomy.">
-                <Select id="service" value={form.service} onChange={(e) => set("service", e.target.value)}>
-                  {RX_SERVICES.map((item) => (
+              <p className="vael-kicker">{isNeed ? "What do we need?" : "What can you fulfill?"}</p>
+              <Field
+                label="Capability"
+                htmlFor="capability"
+                required
+                hint="Kit starter list. Owner may replace this taxonomy. Not Residential home services."
+              >
+                <Select id="capability" value={form.capability} onChange={(e) => set("capability", e.target.value)}>
+                  {CM_CAPABILITIES.map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </Select>
               </Field>
-              <Field label={isNeed ? "Tell us a bit more" : "What is available"} htmlFor="desc" required>
+              <Field
+                label={isNeed ? "What is this for?" : "What work do you take on?"}
+                htmlFor="context"
+                hint="Business or project context. Stored on this device. Shown on matches. Not a scored column of its own."
+              >
+                <Input id="context" value={form.context} onChange={(e) => set("context", e.target.value)} />
+              </Field>
+              <Field label={isNeed ? "Describe the need" : "Describe what is available"} htmlFor="desc" required>
                 <Textarea id="desc" value={form.description} onChange={(e) => set("description", e.target.value)} />
               </Field>
             </section>
@@ -216,16 +228,9 @@ function VeilInner() {
               >
                 <Input id="area" value={form.area} onChange={(e) => set("area", e.target.value)} />
               </Field>
-              <Field
-                label="Postal code (optional)"
-                htmlFor="zip"
-                hint="Stored on this device. Not geocoded. Scored only if both sides list one."
-              >
-                <Input id="zip" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
-              </Field>
-              <Field label="When do you need this?" htmlFor="when">
+              <Field label="When is this needed?" htmlFor="when">
                 <Select id="when" value={form.availability} onChange={(e) => set("availability", e.target.value)}>
-                  {RX_TIMING.map((item) => (
+                  {CM_TIMING.map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </Select>
@@ -235,15 +240,16 @@ function VeilInner() {
 
           {step === "details" ? (
             <section className="space-y-5">
-              <p className="vael-kicker">Anything else?</p>
-              <Alert tone="info" title="Optional">
-                Requirements and extra notes stay on this device. They are not a schedule or a quote.
+              <p className="vael-kicker">Requirements</p>
+              <Alert tone="info" title="Keep this concise">
+                Requirements are used in match ranking when both sides list them. Extra scope is stored locally and is
+                not scored.
               </Alert>
               <Field label="Requirements" htmlFor="req">
                 <Textarea id="req" value={form.requirements} onChange={(e) => set("requirements", e.target.value)} />
               </Field>
-              <Field label="Extra note" htmlFor="extra" hint="Optional. Not scored.">
-                <Input id="extra" value={form.extraNote} onChange={(e) => set("extraNote", e.target.value)} />
+              <Field label="Additional scope" htmlFor="scope" hint="Optional. Not scored. Not a procurement field.">
+                <Input id="scope" value={form.scopeNote} onChange={(e) => set("scopeNote", e.target.value)} />
               </Field>
               <Field label="Contact (hidden until Handshake)" htmlFor="contact">
                 <Input id="contact" value={form.contact} onChange={(e) => set("contact", e.target.value)} />
@@ -296,7 +302,7 @@ function VeilInner() {
                   Back
                 </Button>
                 <Button type="submit" loading={status === "saving"}>
-                  {listing ? "Update need" : isNeed ? "Post a Need" : "Create a VAEL"}
+                  {listing ? "Update need" : isNeed ? "Create a Need" : "Create a VAEL"}
                 </Button>
               </>
             ) : null}
