@@ -14,10 +14,10 @@ const BASE = "/districts/commercial";
 
 export function CommercialHomePage() {
   const district = districtBySlug("commercial")!;
-  const { listing, latestListing, veilKind, signedIn, myConnections } = useCommercial();
+  const { listing, latestListing, vaelKind, signedIn, myConnections } = useCommercial();
   const pending = myConnections.filter((item) => item.status === "pending").length;
   const connected = myConnections.filter((item) => item.status === "connected" && !item.blocked).length;
-  const hasRequest = Boolean(listing && (veilKind === "in" || veilKind === "out" || veilKind === "expiring"));
+  const hasRequest = Boolean(listing && (vaelKind === "in" || vaelKind === "out" || vaelKind === "expiring"));
 
   return (
     <CityPage>
@@ -28,8 +28,8 @@ export function CommercialHomePage() {
         crumbs={[{ label: "City", href: "/" }, { label: "Commercial" }]}
         actions={<DistrictStatus status={district.status} />}
         primaryAction={
-          <Link to={`${BASE}/veil`} className={buttonClassName()}>
-            {hasRequest ? "Update need" : "Create a Need"}
+          <Link to={`${BASE}/vael`} className={buttonClassName()}>
+            {hasRequest ? "Update need" : "Create VAEL"}
           </Link>
         }
         secondaryAction={
@@ -44,7 +44,7 @@ export function CommercialHomePage() {
           {hasRequest && listing ? (
             <div className="mt-3 max-w-xl space-y-3">
               <CommercialAvailabilityCard
-                side={veilKind === "expiring" ? "expiring" : listing.side}
+                side={vaelKind === "expiring" ? "expiring" : listing.side}
                 hours={hoursLeft(listing.expiresAt)}
                 capability={listing.capability}
                 area={listing.area}
@@ -60,7 +60,7 @@ export function CommercialHomePage() {
                 district="Commercial"
                 listing={latestListing}
                 context={latestListing?.capability}
-                manageHref={`${BASE}/veil`}
+                manageHref={`${BASE}/vael`}
                 boardHref="/matches?district=commercial"
               />
               <p className="text-body-sm text-muted">
@@ -181,7 +181,7 @@ export function CommercialHowItWorksPage() {
         If you can fulfill a commercial need, you can still list availability from the same form. The primary path is a
         business need.
       </p>
-      <Link to={`${BASE}/veil`} className={buttonClassName({ className: "mt-6" })}>
+      <Link to={`${BASE}/vael`} className={buttonClassName({ className: "mt-6" })}>
         Create a Need
       </Link>
     </CityPage>

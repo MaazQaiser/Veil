@@ -33,6 +33,7 @@ export function Dialog({
       className={cn(
         "w-[min(30rem,calc(100%-2.5rem))] rounded-xl border border-border bg-surface p-0 text-foreground shadow-md",
         "backdrop:bg-foreground/20",
+        "dark:border-white/10 dark:bg-[#1B1712]/95 dark:backdrop-blur-2xl dark:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)]",
       )}
       onClose={onClose}
       onClick={(event) => {

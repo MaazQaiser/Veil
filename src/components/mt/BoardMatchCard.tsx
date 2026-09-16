@@ -9,7 +9,16 @@ import { AvailabilityPill } from "@/components/vael/visibility";
 import type { RankedMatch } from "@/lib/vaelStore";
 import { getProfile, hoursLeft } from "@/lib/vaelStore";
 
-export function SkillChips({ skills, max = 4 }: { skills: string[]; max?: number }) {
+export function SkillChips({
+  skills,
+  max = 4,
+  chipClassName,
+}: {
+  skills: string[];
+  max?: number;
+  /** Override the chip's default muted styling, e.g. VAEL's gold treatment. */
+  chipClassName?: string;
+}) {
   const shown = skills.slice(0, max);
   const extra = skills.length - shown.length;
   if (shown.length === 0) return null;
@@ -17,12 +26,16 @@ export function SkillChips({ skills, max = 4 }: { skills: string[]; max?: number
     <ul className="mt-3 flex flex-wrap gap-1.5">
       {shown.map((skill) => (
         <li key={skill}>
-          <Badge tone="muted">{skill}</Badge>
+          <Badge tone="muted" className={chipClassName}>
+            {skill}
+          </Badge>
         </li>
       ))}
       {extra > 0 ? (
         <li>
-          <Badge tone="outline">+{extra}</Badge>
+          <Badge tone="outline" className={chipClassName}>
+            +{extra}
+          </Badge>
         </li>
       ) : null}
     </ul>

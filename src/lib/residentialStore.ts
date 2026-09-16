@@ -51,6 +51,12 @@ export type ResidentialProfile = {
   rates: string;
   history: { label: string; url: string }[];
   sample?: boolean;
+  /** District Profile — role/profession within the district, separate from service. */
+  specialization?: string;
+  /** What you can offer in this District. */
+  offers?: string[];
+  /** What you're looking for in this District. */
+  lookingFor?: string[];
 };
 
 export type ResidentialDocument = {
@@ -78,6 +84,11 @@ export const RX_SERVICES = [
 
 /** Same City timing language, labeled for homeowners. */
 export const RX_TIMING = ["This cycle", "Next two weeks", "Flexible"] as const;
+
+/** District Profile option catalogs — the values change per District, the editor shape does not. */
+export const RX_SKILLS = ["Repairs", "Installation", "Remodeling", "Maintenance", "Emergency response"];
+export const RX_OFFERS = ["On-site visits", "Free estimates", "Emergency service", "Ongoing maintenance"];
+export const RX_CREDENTIAL_TYPES = ["Licensed", "Insured", "Background checked", "Bonded"];
 
 export function placeLabel(area: string, postalCode?: string) {
   if (!area && !postalCode) return "Area not listed";
@@ -147,7 +158,7 @@ export function toResidentialMatchable(listing: ResidentialListing): Residential
   };
 }
 
-export function rxVeilKind(listing: ResidentialListing | undefined) {
+export function rxVaelKind(listing: ResidentialListing | undefined) {
   if (!listing) return "none" as const;
   if (!isRxVisible(listing)) return "expired" as const;
   if (hoursLeft(listing.expiresAt) <= EXPIRING_HOURS) return "expiring" as const;
@@ -307,6 +318,21 @@ export function saveRxProfile(next: ResidentialProfile) {
 
 export function getRxDocuments(handle: string) {
   return read<ResidentialDocument[]>(KEYS.documents, []).filter((item) => item.handle === handle);
+}
+
+/** Leaving the district: drop the profile, documents, and any active listing for this handle. */
+export function resetRxProfile(handle: string) {
+  write(KEYS.profiles, getRxProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<ResidentialDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  expireOwnRxListing(handle);
+  return ensureRxProfile(handle);
+}
+
+/** Full removal for one handle: profile, documents, and every listing (not just expired). Used by the demo reset. */
+export function purgeRxHandle(handle: string) {
+  write(KEYS.profiles, getRxProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<ResidentialDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
+  write(KEYS.listings, getRxListings().filter((item) => item.handle !== handle));
 }
 
 export function addRxDocument(doc: Omit<ResidentialDocument, "id">) {

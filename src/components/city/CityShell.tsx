@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
@@ -9,33 +9,34 @@ import { Avatar } from "@/components/ui/avatar";
 import { DistrictStatus } from "@/components/vael/status";
 import {
   IconBell,
+  IconCheck,
+  IconClose,
   IconGrid,
   IconHome,
   IconMenu,
   IconMessage,
+  IconMoon,
+  IconSearch,
+  IconSun,
   IconUsers,
 } from "@/components/ui/icons";
 import { CITY_CONTEXT, districtFromPath, primaryDistricts } from "@/lib/districts";
 import { useCitySession } from "@/lib/citySession";
+import { useTheme } from "@/lib/theme";
 import { useVael } from "@/lib/vaelCore";
 import { onboardingComplete, onboardingRoute } from "@/lib/onboarding";
-import { PRODUCT_HOME } from "@/lib/providerJourney";
+import { PRODUCT_HOME, isDarkModeFlowPath, profileCompletion } from "@/lib/providerJourney";
+import { relativeTime } from "@/lib/time";
 
-export const cityPrimaryNav = [
-  { id: "home", label: "Home", to: PRODUCT_HOME },
-  { id: "matches", label: "Matches", to: "/matches" },
-  { id: "community", label: "Community", to: `${PRODUCT_HOME}/community` },
-  { id: "messages", label: "Messages", to: "/messages" },
-] as const;
+type VaelApi = ReturnType<typeof useVael>;
 
-/**
- * A signed-out visitor is on the public website, not in the product. Member tools
- * would either wall them or pull them away from the one decision that matters.
- */
+/** Header avatar falls back to a real photo, never bare initials, until a member uploads their own. */
+const DEFAULT_AVATAR_URL = "/people/p04.jpg";
+
+/** Site-header pill links — shown on the public marketing site only, not inside the product. */
 const cityEntryNav = [
-  { id: "explore", label: "Explore", to: "/explore" },
+  { id: "explore", label: "Explore Districts", to: "/districts" },
   { id: "how", label: "How VAEL Works", to: "/#how-it-works" },
-  { id: "districts", label: "Districts", to: "/districts" },
   { id: "community", label: "Community", to: "/feed" },
 ] as const;
 
@@ -56,57 +57,400 @@ export function isSitePath(pathname: string) {
 
 const mobilePrimary = [
   { id: "home", label: "Home", to: PRODUCT_HOME, icon: IconHome, end: true },
-  { id: "matches", label: "Matches", to: "/matches", icon: IconGrid, end: false },
+  { id: "matches", label: "Matches", to: `${PRODUCT_HOME}/matches`, icon: IconGrid, end: false },
   { id: "community", label: "Community", to: `${PRODUCT_HOME}/community`, icon: IconUsers, end: false },
   { id: "messages", label: "Messages", to: "/messages", icon: IconMessage, end: false },
 ] as const;
 
 const moreLinks = [
   { label: "Feed", to: "/feed" },
+  { label: "Saved", to: "/feed/saved" },
   { label: "Districts", to: "/districts" },
   { label: "Notifications", to: "/notifications" },
   { label: "Today", to: "/today" },
   { label: "Concierge", to: "/concierge" },
 ] as const;
 
-function navClass(active: boolean) {
-  return cn(
-    "px-0 py-2 text-button font-medium motion-safe:transition-colors motion-safe:duration-200",
-    active ? "text-foreground" : "text-muted hover:text-foreground",
+/** Shared size/shape for the header's Messages and Notifications popups — same box, either way. */
+const DROPDOWN_PANEL_SHELL =
+  "absolute right-0 z-40 mt-2 flex max-h-[32rem] min-h-[26rem] w-[min(20rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-[0_4px_8px_rgba(11,12,12,0.08),0_32px_64px_-16px_rgba(17,17,17,0.32)] dark:border-white/10 dark:backdrop-blur-2xl dark:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)]";
+
+/** Bell line-art, matching the site's icon stroke weight, with a VAEL-yellow accent. */
+function BellIllustration({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 96" fill="none" className={cn("h-16 w-16 text-quiet", className)} aria-hidden>
+      <path
+        d="M48 20c-12 0-20 9-20 22v10l-8 12h56l-8-12V42c0-13-8-22-20-22z"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M40 72a8 8 0 0 0 16 0" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
+      <circle cx="68" cy="26" r="6" className="fill-[#FFC555] dark:fill-accent" />
+    </svg>
   );
 }
 
-function IconLink({
-  to,
-  label,
-  children,
-  className,
-}: {
-  to: string;
-  label: string;
-  children: ReactNode;
-  className?: string;
-}) {
+/** Dark-mode toggle — visible in the header while on the dashboard, where dark styling exists so far. */
+function DarkModeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
   return (
-    <Link
-      to={to}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "relative inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-surface-muted",
-        className,
-      )}
+    <button
+      type="button"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-pressed={isDark}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-[#FFC555]/15 hover:text-[#C99A28] dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10 dark:hover:text-[#F5F3EE]"
+      onClick={toggleTheme}
     >
-      {children}
-    </Link>
+      {isDark ? <IconSun className="h-5 w-5" /> : <IconMoon className="h-5 w-5" />}
+    </button>
+  );
+}
+
+/** Accent picker — only meaningful in dark mode, lets the viewer choose the orange or yellow CTA palette. */
+function AccentPicker() {
+  const { theme, accent, setAccent } = useTheme();
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDoc(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const options: Array<{ value: "orange" | "yellow"; label: string; swatch: string }> = [
+    { value: "orange", label: "Orange", swatch: "#FF9D45" },
+    { value: "yellow", label: "Yellow", swatch: "#FFC555" },
+  ];
+
+  if (theme !== "dark") return null;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={id}
+        aria-label="Accent color"
+        title="Accent color"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] motion-safe:transition-colors motion-safe:duration-200 hover:bg-white/10"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "h-4 w-4 rounded-full ring-1 ring-inset ring-white/25",
+            accent === "yellow" ? "bg-[#FFC555]" : "bg-[#FF9D45]",
+          )}
+        />
+      </button>
+      {open ? (
+        <div
+          id={id}
+          role="menu"
+          aria-label="Accent color"
+          className="absolute right-0 z-40 mt-2 w-44 rounded-2xl border border-white/10 bg-surface-elevated p-2 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="menuitemradio"
+              aria-checked={accent === option.value}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-body-sm font-medium text-foreground hover:bg-white/10",
+                accent === option.value ? "bg-white/10" : null,
+              )}
+              onClick={() => {
+                setAccent(option.value);
+                setOpen(false);
+              }}
+            >
+              <span aria-hidden className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: option.swatch }} />
+              {option.label}
+              {accent === option.value ? <IconCheck className="ml-auto h-4 w-4 shrink-0" /> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** A glimpse of recent notices from the header — full history lives at /notifications. */
+function NotificationsMenu({ notices, unread }: { notices: VaelApi["notices"]; unread: number }) {
+  const location = useLocation();
+  const menuId = useId();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function onDoc(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const rows = useMemo(() => {
+    const seen = new Set<string>();
+    const recent: typeof notices = [];
+    for (const item of [...notices].reverse()) {
+      const key = `${item.title}·${item.body}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      recent.push(item);
+      if (recent.length === 4) break;
+    }
+    return recent;
+  }, [notices]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-label="Notifications"
+        title="Notifications"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-[#FFC555]/15 hover:text-[#C99A28] dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <IconBell className="h-5 w-5" />
+        {unread > 0 ? (
+          <Badge className="absolute -right-1 -top-1 h-5 min-w-5 justify-center px-1">
+            {unread}
+            <span className="sr-only"> unread</span>
+          </Badge>
+        ) : null}
+      </button>
+      {open ? (
+        <div
+          id={menuId}
+          role="dialog"
+          aria-label="Notifications"
+          className={DROPDOWN_PANEL_SHELL}
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-border-subtle px-5 py-4">
+            <p className="text-body font-medium text-foreground">Notifications ({unread})</p>
+          </div>
+          {rows.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-8 text-center">
+              <BellIllustration className="h-20 w-20" />
+              <p className="mt-2 text-body font-medium text-foreground">No notifications yet</p>
+              <p className="max-w-[16rem] text-body-sm text-muted">
+                The more you do on VAEL, the more you'll see in here.
+              </p>
+            </div>
+          ) : (
+            <ul className="flex-1 divide-y divide-border-subtle overflow-y-auto">
+              {rows.map((item) => (
+                <li key={item.id} className="flex items-start gap-3 px-5 py-4">
+                  {!item.read ? (
+                    <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#FFC555] dark:bg-accent" />
+                  ) : (
+                    <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-transparent" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="truncate text-body-sm font-medium text-foreground">{item.title}</span>
+                      <span className="shrink-0 text-caption text-quiet">{relativeTime(item.createdAt)}</span>
+                    </span>
+                    <span className="mt-0.5 block truncate text-caption text-muted">{item.body}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** A glimpse of recent conversations from the header — full inbox lives at /messages. */
+function MessagesMenu({
+  handle,
+  connections,
+  thread,
+  profile,
+  otherParty,
+  unread,
+}: {
+  handle: string;
+  connections: VaelApi["myConnections"];
+  thread: VaelApi["thread"];
+  profile: VaelApi["profile"];
+  otherParty: VaelApi["otherParty"];
+  unread: number;
+}) {
+  const location = useLocation();
+  const menuId = useId();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function onDoc(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const rows = useMemo(() => {
+    return connections
+      .filter((connection) => connection.status === "connected" && !connection.blocked)
+      .map((connection) => {
+        const other = otherParty(connection, handle);
+        const person = profile(other);
+        const messages = thread(connection.id);
+        const last = messages[messages.length - 1];
+        const unreadCount = messages.filter(
+          (item) => item.fromHandle !== handle && !item.readBy.includes(handle),
+        ).length;
+        return {
+          id: connection.id,
+          name: person?.displayName || `@${other}`,
+          avatarUrl: person?.avatarUrl,
+          last,
+          unreadCount,
+        };
+      })
+      .sort((a, b) => Date.parse(b.last?.createdAt ?? "0") - Date.parse(a.last?.createdAt ?? "0"))
+      .slice(0, 4);
+  }, [connections, handle, otherParty, profile, thread]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-label="Messages"
+        title="Messages"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-[#FFC555]/15 hover:text-[#C99A28] dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <IconMessage className="h-5 w-5" />
+        {unread > 0 ? (
+          <Badge className="absolute -right-1 -top-1 h-5 min-w-5 justify-center px-1">
+            {unread}
+            <span className="sr-only"> unread</span>
+          </Badge>
+        ) : null}
+      </button>
+      {open ? (
+        <div id={menuId} role="menu" aria-label="Messages" className={DROPDOWN_PANEL_SHELL}>
+          <div className="flex shrink-0 items-center justify-between border-b border-border-subtle px-5 py-4">
+            <p className="text-body font-medium text-foreground">Messages</p>
+            {unread > 0 ? (
+              <span className="rounded-full bg-[#FFC555]/15 px-2 py-0.5 text-caption font-medium text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+                {unread} new
+              </span>
+            ) : null}
+          </div>
+          {rows.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-8 text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-[#C99A28]/20 bg-gradient-to-br from-[#FFC555]/20 to-[#FFC555]/5 text-[#C99A28] dark:border-accent/25 dark:from-accent/20 dark:to-accent/5 dark:text-accent">
+                <IconMessage className="h-6 w-6" />
+              </span>
+              <p className="mt-2 text-body font-medium text-foreground">No messages yet</p>
+              <p className="max-w-[16rem] text-body-sm text-muted">
+                A thread opens once a Handshake is accepted.
+              </p>
+            </div>
+          ) : (
+            <ul className="flex-1 divide-y divide-border-subtle overflow-y-auto" role="none">
+              {rows.map((row) => (
+                <li key={row.id} role="none">
+                  <Link
+                    role="menuitem"
+                    to={`/messages?c=${row.id}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-start gap-3 px-5 py-4 hover:bg-surface-muted"
+                  >
+                    <Avatar name={row.name} src={row.avatarUrl} size="sm" className="mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-body-sm font-medium text-foreground">{row.name}</span>
+                        {row.last ? (
+                          <span className="shrink-0 text-caption text-quiet">{relativeTime(row.last.createdAt)}</span>
+                        ) : null}
+                      </span>
+                      <span className="mt-0.5 flex items-center justify-between gap-2">
+                        <span className="truncate text-caption text-muted">
+                          {row.last?.body || "No messages yet"}
+                        </span>
+                        {row.unreadCount > 0 ? (
+                          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-[#FFC555] dark:bg-accent" />
+                        ) : null}
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link
+            role="menuitem"
+            to="/messages"
+            onClick={() => setOpen(false)}
+            className="block shrink-0 border-t border-border-subtle px-5 py-4 text-center text-body-sm font-medium text-[#C99A28] hover:bg-surface-muted dark:text-accent dark:hover:bg-white/5"
+          >
+            See all messages
+          </Link>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 const accountMenuItemClassName =
   "flex w-full rounded-sm px-3 py-2 text-left text-body-sm text-foreground hover:bg-surface-muted";
 
-function profileHrefForHandle(handle: string, district: ReturnType<typeof districtFromPath>) {
-  if (district) return `${district.route}/profile/${handle}`;
+// Identity is one generic profile shared across every district (see JoinIdentityPage) —
+// the account menu's "Profile" link always opens that one page, never a per-district
+// profile page, regardless of which district you're currently browsing.
+function profileHrefForHandle(handle: string) {
   return `${PRODUCT_HOME}/profile/${handle}`;
 }
 
@@ -159,17 +503,26 @@ function AccountMenu({
         aria-controls={menuId}
         aria-label={`Account, ${handle}`}
         title={`Account, ${handle}`}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-surface-muted"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full motion-safe:transition-opacity motion-safe:duration-200 hover:opacity-90"
         onClick={() => setOpen((value) => !value)}
       >
-        <Avatar name={displayName} src={avatarUrl} size="sm" />
+        <Avatar
+          name={displayName}
+          src={avatarUrl}
+          size="md"
+          className={
+            avatarUrl
+              ? "ring-2 ring-[#FFC555]/40 ring-offset-2 ring-offset-background dark:ring-accent/50 dark:ring-offset-[#100E0B]"
+              : "border-transparent bg-gradient-to-br from-[#FDBA74] to-[#C99A28] font-medium text-[#0B0C0C] dark:from-accent-hover dark:to-accent dark:text-[#1A1410]"
+          }
+        />
       </button>
       {open ? (
         <div
           id={menuId}
           role="menu"
           aria-label="Account"
-          className="absolute right-0 z-40 mt-2 w-[min(16rem,calc(100vw-2.5rem))] rounded-xl border border-border bg-surface-elevated p-2 shadow-md"
+          className="absolute right-0 z-40 mt-2 w-[min(16rem,calc(100vw-2.5rem))] rounded-xl border border-border bg-surface-elevated p-2 shadow-md dark:border-white/10 dark:backdrop-blur-2xl"
         >
           <div className="mb-1 border-b border-border-subtle px-3 py-2">
             <p className="truncate text-body-sm font-medium">{displayName}</p>
@@ -323,15 +676,66 @@ export function DistrictSwitcher() {
   );
 }
 
+const BANNER_DISMISS_KEY_PREFIX = "vael_profile_banner_dismissed_";
+
+/** Dismissible strip above the header, nudging an incomplete profile toward completion. */
+function ProfileCompleteBanner({ handle }: { handle: string }) {
+  const vael = useVael();
+  const profile = vael.profile(handle);
+  const documents = vael.documents(handle);
+  const { percent } = profileCompletion(profile, documents, vael.latestListing?.side ?? "in");
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem(`${BANNER_DISMISS_KEY_PREFIX}${handle}`) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  if (!profile || percent >= 100 || dismissed) return null;
+
+  return (
+    <div className="relative flex items-center justify-center bg-[#0B0C0C] px-10 py-2.5 text-center text-body-sm text-white">
+      <p>
+        Unlock full visibility across districts by completing your profile.{" "}
+        <Link
+          to={`${PRODUCT_HOME}/profile/${handle}/edit`}
+          className="font-medium underline underline-offset-2 hover:no-underline"
+        >
+          Complete profile
+        </Link>
+      </p>
+      <button
+        type="button"
+        aria-label="Dismiss"
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+        onClick={() => {
+          setDismissed(true);
+          try {
+            sessionStorage.setItem(`${BANNER_DISMISS_KEY_PREFIX}${handle}`, "1");
+          } catch {
+            /* ignore */
+          }
+        }}
+      >
+        <IconClose className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 export function CityShell() {
   const { session } = useCitySession();
+  const navigate = useNavigate();
   const vael = useVael();
   const unreadNotifications = vael.unreadNotices || session.unreadNotifications;
+  const unreadMessages = vael.unreadMessages || session.unreadMessages;
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
-  const district = districtFromPath(location.pathname);
   const onSite = isSitePath(location.pathname);
+  const onHero = location.pathname === "/";
   const inProduct = session.signedIn && !onSite;
+  const inJoinFlow = location.pathname.startsWith("/join");
 
   useEffect(() => {
     setMoreOpen(false);
@@ -345,65 +749,117 @@ export function CityShell() {
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 border-b border-border-subtle bg-background text-foreground">
-        <div className="vael-container-wide flex h-nav min-w-0 items-center gap-6">
-          <Link to="/" className="flex shrink-0 items-center gap-2">
-            <img src="/vael-medallion.png" alt="" className="h-8 w-8" />
-            <span className="font-sans text-h4">VAEL</span>
+      {inProduct ? <ProfileCompleteBanner handle={session.handle} /> : null}
+      <header
+        className={cn(
+          "z-40 text-foreground",
+          onHero
+            ? "absolute inset-x-0 top-0 border-b border-transparent bg-transparent"
+            : inProduct
+              ? "sticky top-0 border-b border-border-subtle bg-white dark:relative dark:border-white/5 dark:bg-[#15130F]/70 dark:backdrop-blur-xl dark:supports-[backdrop-filter]:bg-[#15130F]/50 dark:after:absolute dark:after:inset-x-0 dark:after:bottom-[-1px] dark:after:h-px dark:after:bg-gradient-to-r dark:after:from-transparent dark:after:via-accent/40 dark:after:to-transparent dark:after:content-['']"
+              : "sticky top-0 border-b border-border-subtle bg-background",
+        )}
+      >
+        <div
+          className={cn(
+            "relative flex h-nav min-w-0 items-center gap-4",
+            inProduct ? "w-full px-4 sm:px-6" : "gap-6 site-container",
+          )}
+        >
+          <Link to="/" className="flex shrink-0 items-center gap-2.5">
+            <img src="/vael-medallion.png" alt="" className="h-9 w-9 sm:h-10 sm:w-10" />
+            <span
+              className={cn(
+                "font-sans text-[1.0625rem] font-medium tracking-tight",
+                onHero ? "text-white" : "text-foreground",
+              )}
+            >
+              VAEL
+            </span>
             <span className="sr-only"> — City home</span>
           </Link>
-          <nav
-            className="hidden min-w-0 lg:flex items-center gap-7"
-            aria-label={inProduct ? "Product" : "Site"}
-          >
-            {inProduct
-              ? cityPrimaryNav.map((item) => (
-                  <NavLink
-                    key={item.id}
-                    to={item.to}
-                    end={item.id === "home"}
-                    className={({ isActive }) => navClass(isActive)}
-                  >
-                    {item.label}
-                  </NavLink>
-                ))
-              : cityEntryNav.map((item) => (
-                  <Link key={item.id} to={item.to} className={navClass(false)}>
-                    {item.label}
-                  </Link>
-                ))}
-          </nav>
-          <div className="ml-auto flex min-w-0 items-center gap-2">
+          {!inProduct ? (
+            <nav
+              className="hidden min-w-0 items-center gap-8 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
+              aria-label="Site"
+            >
+              {cityEntryNav.map((item) => (
+                <Link
+                  key={item.id}
+                  to={item.to}
+                  className={cn(
+                    "px-0 py-2 text-[0.9375rem] font-medium motion-safe:transition-colors motion-safe:duration-200",
+                    onHero ? "text-white/85 hover:text-white" : "text-muted hover:text-foreground",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
+          <div className="ml-auto flex min-w-0 items-center gap-3">
             {inProduct ? (
               <>
-                <IconLink to="/notifications" label="Notifications">
-                  <IconBell />
-                  {unreadNotifications > 0 ? (
-                    <Badge className="absolute -right-1 -top-1 h-5 min-w-5 justify-center px-1">
-                      {unreadNotifications}
-                      <span className="sr-only"> unread</span>
-                    </Badge>
-                  ) : null}
-                </IconLink>
+                <form
+                  role="search"
+                  className="hidden min-w-0 items-center gap-2 rounded-full border border-border bg-white px-4 md:flex md:w-72 lg:w-[26rem] dark:border-white/10 dark:bg-white/[0.05] dark:backdrop-blur-md"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const query = String(new FormData(event.currentTarget).get("q") || "").trim();
+                    navigate(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
+                  }}
+                >
+                  <label htmlFor="city-header-search" className="sr-only">
+                    Search VAEL
+                  </label>
+                  <IconSearch className="h-4 w-4 shrink-0 text-quiet" />
+                  <input
+                    id="city-header-search"
+                    name="q"
+                    type="search"
+                    placeholder="Search people, skills, or districts"
+                    className="h-11 min-w-0 flex-1 bg-transparent text-body-sm text-foreground placeholder:text-quiet focus:outline-none"
+                  />
+                </form>
+                {isDarkModeFlowPath(location.pathname) ? (
+                  <>
+                    <DarkModeToggle />
+                    <AccentPicker />
+                  </>
+                ) : null}
+                <NotificationsMenu notices={vael.notices} unread={unreadNotifications} />
+                <MessagesMenu
+                  handle={session.handle}
+                  connections={vael.myConnections}
+                  thread={vael.thread}
+                  profile={vael.profile}
+                  otherParty={vael.otherParty}
+                  unread={unreadMessages}
+                />
                 <AccountMenu
                   handle={session.handle}
                   displayName={vael.profile(session.handle)?.displayName || session.handle}
-                  avatarUrl={vael.profile(session.handle)?.avatarUrl}
-                  profileHref={profileHrefForHandle(session.handle, district)}
+                  avatarUrl={vael.profile(session.handle)?.avatarUrl || DEFAULT_AVATAR_URL}
+                  profileHref={profileHrefForHandle(session.handle)}
                 />
               </>
             ) : session.signedIn ? (
               <>
-                <AccountMenu
-                  handle={session.handle}
-                  displayName={vael.profile(session.handle)?.displayName || session.handle}
-                  avatarUrl={vael.profile(session.handle)?.avatarUrl}
-                  profileHref={profileHrefForHandle(session.handle, district)}
-                  className="hidden sm:block"
-                />
+                {inJoinFlow ? null : (
+                  <AccountMenu
+                    handle={session.handle}
+                    displayName={vael.profile(session.handle)?.displayName || session.handle}
+                    avatarUrl={vael.profile(session.handle)?.avatarUrl || DEFAULT_AVATAR_URL}
+                    profileHref={profileHrefForHandle(session.handle)}
+                    className="hidden sm:block"
+                  />
+                )}
                 <Link
                   to={enterProductHref(true, session.handle)}
-                  className={buttonClassName({ className: "hidden sm:inline-flex h-12 px-5" })}
+                  className={cn(
+                    "hidden items-center justify-center rounded-full bg-[#FFC555] px-5 text-button font-medium text-[#0B0C0C] transition-opacity hover:opacity-90 sm:inline-flex",
+                    onHero ? "h-11" : "h-12",
+                  )}
                 >
                   Open VAEL
                 </Link>
@@ -412,16 +868,29 @@ export function CityShell() {
               <>
                 <Link
                   to="/sign-in"
-                  className="hidden px-2 py-2 text-button font-medium text-muted hover:text-foreground sm:inline-flex"
+                  className={cn(
+                    "hidden px-2 py-2 text-button font-medium sm:inline-flex",
+                    onHero ? "text-white/85 hover:text-white" : "text-muted hover:text-foreground",
+                  )}
                 >
                   Sign in
                 </Link>
-                <Link to={JOIN_ROUTE} className={buttonClassName({ className: "hidden sm:inline-flex h-12 px-5" })}>
-                  Join VAEL
+                <Link
+                  to={JOIN_ROUTE}
+                  className={cn(
+                    "hidden items-center justify-center rounded-full bg-[#FFC555] px-5 text-button font-medium text-[#0B0C0C] transition-opacity hover:opacity-90 sm:inline-flex",
+                    onHero ? "h-11" : "h-12",
+                  )}
+                >
+                  Join VAEL →
                 </Link>
               </>
             )}
-            <IconButton className="lg:hidden" label="More City destinations" onClick={() => setMoreOpen(true)}>
+            <IconButton
+              className={cn("lg:hidden", onHero && "text-white hover:bg-white/10")}
+              label="More City destinations"
+              onClick={() => setMoreOpen(true)}
+            >
               <IconMenu />
             </IconButton>
           </div>
@@ -523,72 +992,63 @@ export function CityShell() {
 
 export function CityFooter() {
   const { session } = useCitySession();
-  const location = useLocation();
-  if (!session.signedIn || isSitePath(location.pathname)) return <SiteFooter />;
-  return (
-    <footer className="mt-auto border-t border-border-subtle py-8 text-caption text-muted">
-      <div className="vael-container-wide flex flex-wrap gap-x-4 gap-y-2">
-        <span>THE CITY OF VAEL</span>
-        <Link to="/legal/terms" className="hover:text-foreground">
-          Terms
-        </Link>
-        <Link to="/legal/privacy" className="hover:text-foreground">
-          Privacy
-        </Link>
-        <Link to="/legal/sms-terms" className="hover:text-foreground">
-          SMS terms
-        </Link>
-        <Link to="/design-system" className="hover:text-foreground">
-          Design system
-        </Link>
-      </div>
-    </footer>
-  );
+  return <SiteFooter signedIn={session.signedIn} />;
 }
 
-const SITE_FOOTER_COLUMNS = [
-  {
-    title: "Explore",
-    links: [
-      { label: "Marketplace", to: "/explore" },
-      { label: "Districts", to: "/districts" },
-      { label: "Community", to: "/feed" },
-      { label: "How It Works", to: "/#how-it-works" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      { label: "About", to: "/#how-it-works" },
-      { label: "Terms", to: "/legal/terms" },
-      { label: "Privacy", to: "/legal/privacy" },
-    ],
-  },
-  {
-    title: "Account",
-    links: [
-      { label: "Sign In", to: "/sign-in" },
-      { label: "Join VAEL", to: JOIN_ROUTE },
-    ],
-  },
+const SITE_FOOTER_EXPLORE_LINKS = [
+  { label: "Marketplace", to: "/explore" },
+  { label: "Districts", to: "/districts" },
+  { label: "Community", to: "/feed" },
+  { label: "How It Works", to: "/#how-it-works" },
 ] as const;
 
-function SiteFooter() {
+const SITE_FOOTER_COMPANY_LINKS = [
+  { label: "About", to: "/#how-it-works" },
+  { label: "Terms", to: "/legal/terms" },
+  { label: "Privacy", to: "/legal/privacy" },
+] as const;
+
+function siteFooterColumns(signedIn: boolean) {
+  return [
+    { title: "Explore", links: SITE_FOOTER_EXPLORE_LINKS },
+    { title: "Company", links: SITE_FOOTER_COMPANY_LINKS },
+    {
+      title: "Account",
+      links: signedIn
+        ? [
+            { label: "Account", to: "/account" },
+            { label: "Notifications", to: "/notifications" },
+          ]
+        : [
+            { label: "Sign In", to: "/sign-in" },
+            { label: "Join VAEL", to: JOIN_ROUTE },
+          ],
+    },
+  ] as const;
+}
+
+function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
+  const columns = siteFooterColumns(signedIn);
   return (
-    <footer data-surface="site" className="mt-auto bg-background text-foreground">
-      <div className="site-container border-t border-border py-14 md:py-20">
+    <footer data-surface="site-dark" className="mt-auto bg-[#0B0C0C] text-white">
+      <div className="site-container py-14 md:py-20">
         <div className="grid gap-12 md:grid-cols-4">
           <div>
-            <p className="font-sans text-h3 font-medium tracking-tight">VAEL</p>
-            <p className="mt-3 text-body-sm text-muted">See who's available. Find who fits. Make the connection.</p>
+            <p className="flex items-center gap-2.5 font-sans text-h3 font-medium tracking-tight text-white">
+              <img src="/vael-medallion.png" alt="" className="h-8 w-8" />
+              VAEL
+            </p>
+            <p className="mt-3 max-w-[16rem] text-body-sm text-white/50">
+              See who's available. Find who fits. Make the connection.
+            </p>
           </div>
-          {SITE_FOOTER_COLUMNS.map((column) => (
+          {columns.map((column) => (
             <nav key={column.title} aria-label={column.title}>
-              <p className="site-meta text-foreground">{column.title}</p>
+              <p className="site-meta text-white/85">{column.title}</p>
               <ul className="mt-4 space-y-3">
                 {column.links.map((item) => (
                   <li key={item.label}>
-                    <Link to={item.to} className="text-body-sm text-muted hover:text-foreground">
+                    <Link to={item.to} className="text-body-sm text-white/50 hover:text-white">
                       {item.label}
                     </Link>
                   </li>
@@ -596,6 +1056,20 @@ function SiteFooter() {
               </ul>
             </nav>
           ))}
+        </div>
+        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-8 text-caption text-white/40 sm:flex-row sm:items-center sm:justify-between">
+          <span>© {new Date().getFullYear()} THE CITY OF VAEL</span>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link to="/legal/terms" className="hover:text-white/70">
+              Terms
+            </Link>
+            <Link to="/legal/privacy" className="hover:text-white/70">
+              Privacy
+            </Link>
+            <Link to="/legal/sms-terms" className="hover:text-white/70">
+              SMS terms
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

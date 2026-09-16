@@ -62,5 +62,5 @@ export function SearchPage() {
 }
 
 export function GoVisiblePage() {
-  return <Navigate to="/media-technology/veil?create=1" replace />;
+  return <Navigate to="/media-technology/vael?create=1" replace />;
 }

@@ -60,12 +60,12 @@ const DETAIL_HREF: Record<MarketplaceDistrictId, (id: string) => string> = {
   commercial: (id) => `/districts/commercial/board/${id}`,
 };
 
-const VEIL_HREF: Record<MarketplaceDistrictId, string> = {
-  "media-technology": "/media-technology/veil?create=1",
-  construction: "/districts/contractor/veil",
-  trucking: "/districts/trucking/veil",
-  residential: "/districts/residential/veil",
-  commercial: "/districts/commercial/veil",
+const VAEL_HREF: Record<MarketplaceDistrictId, string> = {
+  "media-technology": "/media-technology/vael?create=1",
+  construction: "/districts/contractor/vael",
+  trucking: "/districts/trucking/vael",
+  residential: "/districts/residential/vael",
+  commercial: "/districts/commercial/vael",
 };
 
 export function isMarketplaceDistrict(value: string): value is MarketplaceDistrictId {
@@ -88,14 +88,14 @@ export function districtLabel(districtId: MarketplaceDistrictId): string {
   return districts.find((item) => item.id === districtId)?.name ?? districtId;
 }
 
-export function veilRouteForDistrict(districtId: MarketplaceDistrictId): string {
-  return VEIL_HREF[districtId];
+export function vaelRouteForDistrict(districtId: MarketplaceDistrictId): string {
+  return VAEL_HREF[districtId];
 }
 
 export function setAvailabilityHref(handle: string): string {
   const home = getOnboardingDraft(handle)?.districtId;
-  if (home && isMarketplaceDistrict(home)) return veilRouteForDistrict(home);
-  return VEIL_HREF["media-technology"];
+  if (home && isMarketplaceDistrict(home)) return vaelRouteForDistrict(home);
+  return VAEL_HREF["media-technology"];
 }
 
 export function isImmediateAvailability(text: string): boolean {
@@ -127,7 +127,7 @@ export function showRemoteChip(filter: MarketplaceFilter): boolean {
   return filter === "recommended" || filter === "all" || filter === "media-technology";
 }
 
-export function veiledDistrictIds(handle: string): MarketplaceDistrictId[] {
+export function vaeledDistrictIds(handle: string): MarketplaceDistrictId[] {
   const ids: MarketplaceDistrictId[] = [];
   if (getActiveListing(handle)) ids.push("media-technology");
   if (getActiveCxListing(handle)) ids.push("construction");
@@ -325,7 +325,7 @@ export function collectForDistrict(handle: string, districtId: MarketplaceDistri
 
 export function collectRecommended(handle: string, homeDistrictId?: string): MarketplaceMatch[] {
   const home = homeDistrictId ?? getOnboardingDraft(handle)?.districtId;
-  const matches = veiledDistrictIds(handle).flatMap((id) => collectForDistrict(handle, id));
+  const matches = vaeledDistrictIds(handle).flatMap((id) => collectForDistrict(handle, id));
   return sortMarketplace(matches, home);
 }
 

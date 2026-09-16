@@ -1,60 +1,64 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { CityLayout } from "@/components/city/CityLayout";
 import { CitySessionProvider } from "@/lib/citySession";
+import { ThemeProvider } from "@/lib/theme";
 import { VaelCoreProvider } from "@/lib/vaelCore";
 import { ConstructionCoreProvider } from "@/lib/constructionCore";
 import { TruckingCoreProvider } from "@/lib/truckingCore";
 import { ResidentialCoreProvider } from "@/lib/residentialCore";
 import { CommercialCoreProvider } from "@/lib/commercialCore";
 import { CommunityCoreProvider } from "@/lib/communityCore";
+import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { DesignSystemGallery } from "@/gallery/DesignSystemGallery";
 import { SignInPage, SignUpPage } from "@/pages/city/Auth";
 import {
   JoinCredentialsPage,
-  JoinDistrictPage,
-  JoinDonePage,
-  JoinExpertisePage,
-  JoinHandlePage,
   JoinIdentityPage,
+  JoinIntentPage,
   JoinLayout,
   JoinPreviewPage,
+  JoinSetupPage,
   JoinSignUpPage,
-  JoinTypePage,
-  JoinVeilPage,
   JoinWelcomePage,
-  JoinWorkPage,
 } from "@/pages/join";
 import { DemoResetPage } from "@/pages/city/DemoReset";
+import { DemoResetVaelPage } from "@/pages/city/DemoResetVael";
 import { GoVisiblePage, HomePage, SearchPage } from "@/pages/city/Home";
 import { ExplorePage } from "@/pages/city/Explore";
-import { DistrictCommunityPage, FeedPage, UnavailableCommunityPage } from "@/pages/community/Feed";
+import { DistrictCommunityPage, FeedPage, SavedPostsPage, UnavailableCommunityPage } from "@/pages/community/Feed";
 import { CreatePostPage, PostDetailPage } from "@/pages/community/Post";
 import { DistrictPlaceholderPage, DistrictsPage } from "@/pages/city/Districts";
 import { DistrictHomePage, HowItWorksPage } from "@/pages/mt/DistrictHome";
+import {
+  DistrictOverviewPage,
+  DistrictsPage as ManageDistrictsPage,
+  EditDistrictProfilePage,
+} from "@/pages/mt/Districts";
+import { AllMatchesPage } from "@/pages/mt/AllMatches";
 import { MatchesPage } from "@/pages/city/Matches";
 import { MessagesPage } from "@/pages/city/Messages";
 import { HandshakeRequestPage, MatchDetailPage } from "@/pages/mt/Board";
-import { ActiveVeilPage, PostOpportunityPage, VeilPage } from "@/pages/mt/Veil";
+import { ActiveVaelPage, PostOpportunityPage, VaelPage } from "@/pages/mt/Vael";
 import { ProfileEditPage, ProfilePage } from "@/pages/mt/Profile";
 import { ConnectionDetailPage, ConnectionsPage } from "@/pages/mt/Handshake";
 import { ConstructionHomePage, ConstructionHowItWorksPage } from "@/pages/construction/Home";
 import { ConstructionMatchDetailPage } from "@/pages/construction/Board";
-import { ConstructionVeilPage } from "@/pages/construction/Veil";
+import { ConstructionVaelPage } from "@/pages/construction/Vael";
 import { ConstructionProfileEditPage, ConstructionProfilePage } from "@/pages/construction/Profile";
 import { ConstructionConnectionDetailPage, ConstructionConnectionsPage } from "@/pages/construction/Handshake";
 import { TruckingHomePage, TruckingHowItWorksPage } from "@/pages/trucking/Home";
 import { TruckingMatchDetailPage } from "@/pages/trucking/Board";
-import { TruckingVeilPage } from "@/pages/trucking/Veil";
+import { TruckingVaelPage } from "@/pages/trucking/Vael";
 import { TruckingProfileEditPage, TruckingProfilePage } from "@/pages/trucking/Profile";
 import { TruckingConnectionDetailPage, TruckingConnectionsPage } from "@/pages/trucking/Handshake";
 import { ResidentialHomePage, ResidentialHowItWorksPage } from "@/pages/residential/Home";
 import { ResidentialMatchDetailPage } from "@/pages/residential/Board";
-import { ResidentialVeilPage } from "@/pages/residential/Veil";
+import { ResidentialVaelPage } from "@/pages/residential/Vael";
 import { ResidentialProfileEditPage, ResidentialProfilePage } from "@/pages/residential/Profile";
 import { ResidentialConnectionDetailPage, ResidentialConnectionsPage } from "@/pages/residential/Handshake";
 import { CommercialHomePage, CommercialHowItWorksPage } from "@/pages/commercial/Home";
 import { CommercialMatchDetailPage } from "@/pages/commercial/Board";
-import { CommercialVeilPage } from "@/pages/commercial/Veil";
+import { CommercialVaelPage } from "@/pages/commercial/Vael";
 import { CommercialProfileEditPage, CommercialProfilePage } from "@/pages/commercial/Profile";
 import { CommercialConnectionDetailPage, CommercialConnectionsPage } from "@/pages/commercial/Handshake";
 import {
@@ -72,6 +76,7 @@ import { ExtendedVaelCheckoutPage, ExtendedVaelPage, ExtendedVaelSuccessPage } f
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <CitySessionProvider>
         <VaelCoreProvider>
         <ConstructionCoreProvider>
@@ -87,22 +92,26 @@ export default function App() {
             <Route path="/sign-up" element={<SignUpPage />} />
             <Route path="/join" element={<JoinLayout />}>
               <Route index element={<JoinSignUpPage />} />
+              <Route path="intent" element={<JoinIntentPage />} />
               <Route path="welcome" element={<JoinWelcomePage />} />
-              <Route path="handle" element={<JoinHandlePage />} />
-              <Route path="type" element={<JoinTypePage />} />
-              <Route path="district" element={<JoinDistrictPage />} />
+              <Route path="setup" element={<JoinSetupPage />} />
+              <Route path="handle" element={<Navigate to="/join/setup" replace />} />
+              <Route path="type" element={<Navigate to="/join/setup" replace />} />
+              <Route path="district" element={<Navigate to="/join/setup" replace />} />
               <Route path="identity" element={<JoinIdentityPage />} />
-              <Route path="expertise" element={<JoinExpertisePage />} />
-              <Route path="work" element={<JoinWorkPage />} />
+              <Route path="expertise" element={<Navigate to="/join/identity" replace />} />
+              <Route path="work" element={<Navigate to="/join/identity" replace />} />
               <Route path="credentials" element={<JoinCredentialsPage />} />
               <Route path="profile" element={<Navigate to="/join/identity" replace />} />
               <Route path="preview" element={<JoinPreviewPage />} />
-              <Route path="veil" element={<JoinVeilPage />} />
-              <Route path="done" element={<JoinDonePage />} />
+              <Route path="vael" element={<Navigate to="/join/preview" replace />} />
+              <Route path="done" element={<Navigate to={PRODUCT_HOME} replace />} />
             </Route>
             <Route path="/demo/reset" element={<DemoResetPage />} />
+            <Route path="/demo/reset-vael" element={<DemoResetVaelPage />} />
             <Route path="/feed" element={<FeedPage />} />
             <Route path="/feed/new" element={<CreatePostPage />} />
+            <Route path="/feed/saved" element={<SavedPostsPage />} />
             <Route path="/feed/:postId" element={<PostDetailPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/go-visible" element={<GoVisiblePage />} />
@@ -111,7 +120,7 @@ export default function App() {
             <Route path="/districts/contractor/how-it-works" element={<ConstructionHowItWorksPage />} />
             <Route path="/districts/contractor/board" element={<Navigate to="/matches?district=construction" replace />} />
             <Route path="/districts/contractor/board/:listingId" element={<ConstructionMatchDetailPage />} />
-            <Route path="/districts/contractor/veil" element={<ConstructionVeilPage />} />
+            <Route path="/districts/contractor/vael" element={<ConstructionVaelPage />} />
             <Route path="/districts/contractor/profile/:username" element={<ConstructionProfilePage />} />
             <Route path="/districts/contractor/profile/:username/edit" element={<ConstructionProfileEditPage />} />
             <Route path="/districts/contractor/connections" element={<ConstructionConnectionsPage />} />
@@ -122,7 +131,7 @@ export default function App() {
             <Route path="/districts/trucking/how-it-works" element={<TruckingHowItWorksPage />} />
             <Route path="/districts/trucking/board" element={<Navigate to="/matches?district=trucking" replace />} />
             <Route path="/districts/trucking/board/:listingId" element={<TruckingMatchDetailPage />} />
-            <Route path="/districts/trucking/veil" element={<TruckingVeilPage />} />
+            <Route path="/districts/trucking/vael" element={<TruckingVaelPage />} />
             <Route path="/districts/trucking/profile/:username" element={<TruckingProfilePage />} />
             <Route path="/districts/trucking/profile/:username/edit" element={<TruckingProfileEditPage />} />
             <Route path="/districts/trucking/connections" element={<TruckingConnectionsPage />} />
@@ -132,7 +141,7 @@ export default function App() {
             <Route path="/districts/residential/how-it-works" element={<ResidentialHowItWorksPage />} />
             <Route path="/districts/residential/board" element={<Navigate to="/matches?district=residential" replace />} />
             <Route path="/districts/residential/board/:listingId" element={<ResidentialMatchDetailPage />} />
-            <Route path="/districts/residential/veil" element={<ResidentialVeilPage />} />
+            <Route path="/districts/residential/vael" element={<ResidentialVaelPage />} />
             <Route path="/districts/residential/profile/:username" element={<ResidentialProfilePage />} />
             <Route path="/districts/residential/profile/:username/edit" element={<ResidentialProfileEditPage />} />
             <Route path="/districts/residential/connections" element={<ResidentialConnectionsPage />} />
@@ -142,7 +151,7 @@ export default function App() {
             <Route path="/districts/commercial/how-it-works" element={<CommercialHowItWorksPage />} />
             <Route path="/districts/commercial/board" element={<Navigate to="/matches?district=commercial" replace />} />
             <Route path="/districts/commercial/board/:listingId" element={<CommercialMatchDetailPage />} />
-            <Route path="/districts/commercial/veil" element={<CommercialVeilPage />} />
+            <Route path="/districts/commercial/vael" element={<CommercialVaelPage />} />
             <Route path="/districts/commercial/profile/:username" element={<CommercialProfilePage />} />
             <Route path="/districts/commercial/profile/:username/edit" element={<CommercialProfileEditPage />} />
             <Route path="/districts/commercial/connections" element={<CommercialConnectionsPage />} />
@@ -162,12 +171,16 @@ export default function App() {
             <Route path="/extended-vael/success" element={<ExtendedVaelSuccessPage />} />
             <Route path="/matches" element={<MatchesPage />} />
             <Route path="/media-technology" element={<DistrictHomePage />} />
+            <Route path="/media-technology/matches" element={<AllMatchesPage />} />
+            <Route path="/media-technology/districts" element={<ManageDistrictsPage />} />
+            <Route path="/media-technology/districts/:districtId" element={<DistrictOverviewPage />} />
+            <Route path="/media-technology/districts/:districtId/edit" element={<EditDistrictProfilePage />} />
             <Route path="/media-technology/how-it-works" element={<HowItWorksPage />} />
             <Route path="/media-technology/board" element={<Navigate to="/matches?district=media-technology" replace />} />
             <Route path="/media-technology/board/:listingId" element={<MatchDetailPage />} />
             <Route path="/media-technology/board/:listingId/handshake" element={<HandshakeRequestPage />} />
-            <Route path="/media-technology/veil" element={<VeilPage />} />
-            <Route path="/media-technology/veil/active" element={<ActiveVeilPage />} />
+            <Route path="/media-technology/vael" element={<VaelPage />} />
+            <Route path="/media-technology/vael/active" element={<ActiveVaelPage />} />
             <Route path="/media-technology/post-opportunity" element={<PostOpportunityPage />} />
             <Route path="/media-technology/profile/member" element={<Navigate to="/media-technology/profile/alexmorgan" replace />} />
             <Route path="/media-technology/profile/member/edit" element={<Navigate to="/media-technology/profile/alexmorgan/edit" replace />} />
@@ -208,6 +221,7 @@ export default function App() {
         </ConstructionCoreProvider>
         </VaelCoreProvider>
       </CitySessionProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

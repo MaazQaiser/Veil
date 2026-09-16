@@ -6,7 +6,7 @@ import { Button, buttonClassName } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/controls";
 import { CityPage } from "@/components/city/CityShell";
-import { VeilStatePanel } from "@/components/vael/visibility";
+import { VaelStatePanel } from "@/components/vael/visibility";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { useTrucking } from "@/lib/truckingCore";
 import {
@@ -29,16 +29,16 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
-export function TruckingVeilPage() {
+export function TruckingVaelPage() {
   return (
-    <RequireMember title="Trucking Veil">
-      <VeilInner />
+    <RequireMember title="Trucking Vael">
+      <VaelInner />
     </RequireMember>
   );
 }
 
-function VeilInner() {
-  const { listing, latestListing, saveListing, clearListing, handle, veilKind, ensureMine } = useTrucking();
+function VaelInner() {
+  const { listing, latestListing, saveListing, clearListing, handle, vaelKind, ensureMine } = useTrucking();
   const [step, setStep] = useState<"intent" | "form" | "saving" | "saved" | "error">(listing ? "form" : "intent");
   const [error, setError] = useState("");
   const profile = ensureMine();
@@ -105,17 +105,17 @@ function VeilInner() {
       <PageHeader
         kicker="Trucking Exchange"
         title="Create VAEL"
-        description="Veil In if you have transportation capacity. Veil Out if you need a load moved. Free Daily VAEL lasts 24 hours."
+        description="Vael In if you have transportation capacity. Vael Out if you need a load moved. Free Daily VAEL lasts 24 hours."
         crumbs={[
           { label: "Trucking", href: BASE },
-          { label: "Veil" },
+          { label: "Vael" },
         ]}
       />
 
-      {listing && (veilKind === "in" || veilKind === "out" || veilKind === "expiring") ? (
+      {listing && (vaelKind === "in" || vaelKind === "out" || vaelKind === "expiring") ? (
         <div className="mt-8">
-          <VeilStatePanel
-            kind={veilKind === "expiring" ? "expiring" : listing.side}
+          <VaelStatePanel
+            kind={vaelKind === "expiring" ? "expiring" : listing.side}
             hoursLeft={hoursLeft(listing.expiresAt)}
             side={listing.side}
           />
@@ -126,9 +126,9 @@ function VeilInner() {
         </div>
       ) : latestListing ? (
         <div className="mt-8">
-          <VeilStatePanel kind="expired" />
+          <VaelStatePanel kind="expired" />
           <p className="mt-4 text-body-sm text-muted">
-            The previous 24-hour window has ended. Re-veil to appear on the Trucking Board again.
+            The previous 24-hour window has ended. Re-vael to appear on the Trucking Board again.
           </p>
         </div>
       ) : null}
@@ -141,7 +141,7 @@ function VeilInner() {
               setStep("form");
             }}
           >
-            Veil In — I have transportation capacity available
+            Vael In — I have transportation capacity available
           </Button>
           <Button
             variant="outline"
@@ -150,7 +150,7 @@ function VeilInner() {
               setStep("form");
             }}
           >
-            Veil Out — I need transportation
+            Vael Out — I need transportation
           </Button>
         </div>
       ) : null}
@@ -298,7 +298,7 @@ function VeilInner() {
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" loading={step === "saving"}>
-              {listing ? "Re-veil" : "Create a VAEL"}
+              {listing ? "Re-vael" : "Create a VAEL"}
             </Button>
             {listing ? (
               <Button type="button" variant="ghost" onClick={clearListing}>

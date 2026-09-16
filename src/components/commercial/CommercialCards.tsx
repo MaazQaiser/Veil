@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardFooter, CardMeta } from "@/components/ui/card";
 import { MatchPercent } from "@/components/vael/match";
-import { VeilStatus, VerificationState } from "@/components/vael/status";
+import { VaelStatus, VerificationState } from "@/components/vael/status";
 import { buttonClassName } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -135,7 +135,7 @@ export function CommercialAvailabilityCard({
 }) {
   return (
     <Card>
-      <VeilStatus kind={side} hoursLeft={hours} />
+      <VaelStatus kind={side} hoursLeft={hours} />
       <p className="vael-h4 mt-3">{side === "out" || side === "expired" ? "Needs someone" : "Available"}</p>
       <CardMeta className="mt-1">
         {capability} · {area} · {availability}
@@ -165,7 +165,7 @@ export function CommercialMatchCard({
         <p className="mt-1 text-caption text-muted">{match.percent}% Match</p>
       </div>
       <div className="min-w-0">
-        <VeilStatus kind={listing.side} hoursLeft={hoursLeft(listing.expiresAt)} />
+        <VaelStatus kind={listing.side} hoursLeft={hoursLeft(listing.expiresAt)} />
         <h3 className="vael-h4 mt-3">
           {viewerSide === "out"
             ? companyLabel

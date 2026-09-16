@@ -11,6 +11,7 @@ const KEY = "vael_city_accounts_v1";
 export type CityAccount = {
   handle: string;
   email: string;
+  phone: string;
   displayName: string;
   createdAt: string;
 };
@@ -28,6 +29,17 @@ function read(): CityAccount[] {
 function write(next: CityAccount[]) {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(KEY, JSON.stringify(next));
+}
+
+/** Removes every account except the given handles. Used by the demo reset. */
+export function clearAccountsExcept(keepHandles: string[]) {
+  const keep = new Set(keepHandles);
+  write(read().filter((account) => keep.has(account.handle)));
+}
+
+/** Removes one account, leaving every other handle untouched. Used by the demo reset. */
+export function removeAccountByHandle(handle: string) {
+  write(read().filter((account) => account.handle !== handle));
 }
 
 export function normalizeEmail(email: string) {
@@ -83,7 +95,12 @@ export function suggestHandle(displayName: string, email: string) {
   return `${base}${n}`;
 }
 
-export function createAccount(input: { email: string; handle: string; displayName?: string }): CityAccount {
+export function createAccount(input: {
+  email: string;
+  handle: string;
+  displayName?: string;
+  phone?: string;
+}): CityAccount {
   const email = normalizeEmail(input.email);
   const existing = findAccountByEmail(email);
   if (existing) return existing;
@@ -93,6 +110,7 @@ export function createAccount(input: { email: string; handle: string; displayNam
   const account: CityAccount = {
     handle,
     email,
+    phone: input.phone?.trim() ?? "",
     displayName,
     createdAt: new Date().toISOString(),
   };

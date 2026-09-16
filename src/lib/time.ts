@@ -10,3 +10,10 @@ export function relativeTime(iso: string) {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+/** "27 Jan 2025" — used for join/start dates. */
+export function formatDate(iso: string) {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return "";
+  return new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(ms);
+}

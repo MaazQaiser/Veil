@@ -35,6 +35,8 @@ They are vendored into the repo rather than hot-linked so the demo works with no
 | `districts/trucking.jpg` | `photo-1601584115197-04ecc0da31d7` |
 | `districts/residential.jpg` | `photo-1600585154340-be6161a56a0c` |
 | `districts/commercial.jpg` | `photo-1497366216548-37526070297c` |
+| `scenes/hero-mountains.jpg` | `photo-1506905925346-21bda4d32df4` |
+| `scenes/city-skyline-wide.jpg` | `photo-1567344782667-5390f69c40c6` |
 | `video/hero-poster.jpg` | `photo-1600880292203-757bb62b4baf` |
 
 ## Video

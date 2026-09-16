@@ -65,7 +65,7 @@ export function AccountPage() {
       ) : (
         <div className="mt-6">
           <p className="text-body-sm text-muted">
-            Sign in on this device to keep a handle and veil status in this browser. Two devices still do not share a
+            Sign in on this device to keep a handle and vael status in this browser. Two devices still do not share a
             City.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -95,35 +95,35 @@ export function VisibilityPage() {
       district: "Media & Technology",
       listing: mt.latestListing,
       context: mt.latestListing?.discipline,
-      manageHref: "/media-technology/veil",
+      manageHref: "/media-technology/vael",
       boardHref: "/matches?district=media-technology",
     },
     {
       district: "Construction",
       listing: cx.latestListing,
       context: cx.latestListing?.trade,
-      manageHref: "/districts/contractor/veil",
+      manageHref: "/districts/contractor/vael",
       boardHref: "/matches?district=construction",
     },
     {
       district: "Trucking",
       listing: tx.latestListing,
       context: tx.latestListing?.equipment,
-      manageHref: "/districts/trucking/veil",
+      manageHref: "/districts/trucking/vael",
       boardHref: "/matches?district=trucking",
     },
     {
       district: "Residential",
       listing: rx.latestListing,
       context: rx.latestListing?.service,
-      manageHref: "/districts/residential/veil",
+      manageHref: "/districts/residential/vael",
       boardHref: "/matches?district=residential",
     },
     {
       district: "Commercial",
       listing: cm.latestListing,
       context: cm.latestListing?.capability,
-      manageHref: "/districts/commercial/veil",
+      manageHref: "/districts/commercial/vael",
       boardHref: "/matches?district=commercial",
     },
   ];
@@ -157,8 +157,8 @@ export function VisibilityPage() {
           <section>
             <p className="vael-kicker">Current visibility</p>
             <p className="mt-2 max-w-2xl text-body-sm text-muted">
-              Each live Room has its own VAEL. Ending or expiry removes you from that Board. Re-veil starts a new
-              24-hour window. Session veil in the header follows Media & Technology when that Room is active.
+              Each live Room has its own VAEL. Ending or expiry removes you from that Board. Re-vael starts a new
+              24-hour window. Session vael in the header follows Media & Technology when that Room is active.
             </p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               {rooms.map((room) => (
@@ -178,7 +178,7 @@ export function VisibilityPage() {
             <p className="mt-2 text-body-sm">Current: Free Daily VAEL (24 hours).</p>
             <DemoPurchaseNotice className="mt-4" />
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/media-technology/veil?create=1" className={buttonClassName()}>
+              <Link to="/media-technology/vael?create=1" className={buttonClassName()}>
                 Set availability
               </Link>
               <Link to="/extended-vael" className={buttonClassName({ variant: "outline" })}>
@@ -237,7 +237,7 @@ export function NotificationsPage() {
           title="No notifications"
           description="Handshake activity on this device will appear here. SMS, email, and push are not connected."
           action={
-            <Link to="/matches" className={buttonClassName({ variant: "outline" })}>
+            <Link to="/media-technology/matches" className={buttonClassName({ variant: "outline" })}>
               View matches
             </Link>
           }

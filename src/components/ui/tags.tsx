@@ -88,7 +88,7 @@ export function TagField({
   );
 }
 
-/** Shared between the profile form and the Veil form, which both store comma text. */
+/** Shared between the profile form and the Vael form, which both store comma text. */
 export function splitTags(value: string | string[]) {
   if (Array.isArray(value)) return value;
   return value

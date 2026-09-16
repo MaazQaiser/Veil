@@ -1,4 +1,4 @@
-import { PROFILE_FIELDS, requiredFieldsFilled } from "./profileFields";
+import { profileFieldsFor, requiredFieldsFilled } from "./profileFields";
 import {
   getActiveListing,
   getConnections,
@@ -6,10 +6,23 @@ import {
   getProfile,
   type ProfileDocument,
   type ProfileRecord,
+  type VaelSide,
 } from "./vaelStore";
 
 /** Centralized in-app home for an onboarded Professional. Marketing stays at `/`. */
 export const PRODUCT_HOME = "/media-technology";
+
+/**
+ * Dark mode is scoped to the Media & Technology dashboard flow — its own pages
+ * plus the shared utility pages that flow reaches (inbox, saved posts, search,
+ * account, notifications). Other Districts' own product pages stay untouched.
+ */
+export function isDarkModeFlowPath(pathname: string) {
+  if (pathname.startsWith(PRODUCT_HOME)) return true;
+  if (pathname === "/messages" || pathname === "/feed/saved" || pathname === "/search") return true;
+  if (pathname === "/notifications" || pathname === "/account" || pathname.startsWith("/account/")) return true;
+  return false;
+}
 
 /** Ordered provider journey — one direction, no loops. */
 export const JOURNEY_STEPS = [
@@ -17,7 +30,7 @@ export const JOURNEY_STEPS = [
   "Profile",
   "District",
   "Availability",
-  "Veil In",
+  "Vael In",
   "Matches",
   "Handshake",
   "Connected",
@@ -34,20 +47,22 @@ export function profileReady(profile: ProfileRecord | undefined): boolean {
 export function profileCompletion(
   profile: ProfileRecord | undefined,
   documents: ProfileDocument[] = [],
+  side: VaelSide = "in",
 ): { percent: number; prompt: string } {
+  const fields = profileFieldsFor(side);
   if (!profile) {
-    return { percent: 0, prompt: PROFILE_FIELDS[0].prompt };
+    return { percent: 0, prompt: fields[0].prompt };
   }
-  const filled = PROFILE_FIELDS.filter((field) => field.filled(profile, documents)).length;
-  const missing = PROFILE_FIELDS.find((field) => !field.filled(profile, documents));
+  const filled = fields.filter((field) => field.filled(profile, documents)).length;
+  const missing = fields.find((field) => !field.filled(profile, documents));
   return {
-    percent: Math.round((filled / PROFILE_FIELDS.length) * 100),
+    percent: Math.round((filled / fields.length) * 100),
     prompt: missing?.prompt ?? "Your profile is complete.",
   };
 }
 
-export function profileCompletionFor(handle: string) {
-  return profileCompletion(getProfile(handle), getDocuments(handle));
+export function profileCompletionFor(handle: string, side: VaelSide = "in") {
+  return profileCompletion(getProfile(handle), getDocuments(handle), side);
 }
 
 export function journeyStep(handle: string): JourneyStep {
@@ -81,8 +96,8 @@ export function journeyRoute(handle: string): string {
       return `/media-technology/profile/${handle}/edit`;
     case "Availability":
       return "/media-technology";
-    case "Veil In":
-      return "/media-technology/veil?create=1";
+    case "Vael In":
+      return "/media-technology/vael?create=1";
     case "Matches":
       return "/media-technology/board";
     case "Handshake": {

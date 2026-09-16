@@ -72,6 +72,12 @@ export type ProfileRecord = {
   /** Wide plate shown on a profile once the Handshake opens. */
   coverUrl?: string;
   sample?: boolean;
+  /** District Profile — role within the district, separate from disciplines. */
+  specialization?: string;
+  /** What you can offer in this District. */
+  offers?: string[];
+  /** What you're looking for in this District. */
+  lookingFor?: string[];
 };
 
 export type ProfileDocument = {
@@ -128,7 +134,16 @@ export type LocalNotice = {
   read: boolean;
 };
 
-export const SAMPLE_HANDLES = ["amercer", "northlight", "jlee", "willowform", "pshah"] as const;
+export const SAMPLE_HANDLES = [
+  "amercer",
+  "northlight",
+  "jlee",
+  "willowform",
+  "pshah",
+  "mchen",
+  "dortiz",
+  "riverside",
+] as const;
 
 export function isMtSampleHandle(handle: string) {
   return (SAMPLE_HANDLES as readonly string[]).includes(handle);
@@ -362,7 +377,7 @@ export function toMatchable(listing: VaelListing): MatchableListing {
   };
 }
 
-export function veilKindFor(listing: VaelListing | undefined) {
+export function vaelKindFor(listing: VaelListing | undefined) {
   if (!listing) return "none" as const;
   if (!isLifecycleVisible(listing)) return "expired" as const;
   if (hoursLeft(listing.expiresAt) <= EXPIRING_HOURS) return "expiring" as const;
@@ -466,6 +481,152 @@ function northlightProfile(): ProfileRecord {
   };
 }
 
+function mayaListing(now: string): VaelListing {
+  return {
+    id: "vael_mchen",
+    handle: "mchen",
+    side: "out",
+    category: "Designer",
+    discipline: "Motion",
+    skills: ["Motion Graphics", "Animation", "Storyboarding"],
+    tools: ["After Effects", "Cinema 4D"],
+    certifications: [],
+    location: "Seattle",
+    remoteOnsite: "remote",
+    timing: "Next two weeks",
+    experienceYears: 7,
+    engagement: "Project",
+    budgetProxy: "Day rate",
+    description: "Need a motion designer to animate a product launch explainer this cycle.",
+    requirements: "After Effects fluency. Brand-safe motion systems.",
+    contact: "",
+    timeline: "Next two weeks",
+    createdAt: now,
+    expiresAt: hoursFromNow(22),
+    plan: "daily",
+  };
+}
+
+function mayaProfile(): ProfileRecord {
+  return {
+    handle: "mchen",
+    displayName: "Maya Chen",
+    profileType: "individual",
+    headline: "Motion Designer",
+    bio: "Motion designer bringing brand systems to life across launch films, explainers, and social. Sample profile on this device only.",
+    disciplines: ["Motion"],
+    skills: ["Motion Graphics", "Animation", "Storyboarding"],
+    tools: ["After Effects", "Cinema 4D"],
+    experience: "Seven years animating product and brand stories.",
+    experienceYears: 7,
+    credentials: "",
+    location: "Seattle",
+    workPreference: "remote",
+    rates: "Day rate after Handshake.",
+    portfolio: [{ label: "Motion reel", url: "https://example.com/mchen" }],
+    avatarUrl: "/people/p05.jpg",
+    coverUrl: "/scenes/city.jpg",
+    sample: true,
+  };
+}
+
+function devonListing(now: string): VaelListing {
+  return {
+    id: "vael_dortiz",
+    handle: "dortiz",
+    side: "out",
+    category: "Editor",
+    discipline: "Sound",
+    skills: ["Sound Design", "Mixing", "Foley"],
+    tools: ["Pro Tools", "Logic Pro"],
+    certifications: [],
+    location: "Nashville",
+    remoteOnsite: "remote",
+    timing: "This cycle",
+    experienceYears: 10,
+    engagement: "Project",
+    budgetProxy: "Day rate",
+    description: "Looking for a sound designer to finish mix on a short documentary this cycle.",
+    requirements: "Pro Tools fluency. Remote delivery ok.",
+    contact: "",
+    timeline: "This cycle",
+    createdAt: now,
+    expiresAt: hoursFromNow(16),
+    plan: "daily",
+  };
+}
+
+function devonProfile(): ProfileRecord {
+  return {
+    handle: "dortiz",
+    displayName: "Devon Ortiz",
+    profileType: "individual",
+    headline: "Sound Designer · mixing · Pro Tools",
+    bio: "Sound designer and mixer for documentary and narrative short-form. Sample profile on this device only.",
+    disciplines: ["Sound"],
+    skills: ["Sound Design", "Mixing", "Foley"],
+    tools: ["Pro Tools", "Logic Pro"],
+    experience: "Ten years mixing documentary and narrative shorts.",
+    experienceYears: 10,
+    credentials: "",
+    location: "Nashville",
+    workPreference: "remote",
+    rates: "Day rate after Handshake.",
+    portfolio: [{ label: "Mix reel", url: "https://example.com/dortiz" }],
+    avatarUrl: "/people/p07.jpg",
+    coverUrl: "/scenes/community.jpg",
+    sample: true,
+  };
+}
+
+function riversideListing(now: string): VaelListing {
+  return {
+    id: "vael_riverside",
+    handle: "riverside",
+    side: "out",
+    category: "Producer",
+    discipline: "Producing",
+    skills: ["Producing", "Scheduling", "Budgeting"],
+    tools: ["Airtable", "Movie Magic"],
+    certifications: [],
+    location: "Chicago",
+    remoteOnsite: "hybrid",
+    timing: "Flexible",
+    experienceYears: 9,
+    engagement: "Retainer",
+    budgetProxy: "Project fee",
+    description: "Production studio looking for ongoing line-producing support across a slate of shoots.",
+    requirements: "Line-producing experience. Chicago-based or hybrid.",
+    contact: "",
+    timeline: "Flexible",
+    createdAt: now,
+    expiresAt: hoursFromNow(24),
+    plan: "daily",
+  };
+}
+
+function riversideProfile(): ProfileRecord {
+  return {
+    handle: "riverside",
+    displayName: "Riverside Collective",
+    profileType: "studio",
+    headline: "Production studio",
+    bio: "Independent production studio running a slate of branded and documentary shoots. Sample profile on this device only.",
+    disciplines: ["Producing"],
+    skills: ["Producing", "Scheduling", "Budgeting"],
+    tools: ["Airtable", "Movie Magic"],
+    experience: "Studio producing branded and documentary work.",
+    experienceYears: 9,
+    credentials: "",
+    location: "Chicago",
+    workPreference: "hybrid",
+    rates: "Project budget after Handshake.",
+    portfolio: [{ label: "Studio reel", url: "https://example.com/riverside" }],
+    coverUrl: "/scenes/handshake.jpg",
+    sample: true,
+  };
+}
+
 function seedIfNeeded() {
   if (typeof window === "undefined") return;
   if (localStorage.getItem(KEYS.seeded)) return;
@@ -476,6 +637,9 @@ function seedIfNeeded() {
     jordanListing(now),
     willowListing(now),
     priyaListing(now),
+    mayaListing(now),
+    devonListing(now),
+    riversideListing(now),
   ];
   const profiles: ProfileRecord[] = [
     mercerProfile(),
@@ -483,6 +647,9 @@ function seedIfNeeded() {
     jordanProfile(),
     willowProfile(),
     priyaProfile(),
+    mayaProfile(),
+    devonProfile(),
+    riversideProfile(),
   ];
   write(KEYS.listings, listings);
   write(KEYS.profiles, profiles);
@@ -532,6 +699,9 @@ export function ensureMtDemoSamples() {
     { listing: priyaListing(now), profile: priyaProfile() },
     { listing: mercerListing(now), profile: mercerProfile() },
     { listing: northlightListing(now), profile: northlightProfile() },
+    { listing: mayaListing(now), profile: mayaProfile() },
+    { listing: devonListing(now), profile: devonProfile() },
+    { listing: riversideListing(now), profile: riversideProfile() },
   ];
   extras.forEach(({ listing, profile }) => {
     upsertProfile(profile);
@@ -652,6 +822,33 @@ export function saveProfile(next: ProfileRecord) {
   );
 }
 
+/**
+ * Leaving Media & Technology as a district: clears only the district-specific fields
+ * (what you do, skills, tools, work shown, credentials) plus the active VAEL. Identity —
+ * name, photo, location, handle — is the generic profile and stays untouched.
+ */
+export function resetMtDistrictFields(handle: string) {
+  const profile = ensureProfile(handle);
+  saveProfile({
+    ...profile,
+    headline: "",
+    bio: "",
+    disciplines: [],
+    skills: [],
+    tools: [],
+    experience: "",
+    experienceYears: undefined,
+    credentials: "",
+    workPreference: undefined,
+    rates: "",
+    portfolio: [],
+    specialization: undefined,
+    offers: [],
+    lookingFor: [],
+  });
+  expireOwnListing(handle);
+}
+
 /** Moves a profile and its documents when a handle is claimed. */
 export function renameProfileHandle(from: string, to: string) {
   write(
@@ -664,6 +861,27 @@ export function renameProfileHandle(from: string, to: string) {
       item.handle === from ? { ...item, handle: to } : item,
     ),
   );
+}
+
+/**
+ * Removes everything for one handle: profile, listings, documents, any connection
+ * they're party to (plus that connection's messages), and their notices. Used by
+ * the demo reset — surgical, not the seed data or any other handle's data.
+ */
+export function purgeHandle(handle: string) {
+  write(
+    KEYS.connections,
+    getConnections().filter((item) => item.requesterHandle !== handle && item.counterpartHandle !== handle),
+  );
+  const remainingConnectionIds = new Set(getConnections().map((item) => item.id));
+  write(
+    KEYS.messages,
+    read<ThreadMessage[]>(KEYS.messages, []).filter((item) => remainingConnectionIds.has(item.connectionId)),
+  );
+  write(KEYS.notifications, read<LocalNotice[]>(KEYS.notifications, []).filter((item) => item.handle !== handle));
+  write(KEYS.profiles, getProfiles().filter((item) => item.handle !== handle));
+  write(KEYS.listings, getListings().filter((item) => item.handle !== handle));
+  write(KEYS.documents, read<ProfileDocument[]>(KEYS.documents, []).filter((item) => item.handle !== handle));
 }
 
 export function getDocuments(handle: string) {
@@ -696,7 +914,7 @@ export function publishListing(input: Omit<VaelListing, "id" | "createdAt" | "ex
     input.handle,
     "You're visible",
     `Your availability is live for ${DEFAULT_DURATION_HOURS} hours.`,
-    "/media-technology/veil/active",
+    "/media-technology/vael/active",
   );
   return listing;
 }
@@ -998,8 +1216,20 @@ export function certificationOptions(): string[] {
   return [...found].sort((a, b) => a.localeCompare(b));
 }
 
+/** Suggestions drawn from the City's own vocabulary rather than a hard-coded taxonomy. */
+export function disciplineOptions(): string[] {
+  const found = new Set<string>();
+  for (const listing of getListings()) if (listing.discipline) found.add(listing.discipline);
+  for (const profile of getProfiles()) profile.disciplines.forEach((value) => found.add(value));
+  return [...found].sort((a, b) => a.localeCompare(b));
+}
+
 export const M_T_CATEGORIES = ["Editor", "Developer", "Studio", "Producer", "Designer"] as const;
 export const M_T_DISCIPLINES = ["Editorial", "Software", "Motion", "Sound", "Producing"] as const;
 export const M_T_ENGAGEMENTS = ["Project", "Retainer", "Day rate", "Staffing"] as const;
 export const M_T_TIMING = ["This cycle", "Next two weeks", "Flexible"] as const;
 export const M_T_BUDGET = ["Day rate", "Project fee", "To discuss"] as const;
+export const M_T_OFFERS = ["Design services", "Development", "Consulting", "Production support", "Strategy"];
+
+/** Shared across every District — what someone looks for is the same shape everywhere. */
+export const LOOKING_FOR_OPTIONS = ["Opportunities", "Projects", "Collaboration", "Connections"];

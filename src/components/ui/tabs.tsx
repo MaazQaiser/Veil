@@ -69,8 +69,10 @@ export function TabsTrigger({
       aria-controls={`${tabs.id}-panel-${value}`}
       tabIndex={selected ? 0 : -1}
       className={cn(
-        "-mb-px border-b px-3 py-3 text-button font-medium",
-        selected ? "border-foreground text-foreground" : "border-transparent text-muted hover:text-foreground",
+        "-mb-px border-b px-3 py-3 text-button font-medium motion-safe:transition-colors motion-safe:duration-150",
+        selected
+          ? "border-foreground text-foreground dark:border-accent dark:text-accent"
+          : "border-transparent text-muted hover:text-foreground",
         className,
       )}
       onClick={() => tabs.setValue(value)}

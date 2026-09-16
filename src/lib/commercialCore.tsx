@@ -12,9 +12,10 @@ import {
   hoursLeft,
   publishCmListing,
   rankCommercialMatches,
+  resetCmProfile,
   saveCmProfile,
   subscribeCommercial,
-  cmVeilKind,
+  cmVaelKind,
   type RankedCommercialMatch,
   type CommercialListing,
   type CommercialProfile,
@@ -45,6 +46,7 @@ type Ctx = {
   matches: RankedCommercialMatch[];
   saveListing: (input: Omit<CommercialListing, "id" | "createdAt" | "expiresAt" | "plan">) => CommercialListing;
   clearListing: () => void;
+  resetDistrict: () => void;
   profile: (name: string) => CommercialProfile | undefined;
   ensureMine: () => CommercialProfile | undefined;
   writeProfile: (next: CommercialProfile) => void;
@@ -70,13 +72,13 @@ type Ctx = {
   send: typeof sendMessage;
   readThread: typeof markThreadRead;
   hoursLeft: typeof hoursLeft;
-  veilKind: ReturnType<typeof cmVeilKind>;
+  vaelKind: ReturnType<typeof cmVaelKind>;
 };
 
 const CommercialContext = createContext<Ctx | null>(null);
 
 export function CommercialCoreProvider({ children }: { children: ReactNode }) {
-  const { session, setVeil } = useCitySession();
+  const { session, setVael } = useCitySession();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -105,11 +107,14 @@ export function CommercialCoreProvider({ children }: { children: ReactNode }) {
       matches: listing ? rankCommercialMatches(listing) : [],
       saveListing: (input) => {
         const published = publishCmListing(input);
-        setVeil(published.side);
+        setVael(published.side);
         return published;
       },
       clearListing: () => {
         if (handle) expireOwnCmListing(handle);
+      },
+      resetDistrict: () => {
+        if (handle) resetCmProfile(handle);
       },
       profile: getCmProfile,
       ensureMine: () => (handle ? ensureCmProfile(handle) : undefined),
@@ -131,9 +136,9 @@ export function CommercialCoreProvider({ children }: { children: ReactNode }) {
       send: sendMessage,
       readThread: markThreadRead,
       hoursLeft,
-      veilKind: cmVeilKind(listing),
+      vaelKind: cmVaelKind(listing),
     }),
-    [handle, listing, latestListing, session.veil],
+    [handle, listing, latestListing, session.vael],
   );
 
   return createElement(CommercialContext.Provider, { value }, children);

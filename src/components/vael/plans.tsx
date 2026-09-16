@@ -61,7 +61,7 @@ export function PlanCard({
       </CardBody>
       <CardFooter>
         {plan.id === "daily" ? (
-          <Link to="/media-technology/veil?create=1" className={buttonClassName({ size: "sm" })}>
+          <Link to="/media-technology/vael?create=1" className={buttonClassName({ size: "sm" })}>
             Create VAEL
           </Link>
         ) : (

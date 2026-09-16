@@ -12,9 +12,10 @@ import {
   hoursLeft,
   publishRxListing,
   rankResidentialMatches,
+  resetRxProfile,
   saveRxProfile,
   subscribeResidential,
-  rxVeilKind,
+  rxVaelKind,
   type RankedResidentialMatch,
   type ResidentialListing,
   type ResidentialProfile,
@@ -45,6 +46,7 @@ type Ctx = {
   matches: RankedResidentialMatch[];
   saveListing: (input: Omit<ResidentialListing, "id" | "createdAt" | "expiresAt" | "plan">) => ResidentialListing;
   clearListing: () => void;
+  resetDistrict: () => void;
   profile: (name: string) => ResidentialProfile | undefined;
   ensureMine: () => ResidentialProfile | undefined;
   writeProfile: (next: ResidentialProfile) => void;
@@ -70,13 +72,13 @@ type Ctx = {
   send: typeof sendMessage;
   readThread: typeof markThreadRead;
   hoursLeft: typeof hoursLeft;
-  veilKind: ReturnType<typeof rxVeilKind>;
+  vaelKind: ReturnType<typeof rxVaelKind>;
 };
 
 const ResidentialContext = createContext<Ctx | null>(null);
 
 export function ResidentialCoreProvider({ children }: { children: ReactNode }) {
-  const { session, setVeil } = useCitySession();
+  const { session, setVael } = useCitySession();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -105,11 +107,14 @@ export function ResidentialCoreProvider({ children }: { children: ReactNode }) {
       matches: listing ? rankResidentialMatches(listing) : [],
       saveListing: (input) => {
         const published = publishRxListing(input);
-        setVeil(published.side);
+        setVael(published.side);
         return published;
       },
       clearListing: () => {
         if (handle) expireOwnRxListing(handle);
+      },
+      resetDistrict: () => {
+        if (handle) resetRxProfile(handle);
       },
       profile: getRxProfile,
       ensureMine: () => (handle ? ensureRxProfile(handle) : undefined),
@@ -131,9 +136,9 @@ export function ResidentialCoreProvider({ children }: { children: ReactNode }) {
       send: sendMessage,
       readThread: markThreadRead,
       hoursLeft,
-      veilKind: rxVeilKind(listing),
+      vaelKind: rxVaelKind(listing),
     }),
-    [handle, listing, latestListing, session.veil],
+    [handle, listing, latestListing, session.vael],
   );
 
   return createElement(ResidentialContext.Provider, { value }, children);

@@ -101,11 +101,11 @@ function BoardInner() {
         ]}
         primaryAction={
           listing ? (
-            <Link to={`${BASE}/veil`} className={buttonClassName({ variant: "outline" })}>
+            <Link to={`${BASE}/vael`} className={buttonClassName({ variant: "outline" })}>
               Edit VAEL
             </Link>
           ) : (
-            <Link to={`${BASE}/veil`} className={buttonClassName()}>
+            <Link to={`${BASE}/vael`} className={buttonClassName()}>
               Create VAEL
             </Link>
           )
@@ -114,10 +114,10 @@ function BoardInner() {
 
       {!listing ? (
         <EmptyState
-          title="Veil to see matches"
+          title="Vael to see matches"
           description="The Board ranks the opposite side of your Trucking VAEL."
           action={
-            <Link to={`${BASE}/veil`} className={buttonClassName()}>
+            <Link to={`${BASE}/vael`} className={buttonClassName()}>
               Create VAEL
             </Link>
           }
@@ -125,7 +125,7 @@ function BoardInner() {
       ) : (
         <>
           <p className="mt-6 text-body-sm text-muted">
-            You veiled {listing.side === "in" ? "in (capacity available)" : "out (need transportation)"} on{" "}
+            You vaeled {listing.side === "in" ? "in (capacity available)" : "out (need transportation)"} on{" "}
             {laneLabel(listing.origin, listing.destination)}. Opposite-side VAELs rank below.
           </p>
           <Alert tone="info" title="Trucking scoring" className="mt-4">
@@ -146,7 +146,7 @@ function BoardInner() {
               title="No matches yet"
               description="Sample Trucking VAELs on this device may have expired, or nothing opposite your side is visible."
               action={
-                <Link to={`${BASE}/veil`} className={buttonClassName({ variant: "outline" })}>
+                <Link to={`${BASE}/vael`} className={buttonClassName({ variant: "outline" })}>
                   Edit VAEL
                 </Link>
               }
@@ -219,9 +219,9 @@ function MatchDetailInner() {
     return (
       <CityPage>
         <EmptyState
-          title="Veil to open a match"
+          title="Vael to open a match"
           action={
-            <Link to={`${BASE}/veil`} className={buttonClassName()}>
+            <Link to={`${BASE}/vael`} className={buttonClassName()}>
               Create VAEL
             </Link>
           }

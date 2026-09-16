@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCitySession } from "@/lib/citySession";
+import { getOnboardingDraft } from "@/lib/onboarding";
 import { normalizePortfolio } from "@/lib/profileFields";
 import { useVael } from "@/lib/vaelCore";
 import type { ProfileRecord } from "@/lib/vaelStore";
@@ -7,6 +8,7 @@ import type { ProfileRecord } from "@/lib/vaelStore";
 export function useJoinProfile() {
   const { session } = useCitySession();
   const vael = useVael();
+  const intent = getOnboardingDraft(session.handle)?.intent ?? "";
   const existing = vael.ensureMine();
   const [form, setForm] = useState<ProfileRecord>(
     existing ?? {
@@ -33,7 +35,9 @@ export function useJoinProfile() {
   }
 
   function persist(next = form) {
-    const headline = next.headline.trim() || next.disciplines[0] || next.displayName;
+    // Falling back to disciplines is fine — falling back to the person's own name would
+    // turn "no headline yet" into a fake one that then leaks into discipline/category.
+    const headline = next.headline.trim() || next.disciplines[0] || "";
     vael.writeProfile({
       ...next,
       handle: session.handle,
@@ -44,5 +48,5 @@ export function useJoinProfile() {
     });
   }
 
-  return { session, vael, form, set, persist, errors, setErrors };
+  return { session, vael, intent, form, set, persist, errors, setErrors };
 }

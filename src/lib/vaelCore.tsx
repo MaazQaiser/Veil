@@ -25,13 +25,14 @@ import {
   publishListing,
   rankMatches,
   requestHandshake,
+  resetMtDistrictFields,
   saveProfile,
   sendMessage,
   simulateCounterpartAccept,
   subscribeVael,
   unreadMessageCount,
   unreadNoticeCount,
-  veilKindFor,
+  vaelKindFor,
   type ConnectionRecord,
   type ProfileRecord,
   type RankedMatch,
@@ -47,6 +48,7 @@ type Ctx = {
   matches: RankedMatch[];
   saveListing: (input: Omit<VaelListing, "id" | "createdAt" | "expiresAt" | "plan">) => VaelListing;
   clearListing: () => void;
+  resetDistrict: () => void;
   profile: (name: string) => ProfileRecord | undefined;
   ensureMine: () => ProfileRecord | undefined;
   writeProfile: (next: ProfileRecord) => void;
@@ -71,14 +73,14 @@ type Ctx = {
   unreadMessages: number;
   unreadNotices: number;
   hoursLeft: typeof hoursLeft;
-  veilKind: ReturnType<typeof veilKindFor>;
+  vaelKind: ReturnType<typeof vaelKindFor>;
 };
 
 const VaelContext = createContext<Ctx | null>(null);
 
 export function VaelCoreProvider({ children }: { children: ReactNode }) {
-  const { session, setVeil } = useCitySession();
-  const [, setTick] = useState(0);
+  const { session, setVael } = useCitySession();
+  const [tick, setTick] = useState(0);
 
   useEffect(() => subscribeVael(() => setTick((n) => n + 1)), []);
 
@@ -96,10 +98,10 @@ export function VaelCoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!handle) return;
-    const kind = veilKindFor(listing);
+    const kind = vaelKindFor(listing);
     const next = kind === "in" || kind === "out" ? kind : "none";
-    if (session.veil !== next) setVeil(next);
-  }, [handle, listing?.id, listing?.side, listing?.expiresAt, session.veil, setVeil]);
+    if (session.vael !== next) setVael(next);
+  }, [handle, listing?.id, listing?.side, listing?.expiresAt, session.vael, setVael]);
 
   const value = useMemo<Ctx>(
     () => ({
@@ -110,12 +112,17 @@ export function VaelCoreProvider({ children }: { children: ReactNode }) {
       matches: listing ? rankMatches(listing) : [],
       saveListing: (input) => {
         const published = publishListing(input);
-        setVeil(published.side);
+        setVael(published.side);
         return published;
       },
       clearListing: () => {
         if (handle) expireOwnListing(handle);
-        setVeil("none");
+        setVael("none");
+      },
+      resetDistrict: () => {
+        if (!handle) return;
+        resetMtDistrictFields(handle);
+        setVael("none");
       },
       profile: getProfile,
       ensureMine: () => (handle ? ensureProfile(handle) : undefined),
@@ -143,9 +150,9 @@ export function VaelCoreProvider({ children }: { children: ReactNode }) {
       unreadMessages: handle ? unreadMessageCount(handle) : 0,
       unreadNotices: handle ? unreadNoticeCount(handle) : 0,
       hoursLeft,
-      veilKind: veilKindFor(listing),
+      vaelKind: vaelKindFor(listing),
     }),
-    [handle, listing, latestListing, session.veil],
+    [handle, listing, latestListing, session.vael, tick],
   );
 
   return createElement(VaelContext.Provider, { value }, children);

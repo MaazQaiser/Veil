@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { EmptyState } from "@/components/ui/feedback";
-import { FilterBar } from "@/components/ui/search";
+import { FilterBar, SearchInput } from "@/components/ui/search";
 import { FilterChipRow, HonestyNote, PersonCard, SectionHead } from "@/components/marketing/primitives";
 import {
   AVAILABILITY_LABEL,
@@ -16,8 +17,10 @@ const ALL = "All";
 const MATCH_BANDS = ["All", "80+", "60+", "Below 60"] as const;
 
 export function ExplorePage() {
-  const [district, setDistrict] = useState(ALL);
-  const [location, setLocation] = useState(ALL);
+  const [searchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [district, setDistrict] = useState(searchParams.get("district") ?? ALL);
+  const [location, setLocation] = useState(searchParams.get("location") ?? ALL);
   const [availability, setAvailability] = useState(ALL);
   const [category, setCategory] = useState(ALL);
   const [skill, setSkill] = useState(ALL);
@@ -25,7 +28,15 @@ export function ExplorePage() {
   const [verified, setVerified] = useState<"All" | "Verified">("All");
 
   const people = useMemo(() => {
+    const needle = query.trim().toLowerCase();
     return MARKETING_DIRECTORY.filter((person) => {
+      if (
+        needle &&
+        !`${person.name} ${person.role} ${person.district} ${person.category} ${person.skills.join(" ")}`
+          .toLowerCase()
+          .includes(needle)
+      )
+        return false;
       if (district !== ALL && person.district !== district) return false;
       if (location !== ALL && person.location !== location) return false;
       if (availability !== ALL && AVAILABILITY_LABEL[person.availability as AvailabilityWindow] !== availability)
@@ -36,7 +47,7 @@ export function ExplorePage() {
       if (verified === "Verified" && !person.verified) return false;
       return true;
     }).sort((a, b) => b.match - a.match);
-  }, [district, location, availability, category, skill, band, verified]);
+  }, [query, district, location, availability, category, skill, band, verified]);
 
   return (
     <div data-surface="site" className="bg-background pb-24 pt-14 text-foreground">
@@ -48,6 +59,13 @@ export function ExplorePage() {
         />
 
         <div className="sticky top-[4.5rem] z-20 mt-10 space-y-3 border-b border-border bg-background/95 py-4 backdrop-blur">
+          <SearchInput
+            label="Search by name, role, district, or skill"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by name, role, district, or skill"
+            className="max-w-md"
+          />
           <FilterBar count={people.length}>
             <span className="sr-only">Directory filters</span>
           </FilterBar>

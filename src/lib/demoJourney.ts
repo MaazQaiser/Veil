@@ -18,12 +18,13 @@ import {
   upsertProfile,
 } from "./vaelStore";
 import { ensureCommunityPosts, type CommunityPost } from "./communityStore";
-import { registerAccount } from "./accounts";
+import { clearAccountsExcept, registerAccount } from "./accounts";
 import { clearOnboardingDrafts } from "./onboarding";
 
 export const DEMO_HANDLE = "alexmorgan";
 export const DEMO_DISPLAY_NAME = "Alex Morgan";
 export const DEMO_EMAIL = "alex.morgan@example.com";
+export const DEMO_PHONE = "+1 (404) 555-0142";
 export const DEMO_COUNTERPART_HANDLE = "jlee";
 export const DEMO_DRAFT_KEY = "vael_client_demo_draft_v1";
 
@@ -101,38 +102,95 @@ const DEMO_FEED: CommunityPost[] = [
     id: "cpost_demo_jlee",
     handle: "jlee",
     districtId: "media-technology",
-    body: "Looking for a Creative Director this cycle to lead a design-systems engagement. Remote. Sample post on this device.",
-    createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+    kind: "looking-for",
+    title: "Looking for a Creative Director",
+    location: "Wellington",
+    body: "Looking for a Creative Director this cycle to lead a design-systems engagement. Remote, this cycle — someone who can hold brand and product together.",
+    createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
   },
   {
     id: "cpost_demo_willow",
     handle: "willowform",
     districtId: "media-technology",
-    body: "Studio opening a product redesign. Need someone who can hold brand and product together. Sample post on this device.",
-    createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+    kind: "opportunity",
+    title: "Studio opening a product redesign",
+    location: "Portland",
+    body: "Studio opening a product redesign. Need someone who can hold brand and product together through the first release.",
+    createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+  },
+  {
+    id: "cpost_demo_ridge",
+    handle: "ridgeworks",
+    districtId: "construction",
+    kind: "collaboration",
+    title: "Collaboration on a renovation electrical scope",
+    location: "Nellore",
+    body: "Looking to collaborate with a GC on a renovation electrical scope this cycle. Licensed crew, open to partners in Nellore and nearby.",
+    createdAt: new Date(Date.now() - 9 * 3600000).toISOString(),
+  },
+  {
+    id: "cpost_demo_lane",
+    handle: "lanewest",
+    districtId: "trucking",
+    kind: "offering",
+    title: "Capacity open on a West Coast lane",
+    location: "Oakland",
+    body: "Offering dry-van capacity this cycle on a West Coast lane. Clean record, on-time, available now.",
+    createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+  },
+  {
+    id: "cpost_demo_porch",
+    handle: "porchlight",
+    districtId: "residential",
+    kind: "discussion",
+    title: "How are crews handling seasonal turnover?",
+    location: "Austin",
+    body: "How are crews handling seasonal turnover this year? Curious what others in Residential are seeing on the ground.",
+    createdAt: new Date(Date.now() - 18 * 3600000).toISOString(),
+  },
+  {
+    id: "cpost_demo_northyard",
+    handle: "northyard",
+    districtId: "commercial",
+    kind: "opportunity",
+    title: "Need a facilities lead for a downtown build-out",
+    location: "Chicago",
+    body: "Need a facilities lead for a downtown build-out this cycle. Sites, vendors, and a clean handoff to occupancy.",
+    createdAt: new Date(Date.now() - 22 * 3600000).toISOString(),
   },
   {
     id: "cpost_demo_priya",
     handle: "pshah",
     districtId: "media-technology",
-    body: "Brand designer looking for a Creative Director to set the system before a launch. Hybrid in Atlanta. Sample post on this device.",
+    kind: "looking-for",
+    title: "Looking for a Creative Director before launch",
+    location: "Atlanta",
+    body: "Brand designer looking for a Creative Director to set the system before a launch. Hybrid in Atlanta.",
     createdAt: new Date(Date.now() - 8 * 3600000).toISOString(),
   },
   {
     id: "cpost_demo_northlight",
     handle: "northlight",
     districtId: "media-technology",
-    body: "Seeking an editor for a documentary finish this cycle. Avid. Sample post on this device.",
+    kind: "opportunity",
+    title: "Seeking an editor for a documentary finish",
+    location: "Los Angeles",
+    body: "Seeking an editor for a documentary finish this cycle. Avid. Finish support through delivery.",
     createdAt: new Date(Date.now() - 11 * 3600000).toISOString(),
   },
 ];
 
+export function ensureDemoCommunityFeed() {
+  ensureCommunityPosts(DEMO_FEED);
+}
+
 export function prepareDemoWorkspace() {
   ensureMtDemoSamples();
-  ensureCommunityPosts(DEMO_FEED);
+  ensureDemoCommunityFeed();
   registerAccount({
     handle: DEMO_HANDLE,
     email: DEMO_EMAIL,
+    phone: DEMO_PHONE,
     displayName: DEMO_DISPLAY_NAME,
     createdAt: new Date(0).toISOString(),
   });
@@ -180,9 +238,10 @@ export function resetClientDemoData() {
   clearActorLoop(DEMO_HANDLE);
   upsertProfile(ALEX_PROFILE);
   ensureMtDemoSamples();
-  ensureCommunityPosts(DEMO_FEED);
+  ensureDemoCommunityFeed();
   clearDemoDraft();
   clearOnboardingDrafts();
+  clearAccountsExcept([DEMO_HANDLE]);
 }
 
 export function demoHasActiveVael() {

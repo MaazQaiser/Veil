@@ -8,8 +8,46 @@ export function JourneyProgress({ step }: { step: JourneyStep }) {
   return <StepStrip steps={[...JOURNEY_STEPS]} step={step} />;
 }
 
+/** Onboarding wizard progress: numbered circles + connectors, VAEL gold. */
 export function JoinProgress({ step }: { step: OnboardingStep }) {
-  return <StepStrip steps={[...ONBOARDING_STEPS]} step={step} />;
+  const steps = ONBOARDING_STEPS;
+  const current = steps.indexOf(step);
+  const total = steps.length;
+  const percent = Math.round(((Math.max(current, 0) + 1) / total) * 100);
+
+  return (
+    <div className="mb-7">
+      <div className="md:hidden">
+        <p className="text-caption font-medium text-foreground">
+          Step {current + 1} of {total} · {step}
+        </p>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+          <div
+            className="h-full rounded-full bg-accent motion-safe:transition-[width] motion-safe:duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="hidden items-center gap-4 md:flex" role="group" aria-label={`Step ${current + 1} of ${total}`}>
+        <span
+          aria-current="step"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-body-sm font-medium tabular-nums text-background shadow-sm"
+        >
+          {current + 1}
+        </span>
+        <div className="relative h-px flex-1 rounded-full bg-border" aria-hidden>
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-accent motion-safe:transition-[width] motion-safe:duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-body-sm font-medium tabular-nums text-quiet">
+          {total}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 function StepStrip({ steps, step }: { steps: readonly string[]; step: string }) {

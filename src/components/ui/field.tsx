@@ -25,18 +25,20 @@ export function Label({
   );
 }
 
-/** Titled block of related fields. Used by the profile and Veil forms. */
+/** Titled block of related fields. Used by the profile and Vael forms. */
 export function FormSection({
+  id,
   title,
   note,
   children,
 }: {
+  id?: string;
   title: string;
   note?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-8 border-t border-border-subtle pt-10 first:border-t-0 first:pt-0">
+    <section id={id} className="space-y-8 scroll-mt-24 border-t border-border-subtle pt-10 first:border-t-0 first:pt-0">
       <div>
         <h2 className="vael-h4">{title}</h2>
         {note ? <p className="mt-2 text-body-sm text-muted">{note}</p> : null}

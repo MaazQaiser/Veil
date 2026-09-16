@@ -198,7 +198,7 @@ describe("marketplace filters", () => {
 });
 
 describe("marketplace collectors", () => {
-  it("returns no recommended matches when you are not veiled", () => {
+  it("returns no recommended matches when you are not vaeled", () => {
     expect(collectRecommended("maaz")).toEqual([]);
   });
 
@@ -255,10 +255,10 @@ describe("marketplace routes", () => {
     expect(matchingBoardRoute("")).toBe("/matches");
   });
 
-  it("sends Set availability to the onboarding district veil when known", () => {
+  it("sends Set availability to the onboarding district vael when known", () => {
     startOnboarding("maaz");
     patchOnboarding("maaz", { districtId: "construction" });
-    expect(setAvailabilityHref("maaz")).toBe("/districts/contractor/veil");
-    expect(setAvailabilityHref("unknown")).toBe("/media-technology/veil?create=1");
+    expect(setAvailabilityHref("maaz")).toBe("/districts/contractor/vael");
+    expect(setAvailabilityHref("unknown")).toBe("/media-technology/vael?create=1");
   });
 });

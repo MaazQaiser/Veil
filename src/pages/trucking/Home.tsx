@@ -14,7 +14,7 @@ const BASE = "/districts/trucking";
 
 export function TruckingHomePage() {
   const district = districtBySlug("trucking")!;
-  const { listing, latestListing, veilKind, signedIn } = useTrucking();
+  const { listing, latestListing, vaelKind, signedIn } = useTrucking();
   return (
     <CityPage>
       <PageHeader
@@ -24,7 +24,7 @@ export function TruckingHomePage() {
         crumbs={[{ label: "City", href: "/" }, { label: "Trucking" }]}
         actions={<DistrictStatus status={district.status} />}
         primaryAction={
-          <Link to={`${BASE}/veil`} className={buttonClassName()}>
+          <Link to={`${BASE}/vael`} className={buttonClassName()}>
             Create VAEL
           </Link>
         }
@@ -37,10 +37,10 @@ export function TruckingHomePage() {
       <div className="mt-8 space-y-10">
         <section>
           <p className="vael-kicker">Your status</p>
-          {listing && (veilKind === "in" || veilKind === "out" || veilKind === "expiring") ? (
+          {listing && (vaelKind === "in" || vaelKind === "out" || vaelKind === "expiring") ? (
             <div className="mt-3 max-w-xl">
               <TruckingAvailabilityCard
-                side={veilKind === "expiring" ? "expiring" : listing.side}
+                side={vaelKind === "expiring" ? "expiring" : listing.side}
                 hours={hoursLeft(listing.expiresAt)}
                 origin={listing.origin}
                 destination={listing.destination}
@@ -55,11 +55,11 @@ export function TruckingHomePage() {
                 district="Trucking"
                 listing={latestListing}
                 context={latestListing?.equipment}
-                manageHref={`${BASE}/veil`}
+                manageHref={`${BASE}/vael`}
                 boardHref="/matches?district=trucking"
               />
               {!signedIn ? (
-                <p className="mt-3 text-body-sm text-muted">Continue locally, then Veil In or Veil Out in this Room.</p>
+                <p className="mt-3 text-body-sm text-muted">Continue locally, then Vael In or Vael Out in this Room.</p>
               ) : null}
             </div>
           )}
@@ -137,9 +137,9 @@ export function TruckingHowItWorksPage() {
           </p>
         </li>
         <li>
-          <p className="vael-kicker">2. Veil</p>
+          <p className="vael-kicker">2. Vael</p>
           <p className="mt-1">
-            Veil In — I have transportation capacity available. Veil Out — I need transportation. 24 hours.
+            Vael In — I have transportation capacity available. Vael Out — I need transportation. 24 hours.
           </p>
         </li>
         <li>
@@ -153,7 +153,7 @@ export function TruckingHowItWorksPage() {
           <p className="mt-1">Same lock as the rest of the City. Both accept, then the private room opens.</p>
         </li>
       </ol>
-      <Link to={`${BASE}/veil`} className={buttonClassName({ className: "mt-8" })}>
+      <Link to={`${BASE}/vael`} className={buttonClassName({ className: "mt-8" })}>
         Create VAEL
       </Link>
     </CityPage>

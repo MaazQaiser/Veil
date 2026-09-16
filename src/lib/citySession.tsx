@@ -3,12 +3,12 @@ import { DEMO_HANDLE } from "./demoJourney";
 
 const STORAGE_KEY = "vael_city_shell_session_v1";
 
-export type VeilSession = "none" | "in" | "out";
+export type VaelSession = "none" | "in" | "out";
 
 export type CitySession = {
   signedIn: boolean;
   handle: string;
-  veil: VeilSession;
+  vael: VaelSession;
   unreadNotifications: number;
   unreadMessages: number;
 };
@@ -16,7 +16,7 @@ export type CitySession = {
 const defaults: CitySession = {
   signedIn: false,
   handle: "",
-  veil: "none",
+  vael: "none",
   unreadNotifications: 0,
   unreadMessages: 0,
 };
@@ -47,7 +47,7 @@ type Ctx = {
   session: CitySession;
   signIn: (handle?: string) => void;
   signOut: () => void;
-  setVeil: (veil: VeilSession) => void;
+  setVael: (vael: VaelSession) => void;
 };
 
 const SessionContext = createContext<Ctx | null>(null);
@@ -79,8 +79,8 @@ export function CitySessionProvider({ children }: { children: ReactNode }) {
         setSession(next);
         writeSession(next);
       },
-      setVeil: (veil) => {
-        const next = { ...session, veil };
+      setVael: (vael) => {
+        const next = { ...session, vael };
         setSession(next);
         writeSession(next);
       },

@@ -15,25 +15,22 @@ const KEY = "vael_onboarding_v1";
 
 export const ONBOARDING_STEPS = [
   "Sign Up",
+  "Intent",
   "Welcome",
-  "Handle",
-  "Profile Type",
-  "District",
+  "Profile Setup",
   "Identity",
-  "Expertise",
-  "Work",
   "Credentials",
   "Preview",
-  "Veil In",
   "Done",
 ] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
-const PROFILE_BUILD_STEPS: readonly OnboardingStep[] = ["Identity", "Expertise", "Work", "Credentials"];
+const PROFILE_BUILD_STEPS: readonly OnboardingStep[] = ["Identity", "Credentials"];
 
 export type OnboardingDraft = {
   handle: string;
+  intent: "in" | "out" | "";
   profileType: "individual" | "business" | "";
   districtId: string;
   handleClaimed: boolean;
@@ -43,16 +40,12 @@ export type OnboardingDraft = {
 
 export const ONBOARDING_PATH: Record<OnboardingStep, string> = {
   "Sign Up": "/join",
+  Intent: "/join/intent",
   Welcome: "/join/welcome",
-  Handle: "/join/handle",
-  "Profile Type": "/join/type",
-  District: "/join/district",
+  "Profile Setup": "/join/setup",
   Identity: "/join/identity",
-  Expertise: "/join/expertise",
-  Work: "/join/work",
   Credentials: "/join/credentials",
   Preview: "/join/preview",
-  "Veil In": "/join/veil",
   Done: "/join/done",
 };
 
@@ -98,6 +91,7 @@ export function getOnboardingDraft(handle: string): OnboardingDraft | undefined 
 export function startOnboarding(handle: string): OnboardingDraft {
   const draft: OnboardingDraft = {
     handle,
+    intent: "",
     profileType: "",
     districtId: "",
     handleClaimed: false,
@@ -128,6 +122,14 @@ export function finishOnboarding(handle: string): OnboardingDraft {
 export function clearOnboardingDrafts() {
   if (typeof localStorage === "undefined") return;
   localStorage.removeItem(KEY);
+}
+
+/** Removes one handle's draft, leaving every other handle's draft untouched. Used by the demo reset. */
+export function clearOnboardingDraftFor(handle: string) {
+  const store = readStore();
+  if (!(handle in store)) return;
+  const { [handle]: _removed, ...rest } = store;
+  writeStore(rest);
 }
 
 export function onboardingComplete(handle: string): boolean {
@@ -201,9 +203,9 @@ export function claimOnboardingHandle(
   if (handle !== currentHandle) {
     renameAccountHandle(currentHandle, handle);
     renameProfileHandle(currentHandle, handle);
-    patchOnboarding(currentHandle, { handle, handleClaimed: true, completedStep: "Handle" });
+    patchOnboarding(currentHandle, { handle, handleClaimed: true });
   } else {
-    patchOnboarding(currentHandle, { handleClaimed: true, completedStep: "Handle" });
+    patchOnboarding(currentHandle, { handleClaimed: true });
   }
   return { ok: true, handle };
 }

@@ -19,8 +19,8 @@ import {
   parseMarketplaceFilter,
   setAvailabilityHref,
   showRemoteChip,
-  veilRouteForDistrict,
-  veiledDistrictIds,
+  vaelRouteForDistrict,
+  vaeledDistrictIds,
   type MarketplaceChipId,
   type MarketplaceDistrictId,
   type MarketplaceFilter,
@@ -151,7 +151,7 @@ function MatchesInner() {
   const filter = parseMarketplaceFilter(params.get("district"));
   const [chips, setChips] = useState<MarketplaceChipId[]>([]);
 
-  const veiled = veiledDistrictIds(handle);
+  const vaeled = vaeledDistrictIds(handle);
   const homeDistrictId = getOnboardingDraft(handle)?.districtId;
   const collected = collectMarketplace(handle, filter, homeDistrictId);
   const visibleChips = CHIP_DEFS.filter((chip) => chip.id !== "remote" || showRemoteChip(filter));
@@ -160,9 +160,9 @@ function MatchesInner() {
 
   const newCount = matches.filter((item) => item.isNew).length;
   const availableNowCount = matches.filter((item) => item.isAvailableNow).length;
-  const noneVeiled = veiled.length === 0;
+  const noneVaeled = vaeled.length === 0;
   const singleDistrict = filter !== "recommended" && filter !== "all";
-  const notVeiledHere = singleDistrict && !veiled.includes(filter);
+  const notVaeledHere = singleDistrict && !vaeled.includes(filter);
 
   function setFilter(next: MarketplaceFilter) {
     const nextParams = new URLSearchParams(params);
@@ -186,23 +186,23 @@ function MatchesInner() {
         actions={<DistrictSelect value={filter} onChange={setFilter} />}
       />
 
-      {noneVeiled ? (
+      {noneVaeled ? (
         <EmptyState
-          title="Veil In to see matches"
-          description="Set availability in a district. Recommended only ranks districts where you are Veiled In or Out."
+          title="Vael In to see matches"
+          description="Set availability in a district. Recommended only ranks districts where you are Vaeled In or Out."
           action={
             <Link to={setAvailabilityHref(handle)} className={buttonClassName({ size: "lg" })}>
               Set availability
             </Link>
           }
         />
-      ) : notVeiledHere ? (
+      ) : notVaeledHere ? (
         <EmptyState
-          title={`Veil In in ${districtLabel(filter)} to see matches`}
+          title={`Vael In in ${districtLabel(filter)} to see matches`}
           description="This list uses that district’s own engine. It does not score you with another district’s weights."
           action={
-            <Link to={veilRouteForDistrict(filter)} className={buttonClassName({ size: "lg" })}>
-              Veil In
+            <Link to={vaelRouteForDistrict(filter)} className={buttonClassName({ size: "lg" })}>
+              Vael In
             </Link>
           }
         />

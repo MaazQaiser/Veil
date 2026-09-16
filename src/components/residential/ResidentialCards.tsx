@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardFooter, CardMeta } from "@/components/ui/card";
 import { MatchPercent } from "@/components/vael/match";
-import { VeilStatus, VerificationState } from "@/components/vael/status";
+import { VaelStatus, VerificationState } from "@/components/vael/status";
 import { buttonClassName } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -115,7 +115,7 @@ export function ResidentialAvailabilityCard({
 }) {
   return (
     <Card>
-      <VeilStatus kind={side} hoursLeft={hours} />
+      <VaelStatus kind={side} hoursLeft={hours} />
       <p className="vael-h4 mt-3">{side === "out" || side === "expired" ? "Needs someone" : "Available"}</p>
       <CardMeta className="mt-1">
         {service} · {area} · {availability}
@@ -143,7 +143,7 @@ export function ResidentialMatchCard({
         <p className="mt-1 text-caption text-muted">{match.percent}% match</p>
       </div>
       <div className="min-w-0">
-        <VeilStatus kind={listing.side} hoursLeft={hoursLeft(listing.expiresAt)} />
+        <VaelStatus kind={listing.side} hoursLeft={hoursLeft(listing.expiresAt)} />
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <ResidentialServiceBadge service={listing.service} />
         </div>

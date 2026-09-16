@@ -163,6 +163,8 @@ export const DISTRICT_CARDS = [
     id: "media-technology",
     name: "Media & Technology",
     blurb: "Designers, developers, studios & creative professionals.",
+    description:
+      "From product design to post-production, match on real-time availability instead of another cold portfolio review.",
     image: "/districts/media-technology.jpg",
     route: "/media-technology",
   },
@@ -170,6 +172,8 @@ export const DISTRICT_CARDS = [
     id: "construction",
     name: "Construction",
     blurb: "Contractors, trades & construction professionals.",
+    description:
+      "Site work, trades, and general contracting — see who's free this cycle before a job stalls waiting on crew.",
     image: "/districts/construction.jpg",
     route: "/districts/contractor",
   },
@@ -177,6 +181,8 @@ export const DISTRICT_CARDS = [
     id: "trucking",
     name: "Trucking",
     blurb: "Loads, routes & available capacity.",
+    description:
+      "Carriers and drivers signal open capacity, shippers signal loads — no broker calls to find out who's actually free.",
     image: "/districts/trucking.jpg",
     route: "/districts/trucking",
   },
@@ -184,6 +190,8 @@ export const DISTRICT_CARDS = [
     id: "residential",
     name: "Residential",
     blurb: "Homeowners looking for available professionals.",
+    description:
+      "Home projects matched to vetted pros who are free right now, not just the first name in a directory listing.",
     image: "/districts/residential.jpg",
     route: "/districts/residential",
   },
@@ -191,6 +199,8 @@ export const DISTRICT_CARDS = [
     id: "commercial",
     name: "Commercial",
     blurb: "Businesses looking for available talent.",
+    description:
+      "Companies and providers connect on capability and capacity, built for teams that can't wait on a slow procurement cycle.",
     image: "/districts/commercial.jpg",
     route: "/districts/commercial",
   },

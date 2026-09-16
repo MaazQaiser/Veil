@@ -91,10 +91,10 @@ export function ExtendedVaelSuccessPage() {
       />
       <DemoPurchaseNotice className="mt-6" />
       <p className="mt-6 text-body-sm">
-        Your VAEL visibility is unchanged. Create a VAEL in Media & Technology to veil for 24 hours on Free Daily VAEL.
+        Your VAEL visibility is unchanged. Create a VAEL in Media & Technology to vael for 24 hours on Free Daily VAEL.
       </p>
       <div className="mt-8 flex flex-wrap gap-2">
-        <Link to="/media-technology/veil?create=1" className={buttonClassName()}>
+        <Link to="/media-technology/vael?create=1" className={buttonClassName()}>
           Create VAEL
         </Link>
         <Link to="/account/visibility" className={buttonClassName({ variant: "outline" })}>

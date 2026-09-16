@@ -1,6 +1,8 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   addCommunityComment,
+  communityPostKind,
+  communityPostTitle,
   createCommunityPost,
   deleteCommunityPost,
   getCommunityComments,
@@ -8,6 +10,7 @@ import {
   getVisibleCommunityPosts,
   hasLikedCommunityPost,
   hasSavedCommunityPost,
+  inferCommunityPostKind,
   isLiveCommunityDistrict,
   toggleCommunityLike,
   toggleCommunitySave,
@@ -74,5 +77,21 @@ describe("Community local store", () => {
     expect(getCommunityComments(post.id)).toHaveLength(1);
     deleteCommunityPost(post.id, "member");
     expect(getVisibleCommunityPosts()).toHaveLength(0);
+  });
+
+  it("infers post kind and title from the body when they are not stored", () => {
+    expect(inferCommunityPostKind("Looking for a Creative Director this cycle.")).toBe("looking-for");
+    expect(inferCommunityPostKind("Offering capacity on a West Coast lane.")).toBe("offering");
+    expect(inferCommunityPostKind("Want to collaborate on a renovation scope.")).toBe("collaboration");
+    expect(inferCommunityPostKind("Need a facilities lead for a downtown build-out.")).toBe("opportunity");
+    expect(inferCommunityPostKind("How are crews handling seasonal turnover?")).toBe("discussion");
+
+    const post = createCommunityPost({
+      handle: "member",
+      districtId: "city",
+      body: "Looking for a Creative Director this cycle to lead a design-systems engagement.",
+    });
+    expect(communityPostKind(post)).toBe("looking-for");
+    expect(communityPostTitle(post)).toBe("Looking for a Creative Director this cycle to lead a design-systems engagement");
   });
 });
