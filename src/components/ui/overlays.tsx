@@ -9,12 +9,14 @@ export function Dialog({
   title,
   children,
   footer,
+  className,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -32,8 +34,9 @@ export function Dialog({
       aria-labelledby={titleId}
       className={cn(
         "w-[min(30rem,calc(100%-2.5rem))] rounded-xl border border-border bg-surface p-0 text-foreground shadow-md",
-        "backdrop:bg-foreground/20",
-        "dark:border-white/10 dark:bg-[#1B1712]/95 dark:backdrop-blur-2xl dark:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)]",
+        "backdrop:bg-black/60 backdrop:backdrop-blur-sm",
+        "dark:border-white/10 dark:bg-[#141414]/95 dark:backdrop-blur-2xl dark:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)]",
+        className,
       )}
       onClose={onClose}
       onClick={(event) => {

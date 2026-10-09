@@ -12,12 +12,14 @@ export function MessageThread({
   onSend,
   placeholder = "Write a message...",
   compact = false,
+  readOnly = false,
 }: {
   handle: string;
   messages: ThreadMessage[];
   enabled: boolean;
   onSend: (body: string, attachmentName?: string) => void;
   placeholder?: string;
+  readOnly?: boolean;
   /** Fill the parent and pin the composer to the bottom (inbox layout). */
   compact?: boolean;
 }) {
@@ -25,7 +27,7 @@ export function MessageThread({
   const [fileName, setFileName] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "failed">("idle");
 
-  if (!enabled) {
+  if (!enabled && !readOnly) {
     return <p className="text-caption text-muted">The conversation opens after both people accept.</p>;
   }
 
@@ -80,6 +82,7 @@ export function MessageThread({
   return (
     <div className={cn("flex flex-col", compact ? "min-h-0 flex-1" : "min-h-[22rem]")}>
       <div className={cn("min-h-0 flex-1 overflow-y-auto", compact ? "py-4" : "mt-3 max-h-[28rem]")}>{thread}</div>
+      {readOnly ? null : (
       <form
         className={cn("shrink-0 border-t border-border-subtle", compact ? "flex items-end gap-2 pt-3" : "mt-4 space-y-2 pt-4")}
         onSubmit={(event) => {
@@ -152,6 +155,7 @@ export function MessageThread({
           </p>
         ) : null}
       </form>
+      )}
     </div>
   );
 }

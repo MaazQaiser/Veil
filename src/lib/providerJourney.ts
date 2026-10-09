@@ -19,8 +19,15 @@ export const PRODUCT_HOME = "/media-technology";
  */
 export function isDarkModeFlowPath(pathname: string) {
   if (pathname.startsWith(PRODUCT_HOME)) return true;
-  if (pathname === "/messages" || pathname === "/feed/saved" || pathname === "/search") return true;
+  if (pathname === "/messages" || pathname === "/search" || pathname === "/matches") return true;
+  if (pathname === "/feed" || pathname.startsWith("/feed/")) return true;
+  if (pathname === "/districts") return true;
+  if (pathname === "/projects") return true;
   if (pathname === "/notifications" || pathname === "/account" || pathname.startsWith("/account/")) return true;
+  if (pathname === "/districts/contractor" || pathname.startsWith("/districts/contractor/")) {
+    return true;
+  }
+  if (pathname === "/opportunities" || pathname.startsWith("/opportunities/")) return true;
   return false;
 }
 

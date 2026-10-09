@@ -54,7 +54,7 @@ function MessagesInner() {
     const all = [...mt.myConnections, ...cx.myConnections, ...tx.myConnections, ...rx.myConnections, ...cm.myConnections];
     const seen = new Set<string>();
     return all.filter((item) => {
-      if (item.status !== "connected" || item.blocked) return false;
+      if (item.status !== "connected" || item.blocked || item.source === "project_interest") return false;
       if (seen.has(item.id)) return false;
       seen.add(item.id);
       return true;

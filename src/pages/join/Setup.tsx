@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/controls";
-import { IconGrid, IconHome, IconSearch, IconUser } from "@/components/ui/icons";
+import { IconCheck, IconGrid, IconHome, IconSearch, IconUser } from "@/components/ui/icons";
 import { handleIssue, isHandleAvailable } from "@/lib/accounts";
 import { useCitySession } from "@/lib/citySession";
 import {
@@ -10,16 +10,18 @@ import {
   districtProfileEditRoute,
   finishOnboarding,
   getOnboardingDraft,
+  isNeedIntent,
+  onboardingRoute,
   patchOnboarding,
 } from "@/lib/onboarding";
 import { DISTRICT_CARDS } from "@/lib/marketingDirectory";
 import { districts } from "@/lib/districts";
+import { setActiveDistrict } from "@/lib/myDistricts";
 import { useVael } from "@/lib/vaelCore";
 import { cn } from "@/lib/cn";
 import { JoinFieldCard, JoinFooterBar, JoinHead } from "./JoinLayout";
 
-// Districts shown on this step, in this order. "Construction" is relabeled here
-// only — the district's real id/route/registryName elsewhere are untouched.
+// Districts shown on this step, in this order. Names come from the district registry.
 const SETUP_DISTRICT_IDS = [
   "media-technology",
   "construction",
@@ -32,26 +34,23 @@ const SETUP_DISTRICT_IDS = [
   "real-estate",
   "legal-finance",
 ];
-const SETUP_DISTRICT_NAME_OVERRIDES: Record<string, string> = {
-  construction: "The Contractor Exchange",
-};
 // Only these districts have a real profile-edit page built today — everything
 // else falls back to the standard Identity wizard instead of a dead route.
 const LIVE_PROFILE_DISTRICT_IDS = ["construction", "trucking", "residential", "commercial"];
-const setupDistricts = SETUP_DISTRICT_IDS.map((id) => districts.find((d) => d.id === id))
-  .filter((d): d is (typeof districts)[number] => Boolean(d))
-  .map((d) => ({ ...d, name: SETUP_DISTRICT_NAME_OVERRIDES[d.id] ?? d.name }));
+const setupDistricts = SETUP_DISTRICT_IDS.map((id) => districts.find((d) => d.id === id)).filter(
+  (d): d is (typeof districts)[number] => Boolean(d),
+);
 
 const TYPES_IN = [
   {
     id: "individual" as const,
-    title: "Professional",
+    title: "Individual",
     body: "I offer my skills, services, or availability.",
   },
   {
     id: "business" as const,
-    title: "Organization",
-    body: "I represent a business or team.",
+    title: "Business",
+    body: "I represent a company or team.",
   },
 ];
 
@@ -72,7 +71,8 @@ export function JoinSetupPage() {
   const { session, signIn } = useCitySession();
   const vael = useVael();
   const navigate = useNavigate();
-  const TYPES = getOnboardingDraft(session.handle)?.intent === "out" ? TYPES_OUT : TYPES_IN;
+  const draft = getOnboardingDraft(session.handle);
+  const TYPES = draft?.intent === "out" ? TYPES_OUT : TYPES_IN;
 
   const [handleValue, setHandleValue] = useState(session.handle);
   const [handleError, setHandleError] = useState("");
@@ -103,7 +103,13 @@ export function JoinSetupPage() {
     });
   }, [query]);
 
+  const vaelIn = draft?.intent !== "out";
+
   function toggleDistrict(districtId: string) {
+    if (vaelIn) {
+      setSelectedDistricts([districtId]);
+      return;
+    }
     setSelectedDistricts((prev) =>
       prev.includes(districtId) ? prev.filter((id) => id !== districtId) : [...prev, districtId],
     );
@@ -112,6 +118,10 @@ export function JoinSetupPage() {
   const clean = handleValue.trim().toLowerCase().replace(/^@/, "");
   const wellFormed = !handleIssue(clean);
   const canContinue = wellFormed && available !== false && Boolean(profileType) && selectedDistricts.length > 0;
+
+  if (isNeedIntent(draft)) {
+    return <Navigate to={onboardingRoute(session.handle)} replace />;
+  }
 
   function onContinue() {
     if (!canContinue || !profileType) return;
@@ -133,6 +143,12 @@ export function JoinSetupPage() {
     // matching exists.
     const districtId = selectedDistricts[0];
     patchOnboarding(handle, { profileType, districtId, completedStep: "Profile Setup" });
+
+    if (vaelIn) {
+      setActiveDistrict(handle, districtId);
+      navigate("/join/identity");
+      return;
+    }
 
     if (!LIVE_PROFILE_DISTRICT_IDS.includes(districtId) || districtId === "media-technology") {
       navigate("/join/identity");
@@ -181,8 +197,8 @@ export function JoinSetupPage() {
                 type="button"
                 onClick={() => setProfileType(item.id)}
                 className={cn(
-                  "flex h-full flex-col rounded-xl border bg-surface px-4 py-4 text-left motion-safe:transition-colors motion-safe:duration-150",
-                  "hover:border-[#CA8A04] hover:bg-[#FACC15]/[0.06]",
+                  "flex h-full flex-col rounded-lg border bg-surface px-4 py-4 text-left motion-safe:transition-colors motion-safe:duration-150",
+                  "hover:border-[#DE7C40] hover:bg-[#DE7C40]/[0.06]",
                   profileType === item.id ? "border-foreground" : "border-border",
                 )}
               >
@@ -195,9 +211,13 @@ export function JoinSetupPage() {
 
         <JoinFieldCard
           icon={<IconHome />}
-          title="Select your districts"
+          title={vaelIn ? "Select your district" : "Select your districts"}
           badge="Required"
-          hint="Choose the districts where you want to participate. This determines which district profiles you'll complete next."
+          hint={
+            vaelIn
+              ? "Choose the one district you will be live in. You can switch later from Districts."
+              : "Choose the districts where you want to participate. This determines which district profiles you'll complete next."
+          }
         >
           <div className="relative">
             <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-quiet" />
@@ -222,11 +242,22 @@ export function JoinSetupPage() {
                   >
                     <input
                       id={inputId}
-                      type="checkbox"
-                      className="h-5 w-5 shrink-0 rounded border-border text-foreground accent-foreground focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(11,12,12,0.12)]"
+                      type={vaelIn ? "radio" : "checkbox"}
+                      name={vaelIn ? "vael-in-district" : undefined}
+                      className="peer sr-only"
                       checked={checked}
                       onChange={() => toggleDistrict(district.id)}
                     />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border bg-transparent",
+                        "peer-focus-visible:shadow-[0_0_0_3px_rgba(222,124,64,0.35)]",
+                        checked ? "border-accent bg-accent text-[#1A1410]" : "border-foreground/40 text-transparent",
+                      )}
+                    >
+                      <IconCheck className="h-3.5 w-3.5" />
+                    </span>
                     <span className="text-body font-medium text-foreground">{district.name}</span>
                   </label>
                 </li>
@@ -240,7 +271,7 @@ export function JoinSetupPage() {
       </div>
 
       <JoinFooterBar>
-        <Button type="button" size="lg" className="rounded-full px-10" disabled={!canContinue} onClick={onContinue}>
+        <Button type="button" size="lg" className="rounded-lg px-10" disabled={!canContinue} onClick={onContinue}>
           Continue
         </Button>
       </JoinFooterBar>

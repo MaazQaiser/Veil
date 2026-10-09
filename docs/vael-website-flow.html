@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>VAEL — Website flow, Vael In, and Vael Out</title>
+<style>
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #161513;
+    font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+  h1, h2, h3, p { margin: 0; }
+  .cover {
+    page-break-after: always;
+    min-height: 297mm;
+    background: #0B0C0C;
+    color: #F5F3EE;
+    padding: 22mm 18mm 18mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .mark {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    display: block;
+  }
+  .kicker {
+    margin-top: 28mm;
+    color: #DE7C40;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .cover h1 {
+    margin-top: 10px;
+    font-size: 42px;
+    line-height: 1.02;
+    font-weight: 560;
+    letter-spacing: -0.03em;
+    max-width: 14ch;
+  }
+  .cover .lede {
+    margin-top: 18px;
+    max-width: 36ch;
+    color: rgba(245, 243, 238, 0.72);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .cover-meta {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    border-top: 1px solid rgba(245, 243, 238, 0.16);
+    padding-top: 16px;
+  }
+  .cover-meta span {
+    display: block;
+    color: rgba(245, 243, 238, 0.45);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .cover-meta strong { font-weight: 560; font-size: 13px; }
+  h2 {
+    font-size: 22px;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  h3 {
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    margin: 14px 0 4px;
+  }
+  .section { page-break-inside: avoid; margin-bottom: 18px; }
+  .page { page-break-before: always; }
+  section:not(.cover) { padding: 16mm 16mm 18mm; }
+  .rule {
+    height: 3px;
+    width: 42px;
+    background: #DE7C40;
+    margin-bottom: 12px;
+  }
+  p + p { margin-top: 8px; }
+  .muted { color: #5c5852; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 10.5pt;
+  }
+  th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e6e2da;
+  }
+  th {
+    background: #0B0C0C;
+    color: #F5F3EE;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  tr:nth-child(even) td { background: #faf8f4; }
+  ol, ul { margin: 6px 0 0; padding-left: 18px; }
+  li { margin: 3px 0; }
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .card {
+    border: 1px solid #e6e2da;
+    border-radius: 10px;
+    padding: 12px 14px;
+    page-break-inside: avoid;
+  }
+  .card.in { border-top: 3px solid #DE7C40; }
+  .card.out { border-top: 3px solid #C99A28; }
+  .card .who {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .card.in .who { color: #DE7C40; }
+  .card.out .who { color: #9a7420; }
+  .flow {
+    margin-top: 10px;
+    border: 1px solid #e6e2da;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .flow div {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e6e2da;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .flow div:last-child { border-bottom: 0; }
+  .flow b {
+    flex: 0 0 22px;
+    color: #DE7C40;
+    font-size: 11px;
+  }
+  .note {
+    margin-top: 10px;
+    background: #faf8f4;
+    border-left: 3px solid #DE7C40;
+    padding: 8px 12px;
+    font-size: 10.5pt;
+  }
+  .footer-note {
+    margin-top: 16px;
+    color: #8a857c;
+    font-size: 9.5pt;
+  }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <img class="mark" src="../public/vael-medallion.png" alt="VAEL" />
+  <p class="kicker">Platform flow</p>
+  <h1>The website, the Vael In dashboard, and the Vael Out dashboard.</h1>
+  <p class="lede">The public site is shared. After sign-in, Vael In and Vael Out each open their own dashboard.</p>
+  <div class="cover-meta">
+    <div><span>Product</span><strong>THE CITY OF VAEL</strong></div>
+    <div><span>Date</span><strong>6 October 2026</strong></div>
+    <div><span>For</span><strong>Client review</strong></div>
+  </div>
+</section>
+
+<section>
+  <div class="rule"></div>
+  <h2>1. The public website</h2>
+  <p>Anyone can look around without an account. The site opens on a night city. The headline is “The right people. When they’re available.” Search sends the visitor to Explore.</p>
+  <p class="muted">The top of the site stays the same on every public page: Explore Districts, Projects, Community, Sign in, and Go Visible.</p>
+  <table>
+    <thead><tr><th>Place</th><th>What it is for</th></tr></thead>
+    <tbody>
+      <tr><td>Home</td><td>The promise, a search, and two ways in: Vael In and Vael Out.</td></tr>
+      <tr><td>Explore Districts</td><td>Media &amp; Technology, Contractor Exchange, Trucking, Residential, and Commercial.</td></tr>
+      <tr><td>Projects</td><td>Work that is already on the city, shown as a public directory.</td></tr>
+      <tr><td>Community</td><td>The public face of the district conversation.</td></tr>
+      <tr><td>Sign in</td><td>An existing account returns to its own dashboard: Vael In or Vael Out.</td></tr>
+      <tr><td>Go Visible</td><td>The door. The visitor chooses Vael In or Vael Out.</td></tr>
+    </tbody>
+  </table>
+  <div class="note">Join and sign-in keep the site chrome. The dashboard has its own sidebar.</div>
+</section>
+
+<section class="page">
+  <div class="rule"></div>
+  <h2>2. Two dashboards</h2>
+  <p>Go Visible asks what the person is here to do. That choice opens a matching account and a matching dashboard. Vael In and Vael Out stay on their own sides. Moving from one to the other is a separate sign-in.</p>
+  <div class="cards">
+    <article class="card in">
+      <p class="who">Vael In dashboard</p>
+      <h3>I’m available to work.</h3>
+      <p>This person offers skills, services, and current availability. The dashboard is built around being visible and meeting people who are hiring.</p>
+    </article>
+    <article class="card out">
+      <p class="who">Vael Out dashboard</p>
+      <h3>I’m looking for someone.</h3>
+      <p>This person needs someone available for a role. The dashboard is built around hiring and meeting people who fit that need.</p>
+    </article>
+  </div>
+  <div class="note">Each dashboard greets its own side: “Hey Vael In” or “Hey Vael Out.” Visibility lasts 24 hours. When the window ends, the person can Vael again from that same dashboard.</div>
+</section>
+
+<section class="page">
+  <div class="rule"></div>
+  <h2>3. How someone enters</h2>
+  <p>Go Visible asks one question: <strong>What are you here to do?</strong></p>
+  <div class="flow">
+    <div><b>01</b><span><strong>Vael In.</strong> I’m available for work. Setup builds what they can do, then they go visible.</span></div>
+    <div><b>02</b><span><strong>Vael Out.</strong> I’m looking for someone. Setup builds the hiring need, then they post.</span></div>
+  </div>
+  <h3>Into the Vael In dashboard</h3>
+  <ol>
+    <li>Create an account and choose Vael In.</li>
+    <li>Set identity: handle, how they will use VAEL, and the district their matches come from.</li>
+    <li>Build the profile people will match against: name, photo, location, headline, discipline, skills, and experience.</li>
+    <li>Say what they can do, how they take part, and whether they are available now.</li>
+    <li>Review, then go visible. They land on the Vael In dashboard.</li>
+  </ol>
+  <h3>Into the Vael Out dashboard</h3>
+  <ol>
+    <li>Create an account and choose Vael Out. This setup asks who they need, on its own steps.</li>
+    <li>What I need, who they are looking for, location, requirements, and timing.</li>
+    <li>Optional details: tools, engagement, budget, links, documents, and a photo.</li>
+    <li>Review, then post. They land on the Vael Out dashboard.</li>
+  </ol>
+</section>
+
+<section class="page">
+  <div class="rule"></div>
+  <h2>4. The Vael In dashboard</h2>
+  <p>Home opens with <strong>Hey Vael In</strong> and the line “Your availability, profile, matches, and community.” Status reads Visible while the 24-hour window is open, with the hours left, or Not visible when it is closed. The action is Go Visible, until they are already visible.</p>
+  <p>The sidebar is Home, Districts, Matches, Handshakes, and Community. A profile card asks them to finish the profile so people can see what they offer.</p>
+  <div class="flow">
+    <div><b>01</b><span><strong>Home.</strong> Complete the profile and the current district. Then handshake requests, your matches, and community in the district.</span></div>
+    <div><b>02</b><span><strong>Districts.</strong> The worlds they are live in, and the profile for each.</span></div>
+    <div><b>03</b><span><strong>Matches.</strong> “People VAEL has identified as a strong fit for you.” These are people hiring who fit what this person offers.</span></div>
+    <div><b>04</b><span><strong>Handshakes.</strong> “People who want to connect with you right now.” A handshake starts when they accept a VAEL on the board.</span></div>
+    <div><b>05</b><span><strong>Community.</strong> “Take part with people in your district.” Posts read as availability and updates.</span></div>
+  </div>
+  <p class="note">If nobody acts before the 24 hours end, the other person returns to the board. This person can Vael In again later if that person is still available.</p>
+</section>
+
+<section class="page">
+  <div class="rule"></div>
+  <h2>5. The Vael Out dashboard</h2>
+  <p>Home opens with <strong>Hey Vael Out</strong> and the line “Here’s what’s happening with people who match what you’re hiring.” Status reads Vaeled Out while the window is open, with the hours remaining, or Not visible when it is closed. Until they have posted, the action is Vael Out.</p>
+  <p>The sidebar is Home, Districts, Matches, Handshakes, and Community. A profile card asks them to finish the profile so they are matched with the right candidates faster.</p>
+  <div class="flow">
+    <div><b>01</b><span><strong>Home.</strong> Complete the hiring profile and the district. When both are done, home says “You’re all set.” Then handshake requests, matches, and community.</span></div>
+    <div><b>02</b><span><strong>Districts.</strong> Where the hire is based, and the profile for that district.</span></div>
+    <div><b>03</b><span><strong>Matches.</strong> “People VAEL has identified as a strong fit for what you’re hiring.” These are people who are available.</span></div>
+    <div><b>04</b><span><strong>Handshakes.</strong> “Professionals who want to connect with you right now.” A handshake starts when they request one from a match.</span></div>
+    <div><b>05</b><span><strong>Community.</strong> “From the Community.” Recent posts from across VAEL, written from the hiring side.</span></div>
+  </div>
+  <p class="note">If a professional responds and this person does not act before the 24 hours end, that professional returns to the board. They can Vael Out again later if the professional is still available.</p>
+</section>
+
+<section class="page">
+  <div class="rule"></div>
+  <h2>6. How the dashboards meet</h2>
+  <div class="flow">
+    <div><b>01</b><span>A visitor uses Go Visible and chooses Vael In or Vael Out.</span></div>
+    <div><b>02</b><span>Vael In goes visible from the Vael In dashboard, with what they can do.</span></div>
+    <div><b>03</b><span>Vael Out posts from the Vael Out dashboard, with who they need.</span></div>
+    <div><b>04</b><span>Each dashboard shows the other side as matches, ranked by fit.</span></div>
+    <div><b>05</b><span>A handshake is requested on one dashboard and accepted on the other. When both accept, the full profile and a private room open.</span></div>
+  </div>
+  <h3>What a client can open</h3>
+  <table>
+    <thead><tr><th>To see this</th><th>Open</th></tr></thead>
+    <tbody>
+      <tr><td>The public site</td><td>Home, then Explore Districts, Projects, and Community.</td></tr>
+      <tr><td>The choice of dashboard</td><td>Go Visible, then Vael In or Vael Out.</td></tr>
+      <tr><td>The Vael In dashboard</td><td>Signed in on the Vael In side. The greeting is “Hey Vael In.”</td></tr>
+      <tr><td>The Vael Out dashboard</td><td>Signed in on the Vael Out side. The greeting is “Hey Vael Out.”</td></tr>
+    </tbody>
+  </table>
+  <p class="footer-note">Vael In answers what they can do, on the Vael In dashboard. Vael Out answers who they need, on the Vael Out dashboard.</p>
+</section>
+
+</body>
+</html>

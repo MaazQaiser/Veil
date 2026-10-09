@@ -19,9 +19,16 @@ import { purgeCxHandle } from "./constructionStore";
 import { purgeTxHandle } from "./truckingStore";
 import { purgeCmHandle } from "./commercialStore";
 import { purgeHandleFromCommunity } from "./communityStore";
+import { clearContractorExperience } from "./rxExperience";
+import { clearCxProjectsFor } from "./cxProjectStore";
 
 /** The two named client-demo accounts this reset targets by default. */
-export const VAEL_DEMO_ACCOUNT_EMAILS = ["aqsa.amjad@gmail.com", "aqsa.amjad005@gmail.com"];
+export const VAEL_DEMO_ACCOUNT_EMAILS = [
+  "aqsa.amjad@gmail.com",
+  "aqsa.amjad005@gmail.com",
+  "aqsaamjad099@gmail.com",
+  "akshay.amjad@gmail.com",
+];
 
 /**
  * Removes every trace of the given demo accounts (profile, listings, documents,
@@ -47,6 +54,8 @@ export function resetVaelDemoAccounts(emails: string[] = VAEL_DEMO_ACCOUNT_EMAIL
     clearSavedMatches(handle);
     clearDemoDraft(handle);
     clearOnboardingDraftFor(handle);
+    clearContractorExperience(handle);
+    clearCxProjectsFor(handle, email);
     removeAccountByHandle(handle);
 
     removedHandles.push(handle);

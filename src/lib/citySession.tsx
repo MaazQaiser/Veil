@@ -2,6 +2,41 @@ import { createContext, createElement, useContext, useEffect, useMemo, useState,
 import { DEMO_HANDLE } from "./demoJourney";
 
 const STORAGE_KEY = "vael_city_shell_session_v1";
+/** One-time wipe of saved dashboard data on this device (both Vael In and Vael Out). */
+const DATA_CLEARED_KEY = "vael_dashboards_cleared_v1";
+const KEEP_KEYS = new Set(["vael_theme_v1", "vael_theme_accent_v1", "vael_sidebar_collapsed_v1", DATA_CLEARED_KEY]);
+const DATA_PREFIXES = ["vael_", "mtx_", "cx_", "rx_", "tx_", "cm_"];
+
+function clearDashboardLocalDataOnce() {
+  if (typeof localStorage === "undefined") return;
+  try {
+    if (localStorage.getItem(DATA_CLEARED_KEY) === "1") return;
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key) keys.push(key);
+    }
+    for (const key of keys) {
+      if (KEEP_KEYS.has(key)) continue;
+      if (DATA_PREFIXES.some((prefix) => key.startsWith(prefix))) localStorage.removeItem(key);
+    }
+    if (typeof sessionStorage !== "undefined") {
+      const sessionKeys: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i += 1) {
+        const key = sessionStorage.key(i);
+        if (key) sessionKeys.push(key);
+      }
+      for (const key of sessionKeys) {
+        if (key.startsWith("vael_")) sessionStorage.removeItem(key);
+      }
+    }
+    localStorage.setItem(DATA_CLEARED_KEY, "1");
+  } catch {
+    // Private mode can block storage; sign-in still starts from an empty session.
+  }
+}
+
+clearDashboardLocalDataOnce();
 
 export type VaelSession = "none" | "in" | "out";
 

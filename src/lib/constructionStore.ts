@@ -61,7 +61,7 @@ export type ConstructionProfile = {
   serviceArea: string;
   credentials: string[];
   rates: string;
-  portfolio: { label: string; url: string }[];
+  portfolio: { label: string; url: string; note?: string }[];
   sample?: boolean;
   avatar?: string;
   coverImage?: string;

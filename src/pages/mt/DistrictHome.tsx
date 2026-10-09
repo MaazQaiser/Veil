@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
-import { buttonClassName } from "@/components/ui/button";
-import { IconCheck, IconChevronRight, IconUser } from "@/components/ui/icons";
+import { buttonClassName, Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/overlays";
+import { IconCheck, IconHandshake, IconMapPin, IconUser } from "@/components/ui/icons";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { DashboardMatchesRail } from "@/components/mt/DashboardMatchesRail";
@@ -12,13 +13,14 @@ import { useVael } from "@/lib/vaelCore";
 import { useCommunity } from "@/lib/communityCore";
 import { districtBySlug } from "@/lib/districts";
 import { visibilityKindFromListing } from "@/lib/visibilityPlans";
-import { sectionCompletion } from "@/lib/profileFields";
-import { PRODUCT_HOME } from "@/lib/providerJourney";
+import { profileFieldsFor } from "@/lib/profileFields";
+import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
 import { hoursLeft, type VaelSide } from "@/lib/vaelStore";
 import { cn } from "@/lib/cn";
-import { vaelSideStatusLabel } from "@/lib/vaelCopy";
+import { getOnboardingDraft } from "@/lib/onboarding";
+import { handshakeIncomingLede, homeNetworkLede, vaelSideLabel, vaelSideStatusLabel } from "@/lib/vaelCopy";
 
-/** One stacked row in the "Action items" panel — icon, title, description, and a solid pill CTA. No images. */
+/** One card in the "Action items" grid — icon, title, description, and a plain text link. No images, no button. */
 function ActionItemRow({
   icon,
   title,
@@ -35,10 +37,10 @@ function ActionItemRow({
   return (
     <Link
       to={to}
-      className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] motion-safe:transition-shadow motion-safe:duration-200 hover:shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-8px_rgba(17,17,17,0.14)] sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-accent/25 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_16px_36px_-12px_rgba(255,157,69,0.15)]"
+      className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] motion-safe:transition-shadow motion-safe:duration-200 hover:shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-8px_rgba(17,17,17,0.14)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_16px_36px_-12px_rgba(0,0,0,0.4)]"
     >
-      <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-[#0B0C0C] dark:bg-gradient-to-br dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent">
           {icon}
         </span>
         <div className="min-w-0">
@@ -46,11 +48,40 @@ function ActionItemRow({
           <p className="mt-0.5 text-body-sm text-muted">{description}</p>
         </div>
       </div>
-      <span className="inline-flex h-10 shrink-0 items-center gap-1.5 self-start rounded-full bg-[#0B0C0C] px-5 text-body-sm font-medium text-white sm:self-auto dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
-        {cta}
-        <IconChevronRight className="h-3.5 w-3.5" />
+      <span className="shrink-0 text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground dark:text-accent">
+        {cta} →
       </span>
     </Link>
+  );
+}
+
+/** One-time popup right after onboarding hands off to the dashboard. */
+function WelcomeCityModal() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("vael_show_welcome") === "1") {
+        sessionStorage.removeItem("vael_show_welcome");
+        setOpen(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={() => setOpen(false)}
+      title="Welcome to VAEL City!"
+      footer={<Button onClick={() => setOpen(false)}>Let&apos;s explore →</Button>}
+    >
+      <p className="text-body text-muted">
+        Let&apos;s see what&apos;s here — real people, real availability, ranked by fit. Your matches, districts,
+        and community are ready whenever you are.
+      </p>
+    </Dialog>
   );
 }
 
@@ -59,11 +90,18 @@ export function DistrictHomePage() {
   const community = useCommunity();
   const { listing, latestListing, matches, myConnections, handle, signedIn, profile, documents } = vael;
   const mine = signedIn ? profile(handle) : undefined;
-  const name = mine?.displayName || handle;
   const kind = visibilityKindFromListing(latestListing);
   const vaeledIn = (kind === "in" || kind === "expiring") && latestListing?.side !== "out";
   const vaeledOut = kind === "out" || ((kind === "in" || kind === "expiring") && latestListing?.side === "out");
-  const side: VaelSide = vaeledOut ? "out" : "in";
+  const intent = getOnboardingDraft(handle)?.intent ?? "";
+  // Which half of the page is actually rendering — not just current visibility.
+  // Before a first Vael Out, intent alone already puts someone in the Out
+  // experience; everything (sidebar, copy, matches) must agree with that,
+  // not point back at Avail because they haven't gone visible yet.
+  // Intent wins over an older Vael In listing. Otherwise Go Visible → Vael Out
+  // finishes on the availability dashboard.
+  const vaelOutHome = intent === "out" || vaeledOut;
+  const side: VaelSide = vaelOutHome ? "out" : "in";
   const visible = Boolean(listing);
   const visibleHours = latestListing && (vaeledIn || vaeledOut) ? hoursLeft(latestListing.expiresAt) : null;
   const incoming = myConnections.filter(
@@ -71,15 +109,33 @@ export function DistrictHomePage() {
       connection.status === "pending" && connection.counterpartHandle === handle && !connection.counterpartAccepted,
   );
   const docs = signedIn ? documents(handle) : [];
-  const identityCompletion = sectionCompletion(mine, "identity", docs, side);
+  const completion = profileCompletion(mine, docs, side);
   const joinedDistricts = useJoinedDistricts(handle, mine, docs);
+  const currentDistrict = joinedDistricts[0];
+  const districtIncomplete = !currentDistrict || currentDistrict.percent < 100;
+  const districtEditHref = currentDistrict
+    ? `${PRODUCT_HOME}/districts/${currentDistrict.district.id}/edit`
+    : `${PRODUCT_HOME}/districts`;
   const districtsComplete = joinedDistricts.length > 0 && joinedDistricts.every((row) => row.percent === 100);
-  const allComplete = identityCompletion.percent === 100 && districtsComplete;
-  const actionItemsCount = allComplete ? 0 : (identityCompletion.percent < 100 ? 1 : 0) + 1;
+  const profileIncomplete = completion.percent < 100;
+  const allComplete = !profileIncomplete && districtsComplete;
   const posts = community.posts();
 
-  const vaelHref = vaeledIn || vaeledOut ? `${PRODUCT_HOME}/vael/active` : `${PRODUCT_HOME}/vael?create=1`;
+  const firstMissing = profileFieldsFor(side).find((field) => !mine || !field.filled(mine, docs));
+  const editHash =
+    firstMissing?.section === "credentials" ? "documents" : firstMissing?.section ?? "identity";
   const editHref = `${PRODUCT_HOME}/profile/${handle}/edit`;
+  /**
+   * Vael In and Vael Out are separate accounts on this device. Switching to the
+   * side you're not currently on must go through sign-in for that side's
+   * credentials; activating your own current side stays a direct link.
+   */
+  const inHref = vaelOutHome ? "/sign-in?intent=in" : `${PRODUCT_HOME}/vael?create=1&side=in`;
+  const outHref = vaelOutHome ? `${PRODUCT_HOME}/vael?create=1&side=out` : "/sign-in?intent=out";
+  const offerLine = [mine?.disciplines[0], mine?.skills.slice(0, 2).join(", ")].filter(Boolean).join(" · ");
+  const availabilityButtonClass = buttonClassName({
+    className: "bg-[#FFC555] text-[#0B0C0C] hover:bg-[#FFC555]/90 dark:bg-accent dark:text-[#0B0C0C] dark:hover:bg-accent-hover",
+  });
 
   if (!signedIn) {
     return (
@@ -91,6 +147,7 @@ export function DistrictHomePage() {
 
   return (
     <CityPage width="full">
+      <WelcomeCityModal />
       <div className="flex w-full items-start">
         <DashboardSidebar handle={handle} profile={mine} documents={docs} incomingCount={incoming.length} side={side} />
 
@@ -99,86 +156,50 @@ export function DistrictHomePage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
-                Hi, {name}!
+                Hey {vaelSideLabel(side)}
               </h1>
-              <p className="mt-1 text-body-sm text-muted">Here's what's happening in your VAEL network.</p>
+              <p className="mt-1 text-body-sm text-muted">
+                {vaelOutHome ? homeNetworkLede(side) : "Your availability, profile, matches, and community."}
+              </p>
             </div>
             <div className="flex shrink-0 items-center gap-3 self-start sm:self-auto">
-              <div>
-                <p className="flex items-center gap-2 text-caption font-medium uppercase tracking-[0.1em] text-[#C99A28] dark:text-accent">
-                  <span className="relative flex h-1.5 w-1.5">
-                    {vaeledIn || vaeledOut ? (
-                      <span className="absolute hidden h-full w-full animate-ping rounded-full bg-accent opacity-75 motion-reduce:animate-none dark:inline-flex" />
-                    ) : null}
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "relative inline-flex h-1.5 w-1.5 rounded-full",
-                        vaeledIn || vaeledOut ? "bg-[#FFC555] dark:bg-accent" : "bg-quiet",
-                      )}
-                    />
-                  </span>
-                  {vaeledIn ? vaelSideStatusLabel("in") : vaeledOut ? vaelSideStatusLabel("out") : "Not visible"}
-                </p>
-                {(vaeledIn || vaeledOut) && visibleHours !== null ? (
-                  <p className="mt-0.5 text-caption text-muted">
-                    Visible for {visibleHours}h ·{" "}
-                    <Link to={vaelHref} className="underline underline-offset-2 hover:text-foreground">
-                      View status
-                    </Link>
-                  </p>
-                ) : null}
-              </div>
               {vaeledIn || vaeledOut ? (
-                <Link
-                  to={`${PRODUCT_HOME}/vael?create=1&side=${vaeledIn ? "out" : "in"}`}
-                  className={buttonClassName({
-                    className:
-                      "rounded-full bg-[#FFC555] text-[#0B0C0C] hover:bg-[#FFC555]/90 dark:bg-accent dark:text-[#1A1410] dark:shadow-[0_4px_18px_-4px_rgba(255,197,85,0.5)] dark:ring-1 dark:ring-inset dark:ring-white/25 dark:hover:bg-accent-hover",
-                  })}
-                >
-                  {vaeledIn ? "Vael Out" : "Vael In"}
-                </Link>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link
-                    to={`${PRODUCT_HOME}/vael?create=1&side=in`}
-                    className={buttonClassName({
-                      variant: "outline",
-                      className: "rounded-full",
-                    })}
-                  >
-                    Vael In
-                  </Link>
-                  <Link
-                    to={`${PRODUCT_HOME}/vael?create=1&side=out`}
-                    className={buttonClassName({
-                      className:
-                        "rounded-full bg-[#FFC555] text-[#0B0C0C] hover:bg-[#FFC555]/90 dark:bg-accent dark:text-[#1A1410] dark:shadow-[0_4px_18px_-4px_rgba(255,197,85,0.5)] dark:ring-1 dark:ring-inset dark:ring-white/25 dark:hover:bg-accent-hover",
-                    })}
-                  >
-                    Vael Out
-                  </Link>
+                <div>
+                  <p className="flex items-center gap-2 text-caption font-medium uppercase tracking-[0.1em] text-[#C99A28] dark:text-accent">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute hidden h-full w-full animate-ping rounded-full bg-accent opacity-75 motion-reduce:animate-none dark:inline-flex" />
+                      <span aria-hidden className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#FFC555] dark:bg-accent" />
+                    </span>
+                    {vaelOutHome ? vaelSideStatusLabel("out") : "Visible"}
+                  </p>
+                  {visibleHours !== null ? (
+                    <p className="mt-0.5 text-caption text-muted">
+                      {vaelOutHome ? `Visible for ${visibleHours}h` : `Available · ${visibleHours}h left`}
+                    </p>
+                  ) : null}
                 </div>
+              ) : (
+                <Link
+                  to={vaelOutHome ? outHref : inHref}
+                  className="flex items-center gap-2 text-caption font-medium uppercase tracking-[0.1em] text-[#C99A28] hover:text-foreground dark:text-accent dark:hover:text-accent-hover"
+                >
+                  <span aria-hidden className="inline-flex h-1.5 w-1.5 rounded-full bg-quiet" />
+                  Not visible
+                  <span className="normal-case tracking-normal">Go visible</span>
+                </Link>
               )}
+              <Link to={vaelOutHome ? inHref : outHref} className={availabilityButtonClass}>
+                {vaelOutHome ? "Vael In" : "Vael Out"}
+              </Link>
             </div>
           </div>
 
-          {/* Action items — one job: surface what's incomplete (generic profile, district profiles, or
-              adding a new one), or a plain "all set" state once nothing is left to do. */}
+          {vaelOutHome ? (
           <div>
-            <p className="flex items-center gap-2 text-h4 font-medium text-foreground">
-              Action items
-              {!allComplete ? (
-                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-surface-tertiary px-2 text-caption font-medium text-muted">
-                  {actionItemsCount}
-                </span>
-              ) : null}
-            </p>
-            <div className="mt-4 space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {allComplete ? (
-                <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] dark:backdrop-blur-xl">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-[#0B0C0C] dark:bg-gradient-to-br dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
+                <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] sm:col-span-2 dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent">
                     <IconCheck className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
@@ -188,25 +209,95 @@ export function DistrictHomePage() {
                 </div>
               ) : (
                 <>
-                  {identityCompletion.percent < 100 ? (
+                  {profileIncomplete ? (
                     <ActionItemRow
                       icon={<IconUser className="h-5 w-5" />}
                       title="Complete your profile"
-                      description={identityCompletion.prompt}
+                      description={completion.prompt}
                       cta="Complete profile"
-                      to={`${editHref}#identity`}
+                      to={`${editHref}#${editHash}`}
                     />
                   ) : null}
-                  <DistrictsRow handle={handle} mine={mine} docs={docs} />
+                  <DistrictsRow
+                    handle={handle}
+                    mine={mine}
+                    docs={docs}
+                    className={profileIncomplete ? undefined : "sm:col-span-2"}
+                  />
                 </>
               )}
             </div>
           </div>
+          ) : (
+          <div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <ActionItemRow
+                icon={<IconUser className="h-5 w-5" />}
+                title="Complete your profile"
+                description={
+                  profileIncomplete
+                    ? completion.prompt
+                    : offerLine || "Your professional profile is complete."
+                }
+                cta={profileIncomplete ? "Complete profile" : "Edit profile"}
+                to={profileIncomplete ? `${editHref}#${editHash}` : editHref}
+              />
+              <ActionItemRow
+                icon={<IconMapPin className="h-5 w-5" />}
+                title="Complete current district"
+                description={
+                  currentDistrict
+                    ? districtIncomplete
+                      ? `${currentDistrict.district.name} · finish this district profile.`
+                      : `${currentDistrict.district.name} · this district profile is complete.`
+                    : "Choose the district you want to be live in."
+                }
+                cta={districtIncomplete ? "Complete district" : "Edit district"}
+                to={districtEditHref}
+              />
+            </div>
+          </div>
+          )}
+
+          {incoming.length > 0 ? (
+            <div>
+              <p className="flex items-center gap-2 text-h4 font-medium text-foreground">
+                Handshake requests
+                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#FFC555]/15 px-2 text-caption font-medium text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+                  {incoming.length}
+                </span>
+              </p>
+              <p className="mt-1 text-body-sm text-muted">{handshakeIncomingLede(side)}</p>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {incoming.map((connection) => {
+                  const requester = profile(connection.requesterHandle);
+                  return (
+                    <ActionItemRow
+                      key={connection.id}
+                      icon={<IconHandshake className="h-5 w-5" />}
+                      title={requester?.displayName || connection.requesterHandle}
+                      description="Wants to connect with you."
+                      cta="Respond"
+                      to={`${PRODUCT_HOME}/connections/${connection.id}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
 
           {/* "Your matches" — the primary reason a member opens Home. */}
-          <DashboardMatchesRail matches={matches} visible={visible} />
+          <DashboardMatchesRail matches={matches} visible={visible} side={side} />
 
-          <CommunityRail posts={posts} />
+          <CommunityRail
+            posts={posts}
+            title={vaelOutHome ? "From the Community" : "Community"}
+            description={
+              vaelOutHome
+                ? "Recent posts from across VAEL."
+                : "Take part with people in your district."
+            }
+          />
         </div>
       </div>
     </CityPage>

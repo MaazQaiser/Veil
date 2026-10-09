@@ -1,27 +1,33 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { CityFooter, CityShell, isSitePath } from "./CityShell";
 import { useCitySession } from "@/lib/citySession";
-import { useTheme } from "@/lib/theme";
 import { isDarkModeFlowPath } from "@/lib/providerJourney";
+import { isHomeownerPath } from "@/lib/cxRoutes";
 import { cn } from "@/lib/cn";
 
 export function CityLayout() {
   const { session } = useCitySession();
-  const { theme, accent } = useTheme();
   const location = useLocation();
   const inProduct = session.signedIn && !isSitePath(location.pathname);
-  const inJoinFlow = location.pathname.startsWith("/join") || location.pathname === "/sign-in";
-  const hideFooter = inJoinFlow || location.pathname === "/messages";
-  const showDark = theme === "dark" && isDarkModeFlowPath(location.pathname);
+  const inJoinFlow =
+    location.pathname.startsWith("/join") ||
+    location.pathname === "/sign-in" ||
+    location.pathname === "/go-visible" ||
+    isHomeownerPath(location.pathname);
+  // The Vael In (professional) dashboard flow always runs in the site's dark,
+  // orange design language now — no longer a user-toggleable preference.
+  const showDark = isDarkModeFlowPath(location.pathname);
+  const hideFooter = inJoinFlow || location.pathname === "/messages" || showDark;
 
   return (
     <div
       data-surface={inProduct ? undefined : "site"}
       data-theme={showDark ? "dark" : undefined}
-      data-accent={showDark ? accent : undefined}
+      data-accent={showDark ? "orange" : undefined}
       className={cn(
-        "flex min-h-screen min-w-0 flex-col text-foreground dark:text-[#F5F3EE]",
-        inProduct ? "bg-white pb-[4.75rem] lg:pb-0 dark:bg-[#100E0B]" : "bg-background",
+        "flex min-w-0 flex-col text-foreground dark:text-[#F5F3EE]",
+        inJoinFlow ? "h-dvh overflow-hidden" : "min-h-screen",
+        inProduct ? "bg-white pb-[4.75rem] lg:pb-0 dark:bg-[#0B0C0C]" : inJoinFlow ? "bg-[#0B0C0C]" : "bg-background",
       )}
     >
       {showDark ? (
@@ -40,7 +46,10 @@ export function CityLayout() {
         </div>
       ) : null}
       <CityShell />
-      <main id="main-content" className="flex min-w-0 flex-1 flex-col">
+      <main
+        id="main-content"
+        className={cn("flex min-w-0 flex-1 flex-col", inJoinFlow && "min-h-0 overflow-x-hidden overflow-y-auto")}
+      >
         <Outlet />
       </main>
       {hideFooter ? null : <CityFooter />}

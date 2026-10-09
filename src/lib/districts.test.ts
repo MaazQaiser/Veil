@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { districtFromPath, districts, isDistrictEnterable, primaryDistricts } from "./districts";
 
 describe("City district registry", () => {
-  it("keeps Media & Technology, Construction, Trucking, Residential, and Commercial as live primary Rooms", () => {
+  it("keeps Media & Technology, Contractor Exchange, Trucking, Residential, and Commercial as live primary Rooms", () => {
     const live = primaryDistricts.filter((d) => d.status === "live");
     expect(live.map((d) => d.id).sort()).toEqual([
       "commercial",
@@ -12,14 +12,16 @@ describe("City district registry", () => {
       "trucking",
     ]);
     expect(live.find((d) => d.id === "media-technology")?.route).toBe("/media-technology");
+    expect(live.find((d) => d.id === "construction")?.name).toBe("Contractor Exchange");
     expect(live.find((d) => d.id === "construction")?.route).toBe("/districts/contractor");
     expect(live.find((d) => d.id === "trucking")?.route).toBe("/districts/trucking");
     expect(live.find((d) => d.id === "residential")?.route).toBe("/districts/residential");
     expect(live.find((d) => d.id === "commercial")?.route).toBe("/districts/commercial");
   });
 
-  it("keeps Construction on the existing contractor slug", () => {
+  it("keeps Contractor Exchange on the existing contractor slug", () => {
     const construction = districts.find((d) => d.id === "construction");
+    expect(construction?.name).toBe("Contractor Exchange");
     expect(construction?.route).toBe("/districts/contractor");
     expect(construction?.status).toBe("live");
     expect(isDistrictEnterable(construction!)).toBe(true);
@@ -42,7 +44,7 @@ describe("City district registry", () => {
 
   it("reads Media & Technology from its live City route", () => {
     expect(districtFromPath("/media-technology")?.id).toBe("media-technology");
-    expect(districtFromPath("/districts/contractor")?.name).toBe("Construction");
+    expect(districtFromPath("/districts/contractor")?.name).toBe("Contractor Exchange");
     expect(districtFromPath("/districts/trucking")?.id).toBe("trucking");
     expect(districtFromPath("/districts/trucking")?.status).toBe("live");
   });

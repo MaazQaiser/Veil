@@ -219,7 +219,7 @@ describe("marketplace collectors", () => {
     expect(construction.length).toBeGreaterThan(0);
     const match = construction.find((item) => item.listingId === counterpart.id);
     expect(match?.title).toBe("Electrical");
-    expect(match?.districtLabel).toBe("Construction");
+    expect(match?.districtLabel).toBe("Contractor Exchange");
     expect(match?.chips).toContain("Panel");
     expect(match?.whyMatch).toEqual(expect.arrayContaining(["Panel", "Lighting"]));
     expect(match?.whyMatch.length).toBeLessThanOrEqual(3);

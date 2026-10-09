@@ -5,39 +5,69 @@ import { useCitySession } from "@/lib/citySession";
 import {
   ONBOARDING_PATH,
   ONBOARDING_STEPS,
+  getOnboardingDraft,
+  isNeedIntent,
   onboardingComplete,
   onboardingRoute,
   onboardingStep,
   onboardingStepIndex,
   pathToOnboardingStep,
+  signedInLanding,
+  vaelOutPrevious,
+  vaelOutResume,
+  vaelOutVisit,
 } from "@/lib/onboarding";
-import { PRODUCT_HOME } from "@/lib/providerJourney";
 
 export function JoinLayout() {
   const { session } = useCitySession();
   const location = useLocation();
+  const outVisit = vaelOutVisit(location.pathname);
+  const onOutPath = outVisit !== null;
+  const outStep = outVisit && outVisit !== "index" && outVisit !== "invalid" ? outVisit : null;
   const visiting = pathToOnboardingStep(location.pathname) ?? "Sign Up";
+  const draft = session.handle ? getOnboardingDraft(session.handle) : undefined;
+  const outInProgress = draft?.intent === "out" && Boolean(draft.outStep && draft.outStep !== "submitted");
+  const outOpen = outInProgress || (draft?.intent === "out" && !onboardingComplete(session.handle));
+  const publishingProject = new URLSearchParams(location.search).get("from") === "project";
 
-  if (session.signedIn && onboardingComplete(session.handle)) {
-    return <Navigate to={PRODUCT_HOME} replace />;
+  if (session.signedIn && onboardingComplete(session.handle) && !outInProgress && !publishingProject) {
+    return <Navigate to={signedInLanding(session.handle)} replace />;
+  }
+
+  if (session.signedIn && outOpen && !outStep) {
+    return <Navigate to={vaelOutResume(draft)} replace />;
+  }
+
+  if (!session.signedIn && onOutPath) {
+    return <Navigate to="/join?entry=out" replace />;
   }
 
   if (!session.signedIn && visiting !== "Sign Up") {
     return <Navigate to="/join" replace />;
   }
 
-  if (session.signedIn && visiting === "Sign Up") {
+  if (session.signedIn && visiting === "Sign Up" && !onOutPath && !publishingProject) {
     return <Navigate to={onboardingRoute(session.handle)} replace />;
   }
 
-  if (session.signedIn && visiting !== "Sign Up") {
-    const allowed = onboardingStep(session.handle);
-    if (onboardingStepIndex(visiting) > onboardingStepIndex(allowed)) {
-      return <Navigate to={onboardingRoute(session.handle)} replace />;
+  if (session.signedIn && outStep && draft?.intent !== "out") {
+    return <Navigate to={onboardingRoute(session.handle)} replace />;
+  }
+
+  if (session.signedIn && !onOutPath && visiting !== "Sign Up") {
+    if (isNeedIntent(draft)) {
+      if (visiting !== "Need" && visiting !== "Intent") {
+        return <Navigate to={onboardingRoute(session.handle)} replace />;
+      }
+    } else if (!outOpen) {
+      const allowed = onboardingStep(session.handle);
+      if (allowed !== "Need" && visiting !== "Need" && onboardingStepIndex(visiting) > onboardingStepIndex(allowed)) {
+        return <Navigate to={onboardingRoute(session.handle)} replace />;
+      }
     }
   }
 
-  if (visiting === "Sign Up") {
+  if (visiting === "Sign Up" && !onOutPath) {
     return (
       <AuthSplitScreen>
         <Outlet />
@@ -45,30 +75,31 @@ export function JoinLayout() {
     );
   }
 
-  // "Sign Up" can't be revisited once signed in (JoinLayout redirects it
-  // straight back forward above), so it's never a valid Previous target.
-  const stepIndex = onboardingStepIndex(visiting);
-  const candidatePrevious = stepIndex > 0 ? ONBOARDING_STEPS[stepIndex - 1] : null;
-  const previousStep = candidatePrevious && candidatePrevious !== "Sign Up" ? candidatePrevious : null;
+  const previousPath = outStep
+    ? vaelOutPrevious(outStep)
+    : visiting === "Need"
+      ? ONBOARDING_PATH.Intent
+      : visiting === "Intent"
+        ? null
+        : (() => {
+            const stepIndex = onboardingStepIndex(visiting);
+            const candidatePrevious = stepIndex > 0 ? ONBOARDING_STEPS[stepIndex - 1] : null;
+            if (!candidatePrevious || candidatePrevious === "Sign Up") return null;
+            return ONBOARDING_PATH[candidatePrevious];
+          })();
 
   return (
     <div
-      data-surface="site"
-      className="join-flow relative isolate flex flex-1 flex-col overflow-hidden bg-background text-foreground"
+      data-surface="site-dark"
+      className="join-flow wizard-flow relative isolate flex flex-col bg-background text-foreground"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#FFC555]/30 blur-[130px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#CA8A04]/20 blur-[120px]"
-      />
-      <div className="site-container relative flex min-h-[calc(100vh-var(--space-nav,4.5rem))] items-start justify-center pb-14 pt-10 md:pb-24 md:pt-14">
-        <div className="flex w-full min-h-[38rem] max-w-2xl flex-col rounded-[1.75rem] border border-border bg-surface p-8 shadow-[0_30px_80px_rgba(11,12,12,0.14)] sm:p-10 md:min-h-[46rem] md:p-12">
-          <div className="flex flex-1 flex-col">
-            <Outlet context={previousStep ? ONBOARDING_PATH[previousStep] : null} />
-          </div>
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]" />
+        <div className="absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#DE7C40]/10 blur-[120px]" />
+      </div>
+      <div className="site-container relative pb-28 pt-10 md:pb-32 md:pt-14">
+        <div className={cn("mx-auto w-full", visiting === "Intent" || visiting === "Need" ? "max-w-4xl" : "max-w-2xl")}>
+          <Outlet context={previousPath} />
         </div>
       </div>
     </div>
@@ -82,21 +113,17 @@ export function JoinLayout() {
 export function AuthSplitScreen({ children }: { children: ReactNode }) {
   return (
     <div
-      data-surface="site"
-      className="join-flow relative isolate flex flex-1 flex-col overflow-hidden bg-background text-foreground"
+      data-surface="site-dark"
+      className="join-flow auth-flow relative isolate flex flex-1 flex-col bg-background text-foreground"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#FFC555]/30 blur-[130px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#CA8A04]/20 blur-[120px]"
-      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]" />
+        <div className="absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#DE7C40]/10 blur-[120px]" />
+      </div>
       <div className="site-container relative flex flex-1 items-center py-10 md:py-16">
         <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
           <SignUpIntro />
-          <div className="w-full rounded-[1.75rem] border border-border bg-surface p-8 shadow-[0_30px_80px_rgba(11,12,12,0.14)] sm:p-10 md:p-12 lg:ml-auto lg:max-w-xl">
+          <div className="w-full rounded-lg border border-border bg-surface p-8 sm:p-10 md:p-12 lg:ml-auto lg:max-w-xl">
             {children}
           </div>
         </div>
@@ -114,12 +141,12 @@ const SIGN_UP_STATS = [
 function SignUpIntro() {
   return (
     <div className="max-w-xl">
-      <span className="inline-flex items-center gap-2 rounded-full border border-[#0B0C0C]/10 bg-[#0B0C0C] px-4 py-1.5 text-[0.75rem] font-medium uppercase tracking-[0.14em] text-[#FFC555]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#FFC555]" aria-hidden />
+      <span className="inline-flex items-center gap-2 rounded-lg border border-[#DE7C40]/60 bg-[#141414] px-4 py-1.5 text-[0.75rem] font-medium uppercase tracking-[0.14em] text-[#DE7C40]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#DE7C40]" aria-hidden />
         Welcome to VAEL
       </span>
       <h1 className="hero-display mt-6 font-normal text-foreground">
-        Find work with the <span className="text-[#FFC555]">right fit.</span>
+        Find work with the <span className="text-[#DE7C40]">right fit.</span>
       </h1>
       <p className="hero-lede mt-4 max-w-md leading-normal text-muted">
         Your definition of fit is the only one that matters. VAEL matches people and businesses on
@@ -161,7 +188,7 @@ export function CardChips({ items }: { items: string[] }) {
       {items.map((item) => (
         <li
           key={item}
-          className="rounded-full border border-[#CA8A04]/25 bg-[#FFC555]/15 px-3 py-1 text-body-sm text-[#8A6D00]"
+          className="rounded-lg border border-[#DE7C40]/40 bg-[#DE7C40]/15 px-3 py-1 text-body-sm text-[#F2BA8B]"
         >
           {item}
         </li>
@@ -184,7 +211,7 @@ export function JoinFieldCard({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 sm:p-7">
+    <div className="rounded-lg border border-border bg-surface p-6 sm:p-7">
       <div className="flex items-start gap-4">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-tertiary text-muted">
           {icon}
@@ -193,7 +220,7 @@ export function JoinFieldCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-body font-medium text-foreground">{title}</h3>
             {badge ? (
-              <span className="inline-flex items-center rounded-full bg-[#FFC555]/20 px-2.5 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-[#8A6D00]">
+              <span className="inline-flex items-center rounded-lg bg-[#DE7C40]/20 px-2.5 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-[#F2BA8B]">
                 {badge}
               </span>
             ) : null}
@@ -249,15 +276,13 @@ export function JoinHead({
       {eyebrow ? <p className="site-eyebrow">VAEL</p> : null}
       <h1
         className={cn(
-          "font-sans text-[clamp(1.875rem,3.4vw,2.75rem)] font-medium leading-[1.15] tracking-[-0.025em] text-foreground",
+          "font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground",
           eyebrow && "mt-5",
         )}
       >
         {title}
       </h1>
-      {lede ? (
-        <p className="mt-3 font-sans text-[1.0625rem] leading-[1.55] text-muted">{lede}</p>
-      ) : null}
+      {lede ? <p className="mt-1 text-body-sm text-muted">{lede}</p> : null}
     </header>
   );
 }

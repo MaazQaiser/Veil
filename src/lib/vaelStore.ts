@@ -3,6 +3,7 @@
  * Keys match the 25 Aug 2026 mock modules. Nothing is sent to Supabase.
  */
 
+import { projectHandshakeHref } from "./cxRoutes";
 import { scoreMatch, type MatchableListing } from "./matching";
 
 export const DEFAULT_DURATION_HOURS = 24;
@@ -91,7 +92,8 @@ export type ProfileDocument = {
 
 export type VaelDistrictId = "media-technology" | "construction" | "trucking" | "residential" | "commercial";
 
-export function connectionHref(district: VaelDistrictId, connectionId: string) {
+export function connectionHref(district: VaelDistrictId, connectionId: string, projectId?: string) {
+  if (projectId) return projectHandshakeHref(projectId, connectionId);
   if (district === "construction") return `/districts/contractor/connections/${connectionId}`;
   if (district === "media-technology") return `/media-technology/connections/${connectionId}`;
   return `/districts/${district}/connections/${connectionId}`;
@@ -100,8 +102,10 @@ export function connectionHref(district: VaelDistrictId, connectionId: string) {
 export type ConnectionRecord = {
   id: string;
   district?: VaelDistrictId;
-  source: "board_match" | "handshake";
+  source: "board_match" | "handshake" | "project_interest";
   listingId?: string;
+  /** Residential project Handshake — not a Matching Board listing. */
+  projectId?: string;
   requesterHandle: string;
   counterpartHandle: string;
   status: "pending" | "declined" | "connected" | "closed";
@@ -132,6 +136,9 @@ export type LocalNotice = {
   href?: string;
   createdAt: string;
   read: boolean;
+  /** Used to collapse repeats (same person + project + kind). */
+  kind?: string;
+  projectId?: string;
 };
 
 export const SAMPLE_HANDLES = [
@@ -334,6 +341,7 @@ function willowProfile(): ProfileRecord {
     workPreference: "remote",
     rates: "Project budget after Handshake.",
     portfolio: [{ label: "Studio", url: "https://example.com/willowform" }],
+    avatarUrl: "/scenes/willowform.jpg",
     coverUrl: "/scenes/willowform.jpg",
     sample: true,
   };
@@ -476,6 +484,7 @@ function northlightProfile(): ProfileRecord {
     workPreference: "remote",
     rates: "Project budget after Handshake.",
     portfolio: [{ label: "Studio", url: "https://example.com/northlight" }],
+    avatarUrl: "/scenes/northlight.jpg",
     coverUrl: "/scenes/northlight.jpg",
     sample: true,
   };
@@ -622,6 +631,7 @@ function riversideProfile(): ProfileRecord {
     workPreference: "hybrid",
     rates: "Project budget after Handshake.",
     portfolio: [{ label: "Studio reel", url: "https://example.com/riverside" }],
+    avatarUrl: "/scenes/handshake.jpg",
     coverUrl: "/scenes/handshake.jpg",
     sample: true,
   };
@@ -793,9 +803,51 @@ export function getProfile(handle: string) {
   return getProfiles().find((item) => item.handle === handle);
 }
 
+export const DEFAULT_PROFILE_PHOTO = "/people/p04.jpg";
+export const DEFAULT_PROFILE_COVER = "/scenes/city-skyline-wide.jpg";
+
+export function listingFromProfile(profile: ProfileRecord, side: VaelSide = "in"): VaelListing {
+  const discipline = profile.disciplines[0] || profile.headline || "Professional";
+  return {
+    id: `preview_${profile.handle}`,
+    handle: profile.handle,
+    side,
+    category: discipline,
+    discipline,
+    skills: profile.skills,
+    tools: profile.tools,
+    certifications: profile.credentials
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    location: profile.location,
+    remoteOnsite: profile.workPreference || "remote",
+    timing: "This cycle",
+    experienceYears: profile.experienceYears ?? 0,
+    engagement: "Project",
+    budgetProxy: "To discuss",
+    description: profile.bio || `${profile.displayName} is available this cycle.`,
+    requirements: "",
+    contact: "",
+    timeline: "This cycle",
+    createdAt: new Date().toISOString(),
+    expiresAt: hoursFromNow(24),
+    plan: "daily",
+  };
+}
+
 export function ensureProfile(handle: string): ProfileRecord {
   const existing = getProfile(handle);
-  if (existing) return existing;
+  if (existing) {
+    if (existing.avatarUrl && existing.coverUrl) return existing;
+    const next: ProfileRecord = {
+      ...existing,
+      avatarUrl: existing.avatarUrl || DEFAULT_PROFILE_PHOTO,
+      coverUrl: existing.coverUrl || DEFAULT_PROFILE_COVER,
+    };
+    saveProfile(next);
+    return next;
+  }
   const created: ProfileRecord = {
     handle,
     displayName: handle,
@@ -810,6 +862,8 @@ export function ensureProfile(handle: string): ProfileRecord {
     location: "",
     rates: "",
     portfolio: [],
+    avatarUrl: DEFAULT_PROFILE_PHOTO,
+    coverUrl: DEFAULT_PROFILE_COVER,
   };
   write(KEYS.profiles, [...getProfiles(), created]);
   return created;
@@ -913,10 +967,26 @@ export function publishListing(input: Omit<VaelListing, "id" | "createdAt" | "ex
   pushNotice(
     input.handle,
     "You're visible",
-    `Your availability is live for ${DEFAULT_DURATION_HOURS} hours.`,
-    "/media-technology/vael/active",
+    input.side === "out"
+      ? `Your request is live for ${DEFAULT_DURATION_HOURS} hours.`
+      : `Your availability is live for ${DEFAULT_DURATION_HOURS} hours.`,
+    "/media-technology",
   );
   return listing;
+}
+
+/** Keep a live listing's match fields in place so Handshake ids stay valid. */
+export function patchVisibleListing(
+  handle: string,
+  patch: Partial<Omit<VaelListing, "id" | "handle" | "createdAt" | "expiresAt" | "plan">>,
+) {
+  const live = getActiveListing(handle);
+  if (!live) return undefined;
+  write(
+    KEYS.listings,
+    getListings().map((item) => (item.id === live.id ? { ...item, ...patch } : item)),
+  );
+  return getActiveListing(handle);
 }
 
 /** Fill empty profile fields from the VAEL. Does not overwrite edited identity. */
@@ -1004,6 +1074,7 @@ export function requestHandshake(opts: {
   toHandle: string;
   source: ConnectionRecord["source"];
   listingId?: string;
+  projectId?: string;
   district?: VaelDistrictId;
 }) {
   const district = opts.district ?? "media-technology";
@@ -1014,6 +1085,7 @@ export function requestHandshake(opts: {
     district,
     source: opts.source,
     listingId: opts.listingId,
+    projectId: opts.projectId,
     requesterHandle: opts.fromHandle,
     counterpartHandle: opts.toHandle,
     status: "pending",
@@ -1023,7 +1095,7 @@ export function requestHandshake(opts: {
     createdAt: new Date().toISOString(),
   };
   write(KEYS.connections, [...getConnections(), record]);
-  const href = connectionHref(district, record.id);
+  const href = connectionHref(district, record.id, record.projectId);
   pushNotice(opts.toHandle, "Handshake requested", `${noticeName(opts.fromHandle)} asked to connect.`, href);
   pushNotice(
     opts.fromHandle,
@@ -1031,6 +1103,59 @@ export function requestHandshake(opts: {
     `Sent to ${noticeName(opts.toHandle)}. Private details stay closed until they accept.`,
     href,
   );
+  return record;
+}
+
+/** Two I'm Interested presses — Handshake opens connected. No third accept. */
+export function openProjectHandshake(opts: {
+  homeownerHandle: string;
+  contractorHandle: string;
+  projectId: string;
+}) {
+  const district: VaelDistrictId = "construction";
+  const existing = getConnections().find((item) => {
+    if (item.source !== "project_interest" || item.projectId !== opts.projectId) return false;
+    if (item.status === "declined" || item.status === "closed") return false;
+    return (
+      (item.requesterHandle === opts.contractorHandle && item.counterpartHandle === opts.homeownerHandle) ||
+      (item.requesterHandle === opts.homeownerHandle && item.counterpartHandle === opts.contractorHandle)
+    );
+  });
+  if (existing) {
+    if (existing.status === "connected") return existing;
+    return acceptHandshake(existing.id, opts.homeownerHandle) ?? existing;
+  }
+  const record: ConnectionRecord = {
+    id: id("conn"),
+    district,
+    source: "project_interest",
+    projectId: opts.projectId,
+    requesterHandle: opts.contractorHandle,
+    counterpartHandle: opts.homeownerHandle,
+    status: "connected",
+    requesterAccepted: true,
+    counterpartAccepted: true,
+    blocked: false,
+    createdAt: new Date().toISOString(),
+  };
+  write(KEYS.connections, [...getConnections(), record]);
+  const href = connectionHref(district, record.id, opts.projectId);
+  pushCoalescedNotice({
+    handle: opts.homeownerHandle,
+    title: "Handshake opened",
+    body: `You're connected with ${noticeName(opts.contractorHandle)}.`,
+    href,
+    kind: "handshake_opened",
+    projectId: opts.projectId,
+  });
+  pushCoalescedNotice({
+    handle: opts.contractorHandle,
+    title: "Handshake opened",
+    body: `You're connected with ${noticeName(opts.homeownerHandle)}.`,
+    href,
+    kind: "handshake_opened",
+    projectId: opts.projectId,
+  });
   return record;
 }
 
@@ -1141,7 +1266,7 @@ export function markThreadRead(connectionId: string, handle: string) {
 export function unreadMessageCount(handle: string) {
   return getMessages().filter((item) => {
     const connection = getConnection(item.connectionId);
-    if (!connection || connection.status !== "connected") return false;
+    if (!connection || connection.status !== "connected" || connection.source === "project_interest") return false;
     const inThread = connection.requesterHandle === handle || connection.counterpartHandle === handle;
     return inThread && item.fromHandle !== handle && !item.readBy.includes(handle);
   }).length;
@@ -1162,6 +1287,51 @@ export function pushNotice(handle: string, title: string, body: string, href?: s
     read: false,
   };
   write(KEYS.notifications, [...read<LocalNotice[]>(KEYS.notifications, []), notice]);
+}
+
+const COALESCE_MS = 15 * 60 * 1000;
+
+/** Same person + project + kind within a short window becomes one notice, not five. */
+export function pushCoalescedNotice(opts: {
+  handle: string;
+  title: string;
+  body: string;
+  href?: string;
+  kind: string;
+  projectId?: string;
+  windowMs?: number;
+}) {
+  const windowMs = opts.windowMs ?? COALESCE_MS;
+  const now = Date.now();
+  const all = read<LocalNotice[]>(KEYS.notifications, []);
+  const match = [...all].reverse().find((item) => {
+    if (item.handle !== opts.handle || item.kind !== opts.kind) return false;
+    if ((item.projectId ?? "") !== (opts.projectId ?? "")) return false;
+    return now - Date.parse(item.createdAt) <= windowMs;
+  });
+  if (match) {
+    write(
+      KEYS.notifications,
+      all.map((item) =>
+        item.id === match.id
+          ? { ...item, title: opts.title, body: opts.body, href: opts.href ?? item.href, createdAt: new Date().toISOString(), read: false }
+          : item,
+      ),
+    );
+    return;
+  }
+  const notice: LocalNotice = {
+    id: id("note"),
+    handle: opts.handle,
+    title: opts.title,
+    body: opts.body,
+    href: opts.href,
+    createdAt: new Date().toISOString(),
+    read: false,
+    kind: opts.kind,
+    projectId: opts.projectId,
+  };
+  write(KEYS.notifications, [...all, notice]);
 }
 
 export function markNoticesRead(handle: string) {

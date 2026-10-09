@@ -49,7 +49,7 @@ export type CommercialProfile = {
   experience: string;
   credentials: string[];
   rates: string;
-  history: { label: string; url: string }[];
+  history: { label: string; url: string; note?: string }[];
   sample?: boolean;
   /** District Profile — role/profession within the district, separate from capability. */
   specialization?: string;

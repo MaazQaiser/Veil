@@ -137,17 +137,86 @@ html {
 }
 
 /*
- * Join / onboarding flow: primary actions use the VAEL brand gold from the
- * homepage hero CTA instead of the site surface's default black, scoped so
- * the shared Button/StepStrip components stay unchanged everywhere else.
+ * Join / onboarding flow: primary actions use the VAEL hero's orange accent
+ * instead of the site surface's default black, scoped so the shared
+ * Button/StepStrip components stay unchanged everywhere else.
  */
-[data-surface="site"] .join-flow {
-  --color-primary: 255 197 85;
-  --color-primary-hover: 230 172 55;
-  --color-primary-pressed: 204 148 30;
+[data-surface="site"] .join-flow,
+[data-surface="site-dark"] .join-flow {
+  --color-primary: 222 124 64;
+  --color-primary-hover: 232 158 110;
+  --color-primary-pressed: 198 108 52;
   --color-primary-foreground: 11 12 12;
-  --color-accent: 255 197 85;
-  --color-accent-hover: 230 172 55;
+  --color-accent: 222 124 64;
+  --color-accent-hover: 232 158 110;
+}
+
+/*
+ * Hero design language, squared corners: every control inside the join
+ * flow drops its border radius, regardless of what the shared component
+ * bakes in.
+ */
+.join-flow button,
+.join-flow input,
+.join-flow select,
+.join-flow textarea {
+  border-radius: 0 !important;
+}
+
+/*
+ * The whole join flow (sign up/in plus the onboarding wizard) softens back
+ * to a small radius. Placed after the rule above so it wins the tie on
+ * equal specificity.
+ */
+.auth-flow button,
+.auth-flow input,
+.auth-flow select,
+.auth-flow textarea,
+.wizard-flow button,
+.wizard-flow input,
+.wizard-flow select,
+.wizard-flow textarea {
+  border-radius: 8px !important;
+}
+
+/* Primary CTAs (Sign in / Create my account / Next / Continue) read a touch bigger. */
+.auth-flow button[type="submit"],
+.wizard-flow .text-button {
+  font-size: 1rem !important;
+}
+
+/*
+ * Join flow typography: Inter for headings (matches the hero), SF Pro
+ * Display for subheadings/lede text — the box's own JoinHead heading is
+ * SF Pro by default, and the intro panel's lede is Hanken Grotesk by
+ * default, so both get normalized here, scoped to .join-flow only.
+ */
+.join-flow h1 {
+  font-family: "Inter", var(--font-sans);
+}
+
+/* Vael In dashboard picks up the same heading font as the join flow. */
+[data-theme="dark"] h1 {
+  font-family: "Inter", var(--font-sans);
+}
+
+/* Marketing hero heading uses the same Inter medium language as the dashboard. */
+#hero h1 {
+  font-family: "Inter", var(--font-sans);
+  line-height: 0.98;
+}
+
+#split-audience h3 {
+  font-family: "Inter", var(--font-sans);
+}
+
+#hero .rounded-md,
+#split-audience .rounded-md {
+  border-radius: 8px !important;
+}
+
+.join-flow .hero-lede {
+  font-family: var(--font-sans);
 }
 
 /* Inverted bands inside the marketing site. */
@@ -157,6 +226,7 @@ html {
   --color-surface: 21 22 22;
   --color-surface-elevated: 21 22 22;
   --color-surface-muted: 21 22 22;
+  --color-surface-tertiary: 34 35 35;
   --color-border: 47 48 48;
   --color-border-subtle: 34 35 35;
   --color-border-strong: 245 243 238;
@@ -170,6 +240,18 @@ html {
   --color-muted: 154 150 141;
   --color-quiet: 122 119 112;
   --color-ring: 245 243 238;
+  --color-info: 147 181 245;
+  --color-info-foreground: 147 181 245;
+  --color-info-muted: 24 30 44;
+  --color-success: 74 222 128;
+  --color-success-foreground: 74 222 128;
+  --color-success-muted: 22 36 28;
+  --color-warning: 251 191 36;
+  --color-warning-foreground: 251 191 36;
+  --color-warning-muted: 45 34 15;
+  --color-destructive: 248 113 113;
+  --color-destructive-foreground: 248 113 113;
+  --color-destructive-muted: 42 22 22;
 }
 
 /* City chrome uses the same warm paper language as Rooms. */
@@ -191,31 +273,32 @@ html {
 }
 
 /*
- * Dashboard dark mode (phase 1). Opt-in via the moon toggle in the top nav —
- * see src/lib/theme.tsx. Only applied while `data-theme="dark"` is set, so
- * light mode everywhere is completely unaffected by this block. Palette and
- * contrast checked against WCAG AA (4.5:1 body text, 3:1 large/UI text)
- * against the #15130F page background.
+ * Vael In product dashboard: always runs in the site's dark, orange design
+ * language (see CityLayout.tsx — no longer a user-toggleable preference).
+ * Matches the join/sign-up/sign-in flow's near-black palette (#0B0C0C bg,
+ * #141414 surface) and #DE7C40 accent, not a separate warm-brown theme.
+ * Palette and contrast checked against WCAG AA (4.5:1 body text, 3:1
+ * large/UI text) against the #0B0C0C page background.
  */
 [data-theme="dark"] {
-  --color-background: 21 19 15;
+  --color-background: 11 12 12;
   --color-foreground: 245 243 238;
-  --color-surface: 30 26 21;
-  --color-surface-elevated: 34 30 24;
-  --color-surface-muted: 38 32 25;
-  --color-surface-tertiary: 44 37 29;
-  --color-border: 51 43 33;
+  --color-surface: 20 20 20;
+  --color-surface-elevated: 26 26 26;
+  --color-surface-muted: 26 26 26;
+  --color-surface-tertiary: 34 35 35;
+  --color-border: 47 48 48;
   --color-border-strong: 245 243 238;
-  --color-border-subtle: 42 37 29;
-  --color-primary: 255 157 69;
-  --color-primary-hover: 255 175 102;
-  --color-primary-pressed: 232 138 52;
-  --color-primary-foreground: 26 20 16;
-  --color-secondary: 34 30 24;
+  --color-border-subtle: 34 35 35;
+  --color-primary: 222 124 64;
+  --color-primary-hover: 232 158 110;
+  --color-primary-pressed: 198 108 52;
+  --color-primary-foreground: 11 12 12;
+  --color-secondary: 26 26 26;
   --color-secondary-foreground: 245 243 238;
-  --color-accent: 255 157 69;
-  --color-accent-hover: 255 175 102;
-  --color-accent-muted: 58 42 26;
+  --color-accent: 222 124 64;
+  --color-accent-hover: 232 158 110;
+  --color-accent-muted: 45 32 23;
   --color-success: 74 222 128;
   --color-success-foreground: 74 222 128;
   --color-success-muted: 22 36 28;
@@ -235,18 +318,32 @@ html {
 }
 
 /*
- * Dashboard dark mode — accent switch. Defaults to the orange palette above;
- * this block overrides primary/accent to the lighter yellow palette when the
- * viewer picks it from the theme toggle. See src/lib/theme.tsx.
+ * Vael In dashboard uses the same softened radius as the join flow's
+ * auth/wizard cards (8px), not the marketing site's hard 0. Deliberately
+ * excludes rounded-full so avatars, icon circles, and status dots stay
+ * circular.
  */
-[data-theme="dark"][data-accent="yellow"] {
-  --color-primary: 255 197 85;
-  --color-primary-hover: 255 176 103;
-  --color-primary-pressed: 232 169 61;
-  --color-primary-foreground: 26 20 16;
-  --color-accent: 255 197 85;
-  --color-accent-hover: 255 176 103;
-  --color-accent-muted: 61 46 20;
+[data-theme="dark"] button,
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .rounded-md,
+[data-theme="dark"] .rounded-lg,
+[data-theme="dark"] .rounded-xl,
+[data-theme="dark"] .rounded-2xl,
+[data-theme="dark"] .rounded-3xl,
+[data-theme="dark"] .site-card {
+  border-radius: 8px !important;
+}
+
+[data-theme="dark"] .rounded-full,
+[data-theme="dark"] button.rounded-full {
+  border-radius: 9999px !important;
+}
+
+/* Underline tabs must stay a straight line. Pill tabs keep rounded-full above. */
+[data-theme="dark"] button[role="tab"]:not(.rounded-full) {
+  border-radius: 0 !important;
 }
 
 @layer base {
@@ -541,33 +638,33 @@ html {
   }
 
   .hero-display {
-    font-family: var(--font-display);
-    font-size: clamp(2.75rem, 5.8vw, 4.5rem);
-    line-height: 1.04;
-    letter-spacing: -0.025em;
-    font-weight: 500;
+    font-family: "Inter", var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-weight: 800;
   }
 
   .hero-lede {
-    font-family: var(--font-sans);
-    font-size: 1.0625rem;
-    line-height: 1.7;
+    font-family: "Hanken Grotesk", Arial, Helvetica, sans-serif;
+    font-size: 1.25rem;
+    line-height: 1.2;
     font-weight: 400;
   }
 
   @media (min-width: 768px) {
     .hero-display {
-      font-size: clamp(3rem, 4.8vw, 4.5rem);
+      font-size: clamp(2.75rem, 4vw, 4rem);
     }
 
     .hero-lede {
-      font-size: 1.125rem;
+      font-size: 1.25rem;
     }
   }
 
   @media (min-width: 1280px) {
     .hero-display {
-      font-size: 4.5rem;
+      font-size: 4rem;
     }
   }
 }

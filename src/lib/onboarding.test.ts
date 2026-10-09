@@ -18,8 +18,10 @@ import {
   onboardingRoute,
   onboardingStep,
   patchOnboarding,
+  signedInLanding,
   startOnboarding,
 } from "./onboarding";
+import { routeForGoVisibleEntry } from "./goVisible";
 import { ensureProfile, getProfile, saveProfile } from "./vaelStore";
 
 const memory = new Map<string, string>();
@@ -112,6 +114,56 @@ describe("onboarding resume", () => {
     startOnboarding("maaz");
     patchOnboarding("maaz", { districtId: "construction", completedStep: "Profile Setup" });
     expect(onboardingRoute("maaz")).toBe("/districts/contractor/profile/maaz/edit");
+  });
+
+  it("keeps Vael In on welcome and sends Vael Out to its own steps after Intent", () => {
+    startOnboarding("maaz");
+    patchOnboarding("maaz", { intent: "in", completedStep: "Intent" });
+    expect(onboardingStep("maaz")).toBe("Welcome");
+    expect(onboardingRoute("maaz")).toBe("/join/welcome");
+    patchOnboarding("maaz", { intent: "out", completedStep: "Intent" });
+    expect(onboardingRoute("maaz")).toBe("/join/out/need");
+    patchOnboarding("maaz", { outStep: "location" });
+    expect(onboardingRoute("maaz")).toBe("/join/out/location");
+    patchOnboarding("maaz", { outStep: "submitted", completedStep: "Done", completedAt: "2026-09-26T00:00:00.000Z" });
+    expect(onboardingRoute("maaz")).toBe("/join/done");
+  });
+
+  it("starts Vael Out onboarding at What I need and leaves Vael In on welcome", () => {
+    startOnboarding("maaz");
+    expect(routeForGoVisibleEntry("maaz", "out")).toBe("/join/out/need");
+    expect(getOnboardingDraft("maaz")?.intent).toBe("out");
+    expect(getOnboardingDraft("maaz")?.outStep).toBe("need");
+
+    startOnboarding("ina");
+    expect(routeForGoVisibleEntry("ina", "in")).toBe("/join/welcome");
+    expect(getOnboardingDraft("ina")?.intent).toBe("in");
+
+    expect(routeForGoVisibleEntry("ina", "opportunities")).toBe("/need");
+    expect(getOnboardingDraft("ina")?.intent).toBe("in");
+  });
+
+  it("routes I need something done past district selection into Contractor Exchange", () => {
+    startOnboarding("maaz");
+    patchOnboarding("maaz", { intent: "need", completedStep: "Intent" });
+    expect(onboardingStep("maaz")).toBe("Need");
+    expect(onboardingRoute("maaz")).toBe("/join/need");
+    expect(onboardingRoute("maaz")).not.toBe("/join/setup");
+    expect(onboardingRoute("maaz")).not.toBe("/join/welcome");
+
+    patchOnboarding("maaz", { needPlace: "home", districtId: "construction" });
+    expect(onboardingRoute("maaz")).toBe("/need/home");
+
+    patchOnboarding("maaz", { needPlace: "business" });
+    expect(onboardingRoute("maaz")).toBe("/districts/contractor/vael?side=out");
+  });
+
+  it("lands sign-in on the dashboard, including members who started residential", () => {
+    startOnboarding("maaz");
+    patchOnboarding("maaz", { intent: "need", needPlace: "home", completedStep: "Intent" });
+    expect(signedInLanding("maaz")).toBe("/media-technology");
+    finishOnboarding("maaz");
+    expect(signedInLanding("maaz")).toBe("/media-technology");
   });
 
   it("treats a finished draft as complete", () => {

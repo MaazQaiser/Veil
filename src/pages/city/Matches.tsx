@@ -1,11 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CityPage } from "@/components/city/CityShell";
 import { MarketplaceMatchCard } from "@/components/marketplace/MarketplaceMatchCard";
+import { DashboardShell } from "@/components/mt/DashboardShell";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { buttonClassName } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/feedback";
-import { PageHeader } from "@/components/ui/headers";
 import { FilterBar, FilterChip } from "@/components/ui/search";
 import { useCitySession } from "@/lib/citySession";
 import { useCommercial } from "@/lib/commercialCore";
@@ -179,12 +178,18 @@ function MatchesInner() {
   }
 
   return (
-    <CityPage>
-      <PageHeader
-        title="Your Matches"
-        description="Opportunities that fit your skills, experience, and availability."
-        actions={<DistrictSelect value={filter} onChange={setFilter} />}
-      />
+    <DashboardShell>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+        <div className="min-w-0">
+          <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+            Your Matches
+          </h1>
+          <p className="mt-1 max-w-xl text-body-sm text-muted">
+            Opportunities that fit your skills, experience, and availability.
+          </p>
+        </div>
+        <DistrictSelect value={filter} onChange={setFilter} />
+      </div>
 
       {noneVaeled ? (
         <EmptyState
@@ -257,6 +262,6 @@ function MatchesInner() {
           ) : null}
         </>
       )}
-    </CityPage>
+    </DashboardShell>
   );
 }

@@ -26,28 +26,30 @@ export function CountUp({
     }
 
     let frameId = 0;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        cancelAnimationFrame(frameId);
+    let started = false;
 
-        if (!entry.isIntersecting) {
-          setDisplay(0);
-          return;
-        }
+    function start() {
+      if (started) return;
+      started = true;
+      window.removeEventListener("scroll", onScroll);
+      const startTime = performance.now();
+      function tick(now: number) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        setDisplay(Math.round(value * easeOutExpo(progress)));
+        if (progress < 1) frameId = requestAnimationFrame(tick);
+      }
+      frameId = requestAnimationFrame(tick);
+    }
 
-        const start = performance.now();
-        function tick(now: number) {
-          const progress = Math.min((now - start) / duration, 1);
-          setDisplay(Math.round(value * easeOutExpo(progress)));
-          if (progress < 1) frameId = requestAnimationFrame(tick);
-        }
-        frameId = requestAnimationFrame(tick);
-      },
-      { threshold: 0.4 },
-    );
-    observer.observe(node);
+    function onScroll() {
+      const rect = node.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.9 && rect.bottom > 0) start();
+    }
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frameId);
     };
   }, [value, duration]);

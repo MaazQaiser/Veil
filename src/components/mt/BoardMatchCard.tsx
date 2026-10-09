@@ -80,8 +80,14 @@ export function BoardMatchCard({
             <p className="mt-0.5 truncate text-body-sm text-muted">{role}</p>
           </div>
         </div>
-        <p className="line-clamp-2 text-body-sm">{match.listing.description}</p>
-        <SkillChips skills={match.listing.skills} />
+        {match.listing.side === "in" ? (
+          <p className="text-body-sm text-muted">Available. The full profile opens after a Handshake.</p>
+        ) : (
+          <>
+            <p className="line-clamp-2 text-body-sm">{match.listing.description}</p>
+            <SkillChips skills={match.listing.skills} />
+          </>
+        )}
         <p className="mt-auto text-caption text-muted">
           {remote} · {match.listing.location}
           {typeof hours === "number" ? ` · ${hours}h left` : ""}

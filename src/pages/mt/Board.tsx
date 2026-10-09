@@ -5,18 +5,21 @@ import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { FilterBar, FilterChip } from "@/components/ui/search";
 import { Drawer, Dialog } from "@/components/ui/overlays";
 import { Button, buttonClassName } from "@/components/ui/button";
-import { IconCheck, IconChevronRight, IconFilter } from "@/components/ui/icons";
+import { IconCheck, IconChevronLeft, IconChevronRight, IconFilter } from "@/components/ui/icons";
 import { CityPage } from "@/components/city/CityShell";
 import { HandshakeStatus } from "@/components/vael";
 import { ProfileDocumentsSection } from "@/components/vael/trust";
 import { BoardMatchCard, SkillChips } from "@/components/mt/BoardMatchCard";
+import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { Avatar } from "@/components/ui/avatar";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { JourneyProgress } from "@/components/city/setup";
+import { findAccountByHandle } from "@/lib/accounts";
 import { useVael } from "@/lib/vaelCore";
-import { isLifecycleVisible, isMtSampleHandle, type RankedMatch, type VaelListing } from "@/lib/vaelStore";
+import { isLifecycleVisible, type RankedMatch, type VaelListing, type VaelSide } from "@/lib/vaelStore";
+import { PRODUCT_HOME } from "@/lib/providerJourney";
+import { visibilityKindFromListing } from "@/lib/visibilityPlans";
 import { isListingSaved, toggleSavedListing } from "@/lib/savedMatches";
-import { seedDemoConversation } from "@/lib/demoJourney";
 import { matchBand, matchBandLabel, matchBands } from "@/lib/tokens";
 import { cn } from "@/lib/cn";
 import type { HandshakeKind } from "@/components/vael/status";
@@ -105,7 +108,7 @@ function BoardInner() {
         ]}
         primaryAction={
           listing ? (
-            <Link to="/media-technology/vael/active" className={buttonClassName({ variant: "outline" })}>
+            <Link to={PRODUCT_HOME} className={buttonClassName({ variant: "outline" })}>
               Manage availability
             </Link>
           ) : (
@@ -148,7 +151,7 @@ function BoardInner() {
               title="No matches yet"
               description="Nothing opposite your availability is visible this cycle."
               action={
-                <Link to="/media-technology/vael/active" className={buttonClassName({ variant: "outline" })}>
+                <Link to={PRODUCT_HOME} className={buttonClassName({ variant: "outline" })}>
                   Manage availability
                 </Link>
               }
@@ -239,7 +242,7 @@ function MatchFactors({ mine, counterpart }: { mine: VaelListing; counterpart: V
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
       {rows.map((row) => (
-        <div key={row.label} className="rounded-xl border border-border bg-surface px-4 py-3.5">
+        <div key={row.label} className="rounded-xl border border-border bg-white px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]">
           <dt className="text-caption font-medium uppercase tracking-[0.06em] text-quiet">{row.label}</dt>
           <dd className="mt-1 text-body-sm text-foreground">{row.value}</dd>
         </div>
@@ -256,10 +259,35 @@ export function MatchDetailPage() {
   );
 }
 
+const DASHBOARD_CARD =
+  "rounded-2xl border border-border bg-white shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]";
+
 function MatchDetailInner() {
   const { listingId } = useParams();
   const navigate = useNavigate();
-  const { listing, matches, handle, openWith, documents, profile, handshake, simulateAccept } = useVael();
+  const {
+    listing,
+    latestListing,
+    matches,
+    myConnections,
+    handle,
+    signedIn,
+    openWith,
+    documents,
+    profile,
+    handshake,
+    accept,
+    decline,
+  } = useVael();
+  const mine = signedIn ? profile(handle) : undefined;
+  const myDocs = signedIn ? documents(handle) : [];
+  const incoming = myConnections.filter(
+    (connection) =>
+      connection.status === "pending" && connection.counterpartHandle === handle && !connection.counterpartAccepted,
+  );
+  const kind = visibilityKindFromListing(latestListing);
+  const vaeledOut = kind === "out" || ((kind === "in" || kind === "expiring") && latestListing?.side === "out");
+  const side: VaelSide = vaeledOut ? "out" : "in";
   const [saved, setSaved] = useState(() => (listingId ? isListingSaved(handle, listingId) : false));
   const match: RankedMatch | undefined = matches.find((item) => item.listing.id === listingId);
   const other = match?.listing;
@@ -268,9 +296,9 @@ function MatchDetailInner() {
   const hydrated = useRef(false);
 
   const [connectionId, setConnectionId] = useState<string | undefined>(existing?.id);
-  const [phase, setPhase] = useState<"idle" | "requested" | "connected">("idle");
+  const [phase, setPhase] = useState<"idle" | "requested" | "incoming" | "connected">("idle");
   const [revealed, setRevealed] = useState(false);
-  const [acceptedOpen, setAcceptedOpen] = useState(false);
+  const [requestedOpen, setRequestedOpen] = useState(false);
 
   // Returning to a match you already connected with should stay on the full profile —
   // Request Handshake is gone once the Handshake is complete.
@@ -282,50 +310,48 @@ function MatchDetailInner() {
       setPhase("connected");
       setRevealed(true);
     } else if (existing.status === "pending") {
-      setPhase("requested");
+      const theyAskedMe = existing.counterpartHandle === handle && !existing.counterpartAccepted;
+      setPhase(theyAskedMe ? "incoming" : "requested");
     }
-  }, [existing]);
-
-  // Demo-only: sample counterparts auto-accept a couple seconds after a request.
-  useEffect(() => {
-    if (phase !== "requested" || !connectionId || !other) return;
-    if (!isMtSampleHandle(other.handle)) return;
-    const timer = setTimeout(() => {
-      simulateAccept(connectionId, handle);
-      seedDemoConversation(connectionId);
-      setPhase("connected");
-      setAcceptedOpen(true);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [phase, connectionId, other, handle, simulateAccept]);
+  }, [existing, handle]);
 
   if (!listing) {
     return (
-      <CityPage>
-        <EmptyState
-          title="Vael to open a match"
-          action={
-            <Link to="/media-technology/vael?create=1" className={buttonClassName()}>
-              Set availability
-            </Link>
-          }
-        />
+      <CityPage width="full">
+        <div className="flex w-full items-start">
+          <DashboardSidebar handle={handle} profile={mine} documents={myDocs} incomingCount={incoming.length} side={side} />
+          <div className="min-w-0 flex-1 bg-white px-4 py-8 sm:px-8 lg:px-10 dark:bg-white/[0.02]">
+            <EmptyState
+              title="Vael to open a match"
+              action={
+                <Link to={`/media-technology/vael?create=1&side=${side}`} className={buttonClassName()}>
+                  {side === "out" ? "Say what you need" : "Set availability"}
+                </Link>
+              }
+            />
+          </div>
+        </div>
       </CityPage>
     );
   }
 
   if (!other || !isLifecycleVisible(other) || !match) {
     return (
-      <CityPage>
-        <ErrorState
-          title="This match is not visible"
-          description="Their availability may have ended."
-          action={
-            <Link to="/media-technology/matches" className={buttonClassName({ variant: "outline" })}>
-              Back to matches
-            </Link>
-          }
-        />
+      <CityPage width="full">
+        <div className="flex w-full items-start">
+          <DashboardSidebar handle={handle} profile={mine} documents={myDocs} incomingCount={incoming.length} side={side} />
+          <div className="min-w-0 flex-1 bg-white px-4 py-8 sm:px-8 lg:px-10 dark:bg-white/[0.02]">
+            <ErrorState
+              title="This match is not visible"
+              description="Their availability may have ended."
+              action={
+                <Link to="/media-technology/matches" className={buttonClassName({ variant: "outline" })}>
+                  Back to matches
+                </Link>
+              }
+            />
+          </div>
+        </div>
       </CityPage>
     );
   }
@@ -355,16 +381,31 @@ function MatchDetailInner() {
     });
     setConnectionId(record.id);
     setPhase("requested");
+    setRequestedOpen(true);
+  }
+
+  function acceptIncoming() {
+    const id = connectionId ?? existing?.id;
+    if (!id) return;
+    accept(id, handle);
+    setPhase("connected");
+    setRevealed(true);
+  }
+
+  function declineIncoming() {
+    const id = connectionId ?? existing?.id;
+    if (!id) return;
+    decline(id);
+    setConnectionId(undefined);
+    setPhase("idle");
   }
 
   function openFullProfile() {
     setRevealed(true);
-    setAcceptedOpen(false);
   }
 
   function openMessages() {
     if (!connectionId) return;
-    setAcceptedOpen(false);
     navigate(`/messages?c=${connectionId}`);
   }
 
@@ -376,344 +417,406 @@ function MatchDetailInner() {
   );
 
   return (
-    <CityPage width="wide" className="-mt-4 sm:-mt-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 text-body-sm text-quiet">
-        <Link to="/media-technology/matches" className="font-medium text-muted hover:text-foreground">
-          ← Back to Matches
-        </Link>
-      </div>
+    <CityPage width="full">
+      <div className="flex w-full items-start">
+        <DashboardSidebar handle={handle} profile={mine} documents={myDocs} incomingCount={incoming.length} side={side} />
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        {/* LEFT — limited until Handshake, then the full profile */}
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-start gap-5">
-            <Avatar
-              name={name}
-              src={headerImage}
-              size="xl"
-              locked={locked}
-              className="h-24 w-24 shrink-0 ring-1 ring-border"
-            />
-            <div className="min-w-0">
-              <h1 className="font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-semibold tracking-tight text-foreground">
-                {name}
-              </h1>
-              <ul className="mt-3 flex flex-wrap gap-1.5">
-                {role ? (
-                  <li>
-                    <span className="inline-flex h-7 items-center rounded-full bg-[#FFC555]/15 px-2.5 text-caption font-medium text-[#C99A28] dark:bg-accent/15 dark:text-accent">
-                      {role}
-                    </span>
-                  </li>
-                ) : null}
-                <li>
-                  <span className="inline-flex h-7 items-center rounded-full bg-[#FFC555]/15 px-2.5 text-caption font-medium text-[#C99A28] dark:bg-accent/15 dark:text-accent">
-                    Media &amp; Technology
-                  </span>
-                </li>
-                {location ? (
-                  <li>
-                    <span className="inline-flex h-7 items-center rounded-full bg-[#FFC555]/15 px-2.5 text-caption font-medium text-[#C99A28] dark:bg-accent/15 dark:text-accent">
-                      {location}
-                    </span>
-                  </li>
-                ) : null}
-              </ul>
-              {phase === "connected" ? (
-                <p className="mt-3 inline-flex items-center gap-1.5 text-body-sm font-medium text-foreground">
-                  <IconCheck className="h-4 w-4 text-[#22C55E]" />
-                  Connected
-                </p>
-              ) : null}
-            </div>
-          </div>
+        <div className="min-w-0 flex-1 space-y-6 bg-white px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-10 dark:bg-white/[0.02] dark:backdrop-blur-3xl">
+          <Link
+            to="/media-technology/matches"
+            className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
+          >
+            <IconChevronLeft className="h-3.5 w-3.5" />
+            Back to Matches
+          </Link>
 
-          <section className="mt-8 rounded-2xl border border-border bg-[#F7F7F8] p-6 dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
-            <p className="flex items-center gap-2 text-body font-semibold text-foreground">
-              <span aria-hidden className="text-[#C99A28] dark:text-accent">
-                ✦
-              </span>
-              Why You Match
-            </p>
-            <p className="mt-2 text-body text-foreground">
-              Strong fit based on your profile, district, skills, and availability.
-            </p>
-            <div className="mt-4">
-              <MatchFactors mine={listing} counterpart={counterpart} />
-            </div>
-          </section>
-
-          <div className="mt-10 space-y-10">
-            <section>
-              <p className="text-body font-semibold text-foreground">About</p>
-              {revealed ? (
-                <p className="mt-2 text-body text-foreground">{bio}</p>
-              ) : (
-                <>
-                  <p className="mt-2 text-body text-foreground">{aboutPreview(bio)}</p>
-                  <p className="mt-2 text-body-sm font-medium text-quiet">View after Handshake</p>
-                </>
-              )}
-            </section>
-
-            <section>
-              <p className="text-body font-semibold text-foreground">What They&rsquo;re Looking For</p>
-              <p className="mt-2 text-body text-foreground">
-                {counterpart.description || "No engagement details listed yet."}
-              </p>
-              {counterpart.skills.length ? (
-                <>
-                  <p className="mt-4 text-caption font-medium uppercase tracking-[0.06em] text-quiet">
-                    Relevant areas
-                  </p>
-                  <SkillChips
-                    skills={counterpart.skills}
-                    max={6}
-                    chipClassName="border-transparent bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent"
-                  />
-                </>
-              ) : null}
-            </section>
-
-            {revealed ? (
-              <>
-                <section>
-                  <p className="text-body font-semibold text-foreground">Experience</p>
-                  <div className="mt-2 space-y-1.5">
-                    {counterpart.experienceYears ? (
-                      <p className="text-h4 font-medium text-foreground">
-                        {counterpart.experienceYears}+ years
-                      </p>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+            <div className="min-w-0 space-y-6">
+              <div className="flex flex-wrap items-start gap-4">
+                <Avatar
+                  name={name}
+                  src={headerImage}
+                  size="xl"
+                  locked={locked}
+                  className="h-16 w-16 shrink-0 ring-1 ring-border sm:h-20 sm:w-20"
+                />
+                <div className="min-w-0">
+                  <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+                    {name}
+                  </h1>
+                  <ul className="mt-2 flex flex-wrap gap-1.5">
+                    {role ? (
+                      <li>
+                        <span className="inline-flex items-center rounded-full border border-border bg-surface-muted px-3 py-1 text-caption font-medium text-foreground">
+                          {role}
+                        </span>
+                      </li>
                     ) : null}
-                    <p className="text-body text-foreground">
-                      {otherProfile?.disciplines.length ? otherProfile.disciplines.join(", ") : counterpart.discipline}
+                    <li>
+                      <span className="inline-flex items-center rounded-full border border-border bg-surface-muted px-3 py-1 text-caption font-medium text-foreground">
+                        Media &amp; Technology
+                      </span>
+                    </li>
+                    {location ? (
+                      <li>
+                        <span className="inline-flex items-center rounded-full border border-border bg-surface-muted px-3 py-1 text-caption font-medium text-foreground">
+                          {location}
+                        </span>
+                      </li>
+                    ) : null}
+                  </ul>
+                  {phase === "connected" ? (
+                    <p className="mt-3 inline-flex items-center gap-1.5 text-body-sm font-medium text-foreground">
+                      <IconCheck className="h-4 w-4 text-[#22C55E]" />
+                      Connected
                     </p>
-                    {otherProfile?.experience ? (
-                      <p className="text-body text-muted">{otherProfile.experience}</p>
-                    ) : null}
-                  </div>
-                </section>
-
-                <section>
-                  <p className="text-body font-semibold text-foreground">Skills &amp; Expertise</p>
-                  <div className="mt-3">
-                    <SkillChips
-                      skills={counterpart.skills}
-                      max={12}
-                      chipClassName="border-transparent bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent"
-                    />
-                  </div>
-                  {counterpart.certifications.length ? (
-                    <div className="mt-4">
-                      <p className="text-caption font-medium uppercase tracking-[0.06em] text-quiet">
-                        Certifications
-                      </p>
-                      <div className="mt-2">
-                        <SkillChips
-                          skills={counterpart.certifications}
-                          max={12}
-                          chipClassName="border-transparent bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent"
-                        />
-                      </div>
-                    </div>
                   ) : null}
-                </section>
+                </div>
+              </div>
 
-                {tools.length ? (
-                  <section>
-                    <p className="text-body font-semibold text-foreground">Tools</p>
-                    <div className="mt-3">
-                      <SkillChips
-                        skills={tools}
-                        max={12}
-                        chipClassName="border-transparent bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent"
-                      />
-                    </div>
-                  </section>
-                ) : null}
+              <section className={cn(DASHBOARD_CARD, "p-5 sm:p-6")}>
+                <p className="flex items-center gap-2 text-body font-medium text-foreground">
+                  <span aria-hidden className="text-[#C99A28] dark:text-accent">
+                    ✦
+                  </span>
+                  Why You Match
+                </p>
+                <p className="mt-2 text-body-sm text-muted">
+                  Strong fit based on your profile, district, skills, and availability.
+                </p>
+                <div className="mt-4">
+                  <MatchFactors mine={listing} counterpart={counterpart} />
+                </div>
+              </section>
 
+              <div className={cn(DASHBOARD_CARD, "space-y-8 p-5 sm:p-6")}>
                 <section>
-                  <p className="text-body font-semibold text-foreground">Portfolio</p>
-                  {otherProfile?.portfolio.length ? (
-                    <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {otherProfile.portfolio.map((item) => (
-                        <li
-                          key={`${item.label}-${item.url}`}
-                          className="rounded-xl border border-border bg-surface px-4 py-3.5"
-                        >
-                          <p className="text-body font-medium text-foreground">{item.label || "Untitled project"}</p>
-                          {item.note ? <p className="mt-1 text-body-sm text-muted">{item.note}</p> : null}
-                          {item.url ? (
-                            <a
-                              href={item.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-body-sm font-medium text-accent"
-                            >
-                              View work <IconChevronRight className="h-3 w-3" />
-                            </a>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
+                  <p className="text-body font-medium text-foreground">About</p>
+                  {revealed ? (
+                    <p className="mt-2 text-body-sm text-muted">{bio}</p>
+                  ) : counterpart.side === "in" ? (
+                    <p className="mt-2 text-body-sm text-muted">Opens after a Handshake.</p>
                   ) : (
-                    <p className="mt-2 text-body-sm text-muted">No work samples listed yet.</p>
+                    <>
+                      <p className="mt-2 text-body-sm text-muted">{aboutPreview(bio)}</p>
+                      <p className="mt-2 text-caption font-medium text-quiet">View after Handshake</p>
+                    </>
                   )}
                 </section>
 
-                {websiteUrls.length ? (
-                  <section>
-                    <p className="text-body font-semibold text-foreground">Website</p>
-                    <ul className="mt-2 space-y-1.5">
-                      {websiteUrls.map((url) => (
-                        <li key={url}>
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-body-sm font-medium text-accent"
-                          >
-                            {url.replace(/^https?:\/\//, "")}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ) : null}
+                <section>
+                  <p className="text-body font-medium text-foreground">
+                    {counterpart.side === "in" ? "Availability" : "What They’re Looking For"}
+                  </p>
+                  {counterpart.side === "in" && !revealed ? (
+                    <p className="mt-2 text-body-sm text-muted">
+                      {availabilityLabel}
+                      {counterpart.timing ? ` · ${counterpart.timing}` : ""}
+                    </p>
+                  ) : (
+                    <>
+                  <p className="mt-2 text-body-sm text-muted">
+                    {counterpart.description || "No engagement details listed yet."}
+                  </p>
+                    {counterpart.skills.length ? (
+                    <>
+                      <p className="mt-4 text-caption font-medium uppercase tracking-[0.06em] text-quiet">
+                        Relevant areas
+                      </p>
+                      <SkillChips
+                        skills={counterpart.skills}
+                        max={6}
+                        chipClassName="border-border bg-surface-muted text-foreground"
+                      />
+                    </>
+                  ) : null}
+                  {counterpart.side === "out" && counterpart.requirements ? (
+                    <p className="mt-3 text-body-sm text-muted">Requirements: {counterpart.requirements}</p>
+                  ) : null}
+                    </>
+                  )}
+                </section>
 
-                {otherProfile?.credentials || docs.length ? (
-                  <section>
-                    <p className="text-body font-semibold text-foreground">Credentials</p>
-                    {otherProfile?.credentials ? (
-                      <p className="mt-2 text-body text-foreground">{otherProfile.credentials}</p>
-                    ) : null}
-                    {docs.length ? (
-                      <div className="mt-3">
-                        <ProfileDocumentsSection docs={docs} mine={false} revealed />
+                {revealed ? (
+                  <>
+                    <section>
+                      <p className="text-body font-medium text-foreground">Experience</p>
+                      <div className="mt-2 space-y-1.5">
+                        {counterpart.experienceYears ? (
+                          <p className="text-body font-medium text-foreground">
+                            {counterpart.experienceYears}+ years
+                          </p>
+                        ) : null}
+                        <p className="text-body-sm text-muted">
+                          {otherProfile?.disciplines.length ? otherProfile.disciplines.join(", ") : counterpart.discipline}
+                        </p>
+                        {otherProfile?.experience ? (
+                          <p className="text-body-sm text-muted">{otherProfile.experience}</p>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </section>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        </div>
+                    </section>
 
-        {/* RIGHT — sticky action card */}
-        <div className="lg:sticky lg:top-24">
-          <div className="rounded-2xl border border-border bg-white p-7 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_24px_48px_-18px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.07] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-2xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_50px_-16px_rgba(0,0,0,0.6)]">
-            <div className="flex items-center gap-3">
-              <Avatar name={name} src={headerImage} size="md" locked={locked} />
-              <div className="min-w-0">
-                <p className="truncate text-body font-semibold text-foreground">{name}</p>
-                <p className="truncate text-caption text-muted">{role}</p>
+                    <section>
+                      <p className="text-body font-medium text-foreground">Skills &amp; Expertise</p>
+                      <div className="mt-3">
+                        <SkillChips
+                          skills={counterpart.skills}
+                          max={12}
+                          chipClassName="border-border bg-surface-muted text-foreground"
+                        />
+                      </div>
+                      {counterpart.certifications.length ? (
+                        <div className="mt-4">
+                          <p className="text-caption font-medium uppercase tracking-[0.06em] text-quiet">
+                            Certifications
+                          </p>
+                          <div className="mt-2">
+                            <SkillChips
+                              skills={counterpart.certifications}
+                              max={12}
+                              chipClassName="border-border bg-surface-muted text-foreground"
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+                    </section>
+
+                    {tools.length ? (
+                      <section>
+                        <p className="text-body font-medium text-foreground">Tools</p>
+                        <div className="mt-3">
+                          <SkillChips
+                            skills={tools}
+                            max={12}
+                            chipClassName="border-border bg-surface-muted text-foreground"
+                          />
+                        </div>
+                      </section>
+                    ) : null}
+
+                    <section>
+                      <p className="text-body font-medium text-foreground">Portfolio</p>
+                      {otherProfile?.portfolio.length ? (
+                        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {otherProfile.portfolio.map((item) => (
+                            <li
+                              key={`${item.label}-${item.url}`}
+                              className="rounded-xl border border-border bg-white px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]"
+                            >
+                              <p className="text-body font-medium text-foreground">{item.label || "Untitled project"}</p>
+                              {item.note ? <p className="mt-1 text-body-sm text-muted">{item.note}</p> : null}
+                              {item.url ? (
+                                <a
+                                  href={item.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mt-2 inline-flex items-center gap-1 text-body-sm font-medium text-[#C99A28] dark:text-accent"
+                                >
+                                  View work <IconChevronRight className="h-3 w-3" />
+                                </a>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-body-sm text-muted">No work samples listed yet.</p>
+                      )}
+                    </section>
+
+                    {websiteUrls.length ? (
+                      <section>
+                        <p className="text-body font-medium text-foreground">Website</p>
+                        <ul className="mt-2 space-y-1.5">
+                          {websiteUrls.map((url) => (
+                            <li key={url}>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-body-sm font-medium text-[#C99A28] dark:text-accent"
+                              >
+                                {url.replace(/^https?:\/\//, "")}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    ) : null}
+
+                    {counterpart.side === "in" && otherProfile ? (
+                      <section>
+                        <p className="text-body font-medium text-foreground">Professional information</p>
+                        <ul className="mt-2 space-y-1.5 text-body-sm text-muted">
+                          <li>Profile: {otherProfile.profileType === "business" ? "Business" : "Individual"}</li>
+                          <li>Employment: {counterpart.engagement || "Not listed."}</li>
+                          <li>Categories: {(otherProfile.offers ?? []).join(", ") || counterpart.category || "Not listed."}</li>
+                          <li>Participation: {otherProfile.specialization || "Not listed."}</li>
+                          <li>Work: {counterpart.remoteOnsite}</li>
+                          <li>Service area: {counterpart.location || otherProfile.location || "Not listed."}</li>
+                          <li>{otherProfile.profileType === "business" ? "Workstation" : "Own gear"}: {counterpart.requirements || "Not listed."}</li>
+                          <li>
+                            Available today: {counterpart.timeline?.includes("today") ? "Yes" : "No"} · Available right now:{" "}
+                            {counterpart.timeline?.includes("now") ? "Yes" : "No"}
+                          </li>
+                        </ul>
+                      </section>
+                    ) : null}
+
+                    <section>
+                      <p className="text-body font-medium text-foreground">Contact</p>
+                      <p className="mt-2 text-body-sm text-muted">
+                        {[
+                          findAccountByHandle(counterpart.handle)?.email,
+                          findAccountByHandle(counterpart.handle)?.phone,
+                          counterpart.contact,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "No contact listed."}
+                      </p>
+                    </section>
+
+                    {otherProfile?.credentials || docs.length ? (
+                      <section>
+                        <p className="text-body font-medium text-foreground">Credentials</p>
+                        {otherProfile?.credentials ? (
+                          <p className="mt-2 text-body-sm text-muted">{otherProfile.credentials}</p>
+                        ) : null}
+                        {docs.length ? (
+                          <div className="mt-3">
+                            <ProfileDocumentsSection docs={docs} mine={false} revealed />
+                          </div>
+                        ) : null}
+                      </section>
+                    ) : null}
+                  </>
+                ) : null}
               </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-between gap-3">
-              <p className="text-[2.5rem] font-semibold leading-none tracking-[-0.03em] text-foreground">
-                {Math.round(match.percent)}%
-              </p>
-              <span className="shrink-0 rounded-full bg-[#FFC555]/15 px-3 py-1 text-caption font-semibold text-[#C99A28] dark:bg-[#4ADE80]/15 dark:text-[#4ADE80]">
-                {matchBandLabel[matchBand(match.percent)]} fit
-              </span>
-            </div>
-            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface-tertiary">
-              <div
-                className="h-full rounded-full bg-[#FFC555] dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent"
-                style={{ width: `${Math.max(0, Math.min(100, match.percent))}%` }}
-              />
-            </div>
-
-            <ul className="mt-5 space-y-2.5 border-t border-border-subtle pt-5 text-body-sm">
-              <li className="flex items-center justify-between gap-3">
-                <span className="text-muted">Availability</span>
-                {availabilityDot}
-              </li>
-              <li className="flex items-center justify-between gap-3">
-                <span className="text-muted">District</span>
-                <span className="font-medium text-foreground">Media &amp; Technology</span>
-              </li>
-              {location ? (
-                <li className="flex items-center justify-between gap-3">
-                  <span className="text-muted">Location</span>
-                  <span className="truncate font-medium text-foreground">{location}</span>
-                </li>
-              ) : null}
-            </ul>
-
-            <div className="mt-5 border-t border-border-subtle pt-5">
-              {phase === "idle" ? (
-                <>
-                  <p className="text-body font-semibold text-foreground">Interested in connecting?</p>
-                  <p className="mt-1 text-body-sm text-muted">
-                    Request a Handshake to connect and access the full profile.
-                  </p>
-                  <Button className="mt-4 h-12 w-full rounded-full text-body" onClick={sendHandshake}>
-                    Request Handshake
-                  </Button>
-                </>
-              ) : phase === "requested" ? (
-                <>
-                  <p className="text-body font-medium text-foreground">Handshake request sent</p>
-                  <p className="mt-1 text-body-sm text-muted">Your request has been sent to {firstName}.</p>
-                  <Button className="mt-4 h-12 w-full rounded-full text-body" disabled>
-                    Handshake Requested
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="inline-flex items-center gap-1.5 text-body font-medium text-foreground">
-                    <IconCheck className="h-4 w-4 text-[#22C55E]" />
-                    Connected
-                  </p>
-                  <p className="mt-1 text-body-sm text-muted">You&rsquo;re connected with {firstName}.</p>
-                  <div className="mt-4 flex flex-col gap-2.5">
-                    {!revealed ? (
-                      <Button className="h-12 w-full rounded-full text-body" onClick={openFullProfile}>
-                        View Full Profile
-                      </Button>
-                    ) : null}
-                    <Button
-                      className="h-12 w-full rounded-full text-body"
-                      variant={revealed ? "primary" : "outline"}
-                      onClick={openMessages}
-                    >
-                      Send Message
-                    </Button>
+            <div className="lg:sticky lg:top-24">
+              <div className={cn(DASHBOARD_CARD, "p-5 sm:p-6")}>
+                <div className="flex items-center gap-3">
+                  <Avatar name={name} src={headerImage} size="md" locked={locked} />
+                  <div className="min-w-0">
+                    <p className="truncate text-body font-medium text-foreground">{name}</p>
+                    <p className="truncate text-body-sm text-muted">{role}</p>
                   </div>
-                </>
-              )}
-              <Button
-                variant="outline"
-                className="mt-2.5 h-12 w-full rounded-full text-body"
-                onClick={() => setSaved(toggleSavedListing(handle, counterpart.id))}
-              >
-                {saved ? "Saved" : "Save"}
-              </Button>
+                </div>
+
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <p className="text-[2.25rem] font-medium leading-none tracking-tight text-foreground">
+                    {Math.round(match.percent)}%
+                  </p>
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#FFC555]/15 px-3 py-1 text-caption font-semibold text-[#C99A28] dark:bg-[#4ADE80]/15 dark:text-[#4ADE80]">
+                    {matchBandLabel[matchBand(match.percent)]} fit
+                  </span>
+                </div>
+                <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-surface-tertiary">
+                  <div
+                    className="h-full rounded-full bg-[#FFC555] dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent"
+                    style={{ width: `${Math.max(0, Math.min(100, match.percent))}%` }}
+                  />
+                </div>
+
+                <ul className="mt-5 space-y-2.5 border-t border-border-subtle pt-5 text-body-sm">
+                  <li className="flex items-center justify-between gap-3">
+                    <span className="text-muted">Availability</span>
+                    {availabilityDot}
+                  </li>
+                  <li className="flex items-center justify-between gap-3">
+                    <span className="text-muted">District</span>
+                    <span className="font-medium text-foreground">Media &amp; Technology</span>
+                  </li>
+                  {location ? (
+                    <li className="flex items-center justify-between gap-3">
+                      <span className="text-muted">Location</span>
+                      <span className="truncate font-medium text-foreground">{location}</span>
+                    </li>
+                  ) : null}
+                </ul>
+
+                <div className="mt-5 border-t border-border-subtle pt-5">
+                  {phase === "idle" ? (
+                    <>
+                      <p className="text-body font-medium text-foreground">Interested in connecting?</p>
+                      <p className="mt-1 text-body-sm text-muted">
+                        Request a Handshake to connect and access the full profile.
+                      </p>
+                      <Button className="mt-4 w-full" onClick={sendHandshake}>
+                        Request Handshake
+                      </Button>
+                    </>
+                  ) : phase === "incoming" ? (
+                    <>
+                      <p className="text-body font-medium text-foreground">Handshake request</p>
+                      <p className="mt-1 text-body-sm text-muted">
+                        {firstName} asked to connect. Accept to open the private connection.
+                      </p>
+                      <div className="mt-4 flex flex-col gap-2.5">
+                        <Button className="w-full" onClick={acceptIncoming}>
+                          Accept Handshake
+                        </Button>
+                        <Button className="w-full" variant="outline" onClick={declineIncoming}>
+                          Decline
+                        </Button>
+                      </div>
+                    </>
+                  ) : phase === "requested" ? (
+                    <>
+                      <p className="text-body font-medium text-foreground">Handshake request sent</p>
+                      <p className="mt-1 text-body-sm text-muted">Your request has been sent to {firstName}.</p>
+                      <Button className="mt-4 w-full" disabled>
+                        Handshake Requested
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="inline-flex items-center gap-1.5 text-body font-medium text-foreground">
+                        <IconCheck className="h-4 w-4 text-[#22C55E]" />
+                        Connected
+                      </p>
+                      <p className="mt-1 text-body-sm text-muted">You&rsquo;re connected with {firstName}.</p>
+                      <div className="mt-4 flex flex-col gap-2.5">
+                        {!revealed ? (
+                          <Button className="w-full" onClick={openFullProfile}>
+                            View Full Profile
+                          </Button>
+                        ) : null}
+                        <Button
+                          className="w-full"
+                          variant={revealed ? "primary" : "outline"}
+                          onClick={openMessages}
+                        >
+                          Send Message
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="mt-2.5 w-full"
+                    onClick={() => setSaved(toggleSavedListing(handle, counterpart.id))}
+                  >
+                    {saved ? "Saved" : "Save"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <Dialog
-        open={acceptedOpen}
-        onClose={() => setAcceptedOpen(false)}
-        title="Handshake Accepted"
+        open={requestedOpen}
+        onClose={() => setRequestedOpen(false)}
+        title="Handshake requested"
         footer={
-          <>
-            <Button variant="outline" className="rounded-full" onClick={openMessages}>
-              Send Message
-            </Button>
-            <Button className="rounded-full" onClick={openFullProfile}>
-              View Full Profile
-            </Button>
-          </>
+          <Button onClick={() => setRequestedOpen(false)}>Got it</Button>
         }
       >
-        <p>You&rsquo;re connected with {firstName}.</p>
+        <p>Your handshake will be accepted when {firstName} agrees.</p>
         <p className="mt-2 text-body text-muted">
-          You can now view the full profile and start a conversation.
+          You&rsquo;ll be able to message and view the full profile once they accept.
         </p>
       </Dialog>
     </CityPage>

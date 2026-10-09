@@ -20,6 +20,7 @@ import {
 import { ensureCommunityPosts, type CommunityPost } from "./communityStore";
 import { clearAccountsExcept, registerAccount } from "./accounts";
 import { clearOnboardingDrafts } from "./onboarding";
+import { ensureVaelOutAccount } from "./vaelPair";
 
 export const DEMO_HANDLE = "alexmorgan";
 export const DEMO_DISPLAY_NAME = "Alex Morgan";
@@ -184,6 +185,17 @@ export function ensureDemoCommunityFeed() {
   ensureCommunityPosts(DEMO_FEED);
 }
 
+/**
+ * Sample match/community content only — no accounts. Safe to call whenever
+ * a page just needs something to show (e.g. a fresh signup's Home feed);
+ * unlike prepareDemoWorkspace(), it never adds a signable account to this
+ * device.
+ */
+export function seedDemoSampleContent() {
+  ensureMtDemoSamples();
+  ensureDemoCommunityFeed();
+}
+
 export function prepareDemoWorkspace() {
   ensureMtDemoSamples();
   ensureDemoCommunityFeed();
@@ -200,6 +212,7 @@ export function prepareDemoWorkspace() {
   } else {
     ensureProfile(DEMO_HANDLE);
   }
+  ensureVaelOutAccount();
 }
 
 export function demoCyclePeople(): Array<{

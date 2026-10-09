@@ -1,6 +1,6 @@
 # Image credits
 
-All images in `public/people/`, `public/scenes/`, and `public/districts/` are stock
+All images in `public/people/`, `public/scenes/`, `public/districts/`, and `public/projects/` are stock
 photographs from [Unsplash](https://unsplash.com), used under the
 [Unsplash License](https://unsplash.com/license): free to use for commercial and
 non-commercial purposes, no permission or attribution required.
@@ -35,6 +35,13 @@ They are vendored into the repo rather than hot-linked so the demo works with no
 | `districts/trucking.jpg` | `photo-1601584115197-04ecc0da31d7` |
 | `districts/residential.jpg` | `photo-1600585154340-be6161a56a0c` |
 | `districts/commercial.jpg` | `photo-1497366216548-37526070297c` |
+| `projects/plumbing.jpg` | `photo-1584622650111-993a426fbf0a` |
+| `projects/construction.jpg` | `photo-1504307651254-35680f356dfd` |
+| `projects/doors.jpg` | `photo-1600210492493-0946911123ea` |
+| `projects/roofing.jpg` | `photo-1568605114967-8130f3a36994` |
+| `projects/bathroom.jpg` | `photo-1552321554-5fefe8c9ef14` |
+| `projects/electrical.jpg` | `photo-1621905251189-08b45d6a269e` |
+| `projects/painting.jpg` | `photo-1562259949-e8e7689d7828` |
 | `scenes/hero-mountains.jpg` | `photo-1506905925346-21bda4d32df4` |
 | `scenes/city-skyline-wide.jpg` | `photo-1567344782667-5390f69c40c6` |
 | `video/hero-poster.jpg` | `photo-1600880292203-757bb62b4baf` |

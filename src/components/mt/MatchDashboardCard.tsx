@@ -21,6 +21,7 @@ export function MatchDashboardCard({
   nameOverride,
   roleOverride,
   onDistrictClick,
+  className,
 }: {
   match: {
     listing: Pick<RankedMatch["listing"], "id" | "handle" | "description"> &
@@ -35,6 +36,7 @@ export function MatchDashboardCard({
   roleOverride?: string;
   /** When set, the district badge becomes its own control that filters to this district instead of opening the match. */
   onDistrictClick?: () => void;
+  className?: string;
 }) {
   const [saved, setSaved] = useState(false);
   const { listing } = match;
@@ -48,15 +50,25 @@ export function MatchDashboardCard({
   return (
     <Link
       to={href ?? `${PRODUCT_HOME}/board/${listing.id}`}
-      className="group flex w-80 shrink-0 snap-start flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-[#C99A28]/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-accent/30 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(255,157,69,0.2)]"
-    >
-      {image ? (
-        <img src={image} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
-      ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-gradient-to-br dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
-          {initial}
-        </span>
+      className={cn(
+        "group flex w-80 shrink-0 snap-start flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-[#C99A28]/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(0,0,0,0.4)]",
+        className,
       )}
+    >
+      <div className="flex items-center gap-3">
+        {image ? (
+          <img src={image} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]">
+            {initial}
+          </span>
+        )}
+
+        <div className="min-w-0">
+          <p className="truncate text-body font-medium text-foreground">{name}</p>
+          <p className="truncate text-body-sm text-muted">{role}</p>
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {onDistrictClick ? (
@@ -67,7 +79,7 @@ export function MatchDashboardCard({
               event.stopPropagation();
               onDistrictClick();
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-3 py-1 text-caption font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-[#C99A28] dark:hover:border-accent/30 dark:hover:text-accent"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-3 py-1 text-caption font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-[#C99A28] dark:hover:border-white/15 dark:hover:text-foreground"
           >
             {districtName}
           </button>
@@ -84,13 +96,9 @@ export function MatchDashboardCard({
         </span>
       </div>
 
-      <div className="min-w-0">
-        <p className="truncate text-body font-medium text-foreground">{name}</p>
-        <p className="truncate text-body-sm text-muted">{role}</p>
-        {listing.description ? (
-          <p className="mt-1 line-clamp-1 text-body-sm text-quiet">{listing.description}</p>
-        ) : null}
-      </div>
+      {listing.description ? (
+        <p className="line-clamp-2 text-body-sm text-quiet">{listing.description}</p>
+      ) : null}
 
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-subtle pt-3">
         <button
@@ -109,7 +117,7 @@ export function MatchDashboardCard({
           <IconBookmark className={cn("h-4 w-4", saved && "fill-current")} />
           {saved ? "Saved" : "Save"}
         </button>
-        <span className="flex items-center gap-1 text-body-sm font-medium text-[#C99A28] motion-safe:transition-colors motion-safe:duration-150 group-hover:text-foreground dark:text-accent">
+        <span className="flex items-center gap-1 text-body-sm font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 dark:text-[#F5F3EE]">
           View Match
           <IconChevronRight className="h-3.5 w-3.5 motion-safe:transition-transform motion-safe:duration-150 group-hover:translate-x-0.5" />
         </span>

@@ -57,7 +57,7 @@ export const MARKETING_DIRECTORY: DirectoryPerson[] = [
     name: "Amara Okonkwo",
     role: "Project Manager",
     match: 84,
-    district: "Construction",
+    district: "Contractor Exchange",
     location: "Atlanta, GA",
     availability: "this-week",
     category: "Operations",
@@ -135,7 +135,7 @@ export const MARKETING_DIRECTORY: DirectoryPerson[] = [
     name: "Malik Johnson",
     role: "Superintendent",
     match: 64,
-    district: "Construction",
+    district: "Contractor Exchange",
     location: "Houston, TX",
     availability: "today",
     category: "Trades",
@@ -170,8 +170,8 @@ export const DISTRICT_CARDS = [
   },
   {
     id: "construction",
-    name: "Construction",
-    blurb: "Contractors, trades & construction professionals.",
+    name: "Contractor Exchange",
+    blurb: "Available contractors, and people who need construction work.",
     description:
       "Site work, trades, and general contracting — see who's free this cycle before a job stalls waiting on crew.",
     image: "/districts/construction.jpg",

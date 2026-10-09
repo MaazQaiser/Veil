@@ -64,12 +64,23 @@ function getStep(path: string[]): Step {
   if (root === "find-opportunities") {
     if (!second) return { kind: "question", question: "What interests you?", chips: FIND_OPPORTUNITIES_CHIPS };
     if (!third) return { kind: "question", question: "Where?", chips: DISTRICT_CHIPS_WITH_ANY };
+    const inCommunity = second === "collaborations" || second === "community-posts";
+    const where = third === "any" ? "VAEL" : districtName(third);
+    if (inCommunity) {
+      return {
+        kind: "result",
+        title: "Start exploring.",
+        description: `See what people in ${where} are sharing.`,
+        ctaLabel: "Explore Community →",
+        href: third === "any" ? "/feed" : communityHref(third as MarketplaceDistrictId),
+      };
+    }
     return {
       kind: "result",
-      title: "Start exploring.",
-      description: "See what people across VAEL are sharing.",
-      ctaLabel: "Explore Community →",
-      href: third === "any" ? "/feed" : communityHref(third as MarketplaceDistrictId),
+      title: "People are available.",
+      description: `See who's open for work in ${where}.`,
+      ctaLabel: "See who's available →",
+      href: third === "any" ? "/explore" : `/explore?district=${encodeURIComponent(districtName(third))}`,
     };
   }
 
@@ -140,21 +151,26 @@ export function FindYourWay() {
   }
 
   return (
-    <div className="absolute bottom-5 right-4 z-[3] sm:bottom-10 sm:right-10">
+    <div className="absolute bottom-10 right-4 z-[3] sm:bottom-20 sm:right-10">
       {!open ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="New to VAEL? Find your way"
-          className="flex items-center gap-3 rounded-full border border-white/10 bg-[#141414] py-2 pl-2 pr-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] motion-safe:transition-transform motion-safe:duration-150 hover:scale-[1.03]"
+          className="flex w-64 items-start gap-3 rounded-md border border-[#DE7C40]/50 bg-[#141414]/90 p-4 text-left shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-md motion-safe:transition-colors hover:border-[#DE7C40] sm:w-80"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FACC15]">
-            <IconMessage className="h-4 w-4 text-[#0B0C0C]" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#DE7C40] text-[#DE7C40]">
+            <IconMessage className="h-4 w-4" />
           </span>
-          <span className="text-[0.9375rem] font-semibold text-white">Find Your Way</span>
+          <span>
+            <span className="block font-sans text-body-sm font-medium text-white">Find Your Way</span>
+            <span className="mt-1 block font-sans text-caption text-white/60">
+              Answer a few quick questions and we&apos;ll point you to the right place in VAEL.
+            </span>
+          </span>
         </button>
       ) : (
-        <div className="w-72 rounded-2xl border border-white/15 bg-[#141414]/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:w-80">
+        <div className="w-72 rounded-md border border-white/10 bg-[#141414]/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:w-80">
           <div className="flex h-5 items-center justify-between">
             {path.length > 0 && step.kind === "question" ? (
               <button
@@ -183,7 +199,7 @@ export function FindYourWay() {
                 key={index}
                 className={cn(
                   "h-0.5 flex-1 rounded-full",
-                  index <= path.length && step.kind === "question" ? "bg-[#FACC15]/70" : "bg-white/12",
+                  index <= path.length && step.kind === "question" ? "bg-[#DE7C40]/70" : "bg-white/12",
                 )}
               />
             ))}
@@ -191,7 +207,7 @@ export function FindYourWay() {
 
           {step.kind === "question" ? (
             <>
-              <p className="mt-4 text-[0.9375rem] font-medium text-white">{step.question}</p>
+              <p className="mt-4 font-sans text-body-sm font-medium text-white">{step.question}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {step.chips.map((chip) => (
                   <button
@@ -199,10 +215,10 @@ export function FindYourWay() {
                     type="button"
                     onClick={() => selectChip(chip.id)}
                     className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-[0.8125rem] font-medium motion-safe:transition-colors motion-safe:duration-150",
+                      "rounded-md border px-3.5 py-1.5 font-sans text-caption font-medium motion-safe:transition-colors motion-safe:duration-150",
                       pending === chip.id
-                        ? "border-[#FACC15] bg-[#FACC15]/20 text-white"
-                        : "border-white/20 bg-white/5 text-white/80 hover:border-[#FACC15]/50 hover:bg-white/10 hover:text-white",
+                        ? "border-[#DE7C40] bg-[#DE7C40]/20 text-white"
+                        : "border-white/15 bg-white/[0.05] text-white/80 hover:border-[#DE7C40]/50 hover:bg-white/10 hover:text-white",
                     )}
                   >
                     {chip.label}
@@ -212,12 +228,12 @@ export function FindYourWay() {
             </>
           ) : (
             <>
-              <p className="mt-4 text-[0.9375rem] font-semibold text-white">{step.title}</p>
-              <p className="mt-1.5 text-[0.8125rem] text-white/70">{step.description}</p>
+              <p className="mt-4 font-sans text-body-sm font-medium text-white">{step.title}</p>
+              <p className="mt-1.5 font-sans text-caption text-white/70">{step.description}</p>
               <Link
                 to={step.href}
                 onClick={closePanel}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[0.8125rem] font-semibold text-[#0B0C0C] motion-safe:transition-opacity hover:opacity-90"
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#DE7C40] px-4 py-2 font-sans text-caption font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#E89E6E]"
               >
                 {step.ctaLabel}
               </Link>

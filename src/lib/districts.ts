@@ -33,12 +33,12 @@ export const districts: CityDistrict[] = [
   {
     id: "construction",
     slug: "contractor",
-    name: "Construction",
+    name: "Contractor Exchange",
     registryName: "Contractor",
     status: "live",
     route: "/districts/contractor",
-    summary: "Live Room. Available construction work and construction need. Own fields and a sibling matching engine — not Media & Technology scoring. URL slug remains contractor.",
-    blurb: "Trades, site work, and construction contracting.",
+    summary: "Live Room. Vael In if you are available for construction work. Vael Out if you need construction capability. Own fields and a sibling matching engine — not Media & Technology scoring. URL slug remains contractor.",
+    blurb: "Available contractors, and people who need construction work.",
     primary: true,
   },
   {

@@ -8,7 +8,6 @@ import {
   IconUsers,
 } from "@/components/ui/icons";
 import { Reveal } from "./Reveal";
-import { PillEyebrow } from "./primitives";
 
 const FEED = [
   {
@@ -54,7 +53,7 @@ export function Community() {
     <section
       id="community"
       data-surface="site-dark"
-      className="relative overflow-hidden bg-[#0B0C0C] py-20 text-white md:py-28"
+      className="relative overflow-hidden border-t border-white/10 bg-[#0B0C0C] py-20 text-white md:py-28"
     >
       <img
         src="/scenes/city.jpg"
@@ -66,16 +65,16 @@ export function Community() {
       <div className="site-container relative z-[2]">
         <Reveal className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <PillEyebrow className="border-white/20 bg-white/10 text-white">
+            <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
               How VAEL Connects
-            </PillEyebrow>
-            <h2 className="hero-display mt-5 text-white">
+            </span>
+            <h2 className="mt-5 font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-white">
               More than
               <br />
-              <span className="text-white/80">a marketplace.</span>
+              <span className="text-white/65">a marketplace.</span>
             </h2>
           </div>
-          <p className="hero-lede max-w-sm text-white/65 lg:text-right">
+          <p className="max-w-sm font-sans text-[1.0625rem] leading-[1.55] text-white/65 lg:text-right">
             Not another feed. Just the places people actually go when they want the real story on a
             district, a client, or a job.
           </p>
@@ -84,15 +83,12 @@ export function Community() {
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEED.map((item, index) => (
             <Reveal key={`${item.bold}-${item.italic}`} delay={(index % 3) * 100}>
-              <div className="group rounded-2xl border border-white/12 bg-white/[0.04] p-7 backdrop-blur-md motion-safe:transition-all motion-safe:duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FACC15]/15 text-[#FACC15]">
+              <div className="group rounded-md border border-[#DE7C40]/50 bg-[#141414]/90 p-7 motion-safe:transition-colors motion-safe:duration-300 hover:bg-[#DE7C40]/[0.08]">
+                <span className="flex h-11 w-11 items-center justify-center rounded-md bg-[#DE7C40]/15 text-[#DE7C40]">
                   <item.icon className="h-5 w-5" />
                 </span>
-                <h3 className="mt-6 text-h4 font-medium tracking-tight text-white">
-                  {item.bold}{" "}
-                  <span className="font-display text-[1.5rem] leading-none text-white/80">
-                    {item.italic}
-                  </span>
+                <h3 className="mt-6 font-sans text-[1.25rem] font-medium tracking-tight text-white">
+                  {item.bold} <span className="text-white/65">{item.italic}</span>
                 </h3>
                 <p className="mt-3 text-body-sm text-white/55">{item.copy}</p>
               </div>
@@ -103,7 +99,7 @@ export function Community() {
         <Reveal delay={200}>
           <Link
             to="/feed"
-            className="mt-12 inline-flex h-12 items-center justify-center rounded-full bg-[#FACC15] px-6 text-[0.9375rem] font-medium text-[#0B0C0C] transition-opacity hover:opacity-90"
+            className="mt-12 inline-flex h-12 items-center justify-center rounded-md bg-[#DE7C40] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#E89E6E]"
           >
             Enter Community →
           </Link>

@@ -1,48 +1,17 @@
 import { useMemo, useState } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { PageHeader } from "@/components/ui/headers";
-import { Alert } from "@/components/ui/feedback";
-import { Button, buttonClassName } from "@/components/ui/button";
-import { Field, FormSection } from "@/components/ui/field";
-import { Input, Select, Textarea } from "@/components/ui/controls";
-import { TagField } from "@/components/ui/tags";
-import { CityPage } from "@/components/city/CityShell";
-import { JourneyProgress } from "@/components/city/setup";
-import { VaelStatePanel } from "@/components/vael/visibility";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { DashboardShell } from "@/components/mt/DashboardShell";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { useVael } from "@/lib/vaelCore";
-import {
-  ALEX_VAEL_DEFAULTS,
-  clearDemoDraft,
-  DEMO_HANDLE,
-  loadDemoDraft,
-  saveDemoDraft,
-} from "@/lib/demoJourney";
-import {
-  capabilityOptions,
-  certificationOptions,
-  DEFAULT_DURATION_HOURS,
-  hoursLeft,
-  M_T_BUDGET,
-  M_T_CATEGORIES,
-  M_T_DISCIPLINES,
-  M_T_ENGAGEMENTS,
-  M_T_TIMING,
-  type VaelListing,
-} from "@/lib/vaelStore";
+import { PRODUCT_HOME } from "@/lib/providerJourney";
+import { ALEX_VAEL_DEFAULTS, clearDemoDraft, DEMO_HANDLE, loadDemoDraft } from "@/lib/demoJourney";
+import { DEFAULT_DURATION_HOURS, M_T_BUDGET, M_T_ENGAGEMENTS, M_T_TIMING, type VaelListing } from "@/lib/vaelStore";
 
 export function VaelPage() {
   return (
     <RequireMember title="Set availability">
       <VaelInner />
-    </RequireMember>
-  );
-}
-
-export function ActiveVaelPage() {
-  return (
-    <RequireMember title="You're visible">
-      <ActiveVaelInner />
     </RequireMember>
   );
 }
@@ -90,20 +59,20 @@ function VaelInner() {
   const requestedSide = params.get("side") === "out" ? "out" : params.get("side") === "in" ? "in" : undefined;
   /** Creating with an explicit side different from the active listing switches sides instead of just viewing status. */
   const switchingSide = Boolean(listing && creating && requestedSide && requestedSide !== listing.side);
+  /** An active listing can be reopened on the same side. A different side switches the signal. */
+  const managingIn = Boolean(creating && requestedSide === "in" && listing?.side === "in");
+  const managingOut = Boolean(creating && requestedSide === "out" && listing?.side === "out");
 
-  if (listing && !switchingSide) {
-    return <Navigate to="/media-technology/vael/active" replace />;
+  if (listing && !switchingSide && !managingIn && !managingOut) {
+    return <Navigate to={PRODUCT_HOME} replace />;
   }
 
   const profile = ensureMine();
   const draft = loadDemoDraft(handle);
   const fallback = handle === DEMO_HANDLE ? ALEX_VAEL_DEFAULTS : BLANK_VAEL_DEFAULTS;
-  /** Opens on the form — success moves to /vael/active. */
+  /** Opens on the form — success moves back to the dashboard. */
   const [step, setStep] = useState<"form" | "saving" | "error">("form");
   const [error, setError] = useState("");
-  const [draftSaved, setDraftSaved] = useState(false);
-  /** Kept out of `step` so a validation error cannot expand unrelated optional fields. */
-  const [showMore, setShowMore] = useState(false);
   const initialSide = requestedSide ?? listing?.side ?? "in";
 
   const [form, setForm] = useState(() => ({
@@ -132,15 +101,8 @@ function VaelInner() {
     timeline: listing?.timeline ?? draft?.timeline ?? fallback.timeline,
   }));
 
-  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
-  }
-
   /** `in` is a Provider becoming available. `out` is someone saying they need a person. */
   const available = form.side === "in";
-  const skillOptions = capabilityOptions("skills");
-  const toolOptions = capabilityOptions("tools");
-  const certOptions = certificationOptions();
 
   const payload = useMemo(
     (): Omit<VaelListing, "id" | "createdAt" | "expiresAt" | "plan"> => ({
@@ -166,28 +128,12 @@ function VaelInner() {
   );
 
   function publish() {
-    const missing = !form.discipline
-      ? "Choose a discipline so VAEL knows where you fit."
-      : splitList(form.skills).length === 0
-        ? "Add at least one capability to become visible to relevant matches."
-        : !form.location
-          ? "Add the location you work from."
-          : !form.description.trim()
-            ? available
-              ? "Add one line about what you are available for."
-              : "Add one line about what you need."
-            : "";
-    if (missing) {
-      setError(missing);
-      setStep("error");
-      return;
-    }
     setStep("saving");
     try {
       saveListing(payload);
       clearDemoDraft(handle);
       setError("");
-      navigate("/media-technology/vael/active");
+      navigate(PRODUCT_HOME);
     } catch {
       setError("The VAEL could not be stored on this device.");
       setStep("error");
@@ -195,167 +141,26 @@ function VaelInner() {
   }
 
   return (
-    <CityPage width="narrow">
-      <JourneyProgress step="Vael In" />
-      <PageHeader
-        kicker="Media & Technology"
-        title={available ? "Set your availability" : "Say what you need"}
-        description={
-          available
-            ? "Let the City know you’re available for relevant opportunities."
-            : "Tell the City what you are looking for this cycle."
-        }
-        crumbs={[
-          { label: "Media & Technology", href: "/media-technology" },
-          { label: "Availability" },
-        ]}
-      />
-
+    <DashboardShell>
       <form
-        className="mt-10 max-w-narrow space-y-12"
+        className="max-w-xl space-y-6"
         onSubmit={(event) => {
           event.preventDefault();
           publish();
         }}
       >
-        <FormSection
-          title={available ? "Your availability" : "What you need"}
-          note={
-            available
-              ? "These come from your profile. Adjust anything that isn’t right for this cycle."
-              : "Describe the capability you are looking for."
-          }
-        >
-          <Field label="Discipline" htmlFor="discipline" required>
-            <Select id="discipline" value={form.discipline} onChange={(e) => set("discipline", e.target.value)}>
-              {/* Without this the select would render the first discipline while holding no value. */}
-              <option value="">Choose a discipline</option>
-              {M_T_DISCIPLINES.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </Select>
-          </Field>
-          <TagField
-            id="skills"
-            label="Skills"
-            values={splitList(form.skills)}
-            options={skillOptions}
-            placeholder="Search or add a skill"
-            onChange={(next) => set("skills", next.join(", "))}
-          />
-          <TagField
-            id="tools"
-            label="Tools"
-            values={splitList(form.tools)}
-            options={toolOptions}
-            placeholder="Search or add a tool"
-            onChange={(next) => set("tools", next.join(", "))}
-          />
-          <TagField
-            id="certs"
-            label="Certifications"
-            hint="Optional."
-            values={splitList(form.certifications)}
-            options={certOptions}
-            placeholder="Search or add a certification"
-            onChange={(next) => set("certifications", next.join(", "))}
-          />
-          <Field
-            label={available ? "What you’re available for" : "What you need"}
-            htmlFor="desc"
-            required
-            hint="One line. Matches see this."
-          >
-            <Textarea id="desc" rows={2} value={form.description} onChange={(e) => set("description", e.target.value)} />
-          </Field>
-        </FormSection>
-
-        <FormSection title="Work preference">
-          <Field label="Work preference" htmlFor="remote">
-            <Select
-              id="remote"
-              value={form.remoteOnsite}
-              onChange={(e) => set("remoteOnsite", e.target.value as "remote" | "onsite" | "hybrid")}
-            >
-              <option value="remote">Remote</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="onsite">On-site</option>
-            </Select>
-          </Field>
-          <Field label="Location" htmlFor="location" required>
-            <Input id="location" value={form.location} onChange={(e) => set("location", e.target.value)} />
-          </Field>
-        </FormSection>
-
-        <FormSection title={available ? "When are you available?" : "When do you need someone?"}>
-          <Field label="Timing" htmlFor="timing">
-            <Select id="timing" value={form.timing} onChange={(e) => set("timing", e.target.value)}>
-              {M_T_TIMING.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Experience (years)" htmlFor="exp" hint="Carried over from your profile.">
-            <Input
-              id="exp"
-              inputMode="numeric"
-              value={form.experienceYears}
-              onChange={(e) => set("experienceYears", e.target.value)}
-            />
-          </Field>
-        </FormSection>
-
-        {showMore ? (
-          <FormSection title="More detail" note="Optional. Helps VAEL place you more precisely.">
-            <Field label="Category" htmlFor="category">
-              <Select id="category" value={form.category} onChange={(e) => set("category", e.target.value)}>
-                <option value="">Not specified</option>
-                {M_T_CATEGORIES.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Engagement" htmlFor="eng">
-              <Select id="eng" value={form.engagement} onChange={(e) => set("engagement", e.target.value)}>
-                {M_T_ENGAGEMENTS.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Budget proxy" htmlFor="budget">
-              <Select id="budget" value={form.budgetProxy} onChange={(e) => set("budgetProxy", e.target.value)}>
-                {M_T_BUDGET.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </Select>
-            </Field>
-          </FormSection>
-        ) : null}
-
-        <section className="rounded-2xl border border-border bg-surface-muted px-6 py-6">
-          <p className="vael-kicker">You’ll be visible for</p>
-          <p className="mt-2 vael-h3">{DEFAULT_DURATION_HOURS} hours</p>
-          <p className="mt-2 text-body-sm text-muted">
-            After that your VAEL ends and you stop appearing to matches. You can Vael In again any time.
+        <section className="rounded-2xl border border-border bg-white px-6 py-6 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <p className="text-caption font-medium uppercase tracking-[0.1em] text-[#C99A28] dark:text-accent">
+            You’ll be visible for
           </p>
-          <p className="vael-kicker mt-6">Matching will consider</p>
-          <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-body-sm text-muted">
-            {["Your capabilities", "Work preference", "Location", "Experience", "Availability"].map((item, index) => (
-              <li key={item}>
-                {index > 0 ? (
-                  <span className="mr-3 text-quiet" aria-hidden>
-                    ·
-                  </span>
-                ) : null}
-                {item}
-              </li>
-            ))}
-          </ul>
+          <p className="mt-2 font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+            {DEFAULT_DURATION_HOURS} hours
+          </p>
+          <p className="mt-2 text-body-sm text-muted">
+            After that your VAEL ends and you stop appearing to matches. You can {available ? "Vael In" : "Vael Out"}{" "}
+            again any time.
+          </p>
         </section>
-
-        <Alert tone="info" title="Stored on this device">
-          This VAEL stays in this browser for {DEFAULT_DURATION_HOURS} hours. It is not sent to a live market.
-        </Alert>
 
         {error ? (
           <p role="alert" className="text-label text-destructive">
@@ -363,85 +168,10 @@ function VaelInner() {
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg" loading={step === "saving"}>
-            {available ? "Vael In" : "Vael Out"}
-          </Button>
-          {!showMore ? (
-            <Button type="button" variant="ghost" onClick={() => setShowMore(true)}>
-              More detail
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              saveDemoDraft(form, handle);
-              setDraftSaved(true);
-            }}
-          >
-            Save for later
-          </Button>
-        </div>
-        {draftSaved ? <p className="text-label text-muted">Saved on this device. Not published.</p> : null}
-      </form>
-    </CityPage>
-  );
-}
-
-function ActiveVaelInner() {
-  const { listing, vaelKind, clearListing } = useVael();
-  const navigate = useNavigate();
-
-  if (!listing) {
-    return <Navigate to="/media-technology/vael?create=1" replace />;
-  }
-
-  const hours = hoursLeft(listing.expiresAt);
-
-  return (
-    <CityPage width="narrow">
-      <JourneyProgress step="Matches" />
-      <PageHeader
-        kicker="Media & Technology"
-        title="You’re visible"
-        description={
-          listing.side === "out"
-            ? "The City can see that you need someone."
-            : "Relevant matches can now see your availability."
-        }
-        crumbs={[
-          { label: "Media & Technology", href: "/media-technology" },
-          { label: "Availability" },
-        ]}
-      />
-      <div className="mt-8 space-y-6">
-        <VaelStatePanel
-          kind={vaelKind === "expiring" ? "expiring" : listing.side === "out" ? "out" : "in"}
-          hoursLeft={hours}
-          side={listing.side}
-        />
-        <p className="text-body">
-          {[listing.category || listing.discipline, "Media & Technology"].filter(Boolean).join(" · ")}
-        </p>
-        <p className="text-body text-muted">{hours} hours remaining on this device.</p>
-      </div>
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Link to="/media-technology/board" className={buttonClassName({ size: "lg" })}>
-          View matches
-        </Link>
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => {
-            clearListing();
-            navigate("/media-technology/vael?create=1");
-          }}
-        >
-          End availability
+        <Button type="submit" size="lg" loading={step === "saving"}>
+          {available ? "Vael In" : "Vael Out"}
         </Button>
-      </div>
-    </CityPage>
+      </form>
+    </DashboardShell>
   );
 }

@@ -8,7 +8,7 @@ import {
   renameAccountHandle,
 } from "./accounts";
 import { districts } from "./districts";
-import { profileReady } from "./providerJourney";
+import { PRODUCT_HOME, profileReady } from "./providerJourney";
 import { getProfile, renameProfileHandle } from "./vaelStore";
 
 const KEY = "vael_onboarding_v1";
@@ -28,19 +28,67 @@ export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
 const PROFILE_BUILD_STEPS: readonly OnboardingStep[] = ["Identity", "Credentials"];
 
+export type OnboardingIntent = "in" | "out" | "need" | "";
+export type OnboardingNeedPlace = "home" | "business" | "";
+
+/** VAEL OUT request steps. Separate from the VAEL IN wizard indexes. */
+export const VAEL_OUT_STEPS = ["need", "who", "location", "requirements", "timing", "details", "review"] as const;
+
+export type VaelOutStep = (typeof VAEL_OUT_STEPS)[number];
+
 export type OnboardingDraft = {
   handle: string;
-  intent: "in" | "out" | "";
+  intent: OnboardingIntent;
   profileType: "individual" | "business" | "";
   districtId: string;
   handleClaimed: boolean;
   completedStep: OnboardingStep;
   completedAt?: string;
+  /** Home vs business after "I need something done". Internal only. */
+  needPlace?: OnboardingNeedPlace;
+  /** Current VAEL OUT step. "submitted" means the request was posted. */
+  outStep?: VaelOutStep | "submitted";
 };
 
-export const ONBOARDING_PATH: Record<OnboardingStep, string> = {
+export function isVaelOutStep(value: string): value is VaelOutStep {
+  return (VAEL_OUT_STEPS as readonly string[]).includes(value);
+}
+
+export function vaelOutPath(step: VaelOutStep) {
+  return `/join/out/${step}`;
+}
+
+/** Step the person should see. `outStep` is the step they are on. */
+export function vaelOutResume(draft: OnboardingDraft | undefined): string {
+  const step = draft?.outStep;
+  if (step && isVaelOutStep(step)) return vaelOutPath(step);
+  return vaelOutPath("need");
+}
+
+export function vaelOutPrevious(step: VaelOutStep): string | null {
+  const index = VAEL_OUT_STEPS.indexOf(step);
+  if (index <= 0) return null;
+  return vaelOutPath(VAEL_OUT_STEPS[index - 1]);
+}
+
+export function vaelOutNext(step: VaelOutStep): VaelOutStep | "submitted" {
+  const next = VAEL_OUT_STEPS[VAEL_OUT_STEPS.indexOf(step) + 1];
+  return next ?? "submitted";
+}
+
+/** `/join/out`, a known step, or an unknown step under that prefix. */
+export function vaelOutVisit(pathname: string): VaelOutStep | "index" | "invalid" | null {
+  const normalized = pathname.replace(/\/$/, "") || "/";
+  if (normalized === "/join/out") return "index";
+  const match = normalized.match(/^\/join\/out\/([^/]+)$/);
+  if (!match) return null;
+  return isVaelOutStep(match[1]) ? match[1] : "invalid";
+}
+
+export const ONBOARDING_PATH: Record<OnboardingStep | "Need", string> = {
   "Sign Up": "/join",
   Intent: "/join/intent",
+  Need: "/join/need",
   Welcome: "/join/welcome",
   "Profile Setup": "/join/setup",
   Identity: "/join/identity",
@@ -48,6 +96,25 @@ export const ONBOARDING_PATH: Record<OnboardingStep, string> = {
   Preview: "/join/preview",
   Done: "/join/done",
 };
+
+export const CONTRACTOR_HOME_PATH = "/need/home";
+export const CONTRACTOR_BUSINESS_PATH = "/districts/contractor/vael?side=out";
+
+export function isNeedIntent(draft: OnboardingDraft | undefined) {
+  return draft?.intent === "need";
+}
+
+/** Where a "I need something done" member should land. Never names districts. */
+export function needExperienceLanding(draft: OnboardingDraft | undefined) {
+  if (!draft || draft.intent !== "need") return ONBOARDING_PATH.Need;
+  if (draft.needPlace === "home") return CONTRACTOR_HOME_PATH;
+  if (draft.needPlace === "business") return CONTRACTOR_BUSINESS_PATH;
+  return ONBOARDING_PATH.Need;
+}
+
+export function signedInLanding(_handle: string) {
+  return PRODUCT_HOME;
+}
 
 type StoredDraft = Omit<OnboardingDraft, "completedStep"> & { completedStep: string };
 type Store = Record<string, OnboardingDraft>;
@@ -96,6 +163,7 @@ export function startOnboarding(handle: string): OnboardingDraft {
     districtId: "",
     handleClaimed: false,
     completedStep: "Sign Up",
+    needPlace: "",
   };
   writeStore({ ...readStore(), [handle]: draft });
   return draft;
@@ -149,11 +217,12 @@ function nextStep(completed: OnboardingStep): OnboardingStep {
   return ONBOARDING_STEPS[Math.min(index + 1, ONBOARDING_STEPS.length - 1)];
 }
 
-export function onboardingStep(handle: string): OnboardingStep {
+export function onboardingStep(handle: string): OnboardingStep | "Need" {
   if (!handle) return "Sign Up";
   if (onboardingComplete(handle)) return "Done";
   const draft = getOnboardingDraft(handle);
   if (!draft) return "Sign Up";
+  if (draft.intent === "need") return "Need";
   return nextStep(draft.completedStep);
 }
 
@@ -171,21 +240,30 @@ export function matchingBoardRoute(districtId: string): string {
 }
 
 export function onboardingRoute(handle: string): string {
+  const draft = getOnboardingDraft(handle);
+  if (isNeedIntent(draft)) return needExperienceLanding(draft);
+  if (draft?.intent === "out" && draft.outStep && draft.outStep !== "submitted") {
+    return vaelOutResume(draft);
+  }
+  if (draft?.intent === "out" && !onboardingComplete(handle)) {
+    return vaelOutResume(draft);
+  }
+
   const step = onboardingStep(handle);
-  if (PROFILE_BUILD_STEPS.includes(step)) {
-    const draft = getOnboardingDraft(handle);
+  if (step !== "Need" && PROFILE_BUILD_STEPS.includes(step)) {
     if (draft?.districtId && draft.districtId !== "media-technology") {
       return districtProfileEditRoute(draft.districtId, handle);
     }
   }
+  if (step === "Need") return ONBOARDING_PATH.Need;
   return ONBOARDING_PATH[step];
 }
 
-export function pathToOnboardingStep(pathname: string): OnboardingStep | null {
+export function pathToOnboardingStep(pathname: string): OnboardingStep | "Need" | null {
   const normalized = pathname.replace(/\/$/, "") || "/";
   if (normalized === "/join") return "Sign Up";
   if (normalized === "/join/profile") return "Identity";
-  const found = (Object.entries(ONBOARDING_PATH) as Array<[OnboardingStep, string]>).find(
+  const found = (Object.entries(ONBOARDING_PATH) as Array<[OnboardingStep | "Need", string]>).find(
     ([, path]) => path === normalized,
   );
   return found?.[0] ?? null;

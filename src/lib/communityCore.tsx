@@ -9,16 +9,22 @@ import {
   getFollowedCommunityIds,
   getSavedCommunityPosts,
   getVisibleCommunityPosts,
+  getMemberCommunityActivity,
+  getMemberCommunityPosts,
+  getMemberSavedCommunityPosts,
   isFollowingCommunity,
   subscribeCommunity,
   toggleCommunityFollow,
   toggleCommunityLike,
+  toggleCommunityReaction,
   toggleCommunitySave,
   viewCommunityPost,
   type CommunityDistrictId,
+  type CommunityActivityItem,
   type CommunityPost,
   type CommunityPostKind,
   type CommunityPostView,
+  type CommunityReactionKind,
 } from "./communityStore";
 import { pushNotice } from "./vaelStore";
 import { ensureDemoCommunityFeed } from "./demoJourney";
@@ -30,9 +36,13 @@ type Ctx = {
   saved: () => CommunityPostView[];
   post: (id: string) => CommunityPostView | undefined;
   comments: typeof getCommunityComments;
+  memberPosts: () => CommunityPostView[];
+  memberSaved: () => CommunityPostView[];
+  memberActivity: () => CommunityActivityItem[];
   publish: (input: { districtId: CommunityDistrictId; body: string; kind?: CommunityPostKind; title?: string }) => CommunityPost;
   remove: (id: string) => void;
   like: (id: string) => void;
+  react: (id: string, kind: CommunityReactionKind) => void;
   save: (id: string) => void;
   comment: (postId: string, body: string) => void;
   followedCommunities: () => CommunityDistrictId[];
@@ -65,6 +75,9 @@ export function CommunityCoreProvider({ children }: { children: ReactNode }) {
         return record ? viewCommunityPost(record, handle || undefined) : undefined;
       },
       comments: getCommunityComments,
+      memberPosts: () => getMemberCommunityPosts(handle).map((item) => viewCommunityPost(item, handle || undefined)),
+      memberSaved: () => getMemberSavedCommunityPosts(handle).map((item) => viewCommunityPost(item, handle || undefined)),
+      memberActivity: () => getMemberCommunityActivity(handle),
       publish: (input) => {
         if (!handle) throw new Error("Continue locally to share.");
         return createCommunityPost({ ...input, handle });
@@ -76,6 +89,10 @@ export function CommunityCoreProvider({ children }: { children: ReactNode }) {
       like: (id) => {
         if (!handle) throw new Error("Continue locally to like a post.");
         toggleCommunityLike(id, handle);
+      },
+      react: (id, kind) => {
+        if (!handle) throw new Error("Continue locally to react to a post.");
+        toggleCommunityReaction(id, handle, kind);
       },
       save: (id) => {
         if (!handle) throw new Error("Continue locally to save a post.");

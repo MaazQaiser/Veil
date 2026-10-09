@@ -2,7 +2,7 @@
  * Local Community store.
  *
  * Matches the original product model documented in the audit pack:
- * posts, comments, reactions (like), saves. Keys stay on this device.
+ * posts, comments, reactions (like, celebrate, insight), saves. Keys stay on this device.
  *
  * Does not invent posts for unfinished lots. Empty stays honest until a member
  * publishes, or until the client demo seeds labeled sample-on-this-device posts.
@@ -86,10 +86,12 @@ export type CommunityComment = {
   createdAt: string;
 };
 
+export type CommunityReactionKind = "like" | "celebrate" | "insight";
+
 export type CommunityReaction = {
   postId: string;
   handle: string;
-  kind: "like";
+  kind: CommunityReactionKind;
 };
 
 export type CommunitySave = {
@@ -184,6 +186,10 @@ export function communityDistrictFromLot(district: CityDistrict): CommunityDistr
   if (!isDistrictEnterable(district)) return undefined;
   if (isLiveCommunityDistrict(district.id)) return district.id;
   return undefined;
+}
+
+export function isDemoCommunityPost(post: Pick<CommunityPost, "id">) {
+  return post.id.startsWith("cpost_demo_");
 }
 
 export function formatCommunityTime(iso: string) {
@@ -330,30 +336,46 @@ export function addCommunityComment(input: { postId: string; handle: string; bod
   return comment;
 }
 
+export function getCommunityReactions(postId: string, kind: CommunityReactionKind) {
+  return read<CommunityReaction[]>(KEYS.reactions, []).filter((item) => item.postId === postId && item.kind === kind);
+}
+
 export function getCommunityLikes(postId: string) {
-  return read<CommunityReaction[]>(KEYS.reactions, []).filter((item) => item.postId === postId && item.kind === "like");
+  return getCommunityReactions(postId, "like");
+}
+
+export function hasCommunityReaction(postId: string, handle: string, kind: CommunityReactionKind) {
+  return getCommunityReactions(postId, kind).some((item) => item.handle === handle);
 }
 
 export function hasLikedCommunityPost(postId: string, handle: string) {
-  return getCommunityLikes(postId).some((item) => item.handle === handle);
+  return hasCommunityReaction(postId, handle, "like");
 }
 
-export function toggleCommunityLike(postId: string, handle: string) {
+export function toggleCommunityReaction(postId: string, handle: string, kind: CommunityReactionKind) {
   const post = getCommunityPost(postId);
   if (!post || post.deletedAt) throw new Error("This post is not available.");
   const all = read<CommunityReaction[]>(KEYS.reactions, []);
-  const exists = all.some((item) => item.postId === postId && item.handle === handle && item.kind === "like");
+  const exists = all.some((item) => item.postId === postId && item.handle === handle && item.kind === kind);
   write(
     KEYS.reactions,
     exists
-      ? all.filter((item) => !(item.postId === postId && item.handle === handle && item.kind === "like"))
-      : [...all, { postId, handle, kind: "like" as const }],
+      ? all.filter((item) => !(item.postId === postId && item.handle === handle && item.kind === kind))
+      : [...all, { postId, handle, kind }],
   );
   return !exists;
 }
 
+export function toggleCommunityLike(postId: string, handle: string) {
+  return toggleCommunityReaction(postId, handle, "like");
+}
+
 export function getCommunitySaves(handle: string) {
   return read<CommunitySave[]>(KEYS.saves, []).filter((item) => item.handle === handle);
+}
+
+export function getCommunitySaveCount(postId: string) {
+  return read<CommunitySave[]>(KEYS.saves, []).filter((item) => item.postId === postId).length;
 }
 
 export function hasSavedCommunityPost(postId: string, handle: string) {
@@ -375,6 +397,73 @@ export function toggleCommunitySave(postId: string, handle: string) {
 export function getSavedCommunityPosts(handle: string) {
   const ids = new Set(getCommunitySaves(handle).map((item) => item.postId));
   return getVisibleCommunityPosts().filter((item) => ids.has(item.id));
+}
+
+function isLiveMemberPost(post: CommunityPost | undefined): post is CommunityPost {
+  return Boolean(post && !post.deletedAt && !isDemoCommunityPost(post));
+}
+
+/** Posts this handle actually published — never demo/example content. */
+export function getMemberCommunityPosts(handle: string) {
+  if (!handle) return [];
+  return getVisibleCommunityPosts().filter((item) => item.handle === handle && !isDemoCommunityPost(item));
+}
+
+/** Saved posts minus example/demo content. */
+export function getMemberSavedCommunityPosts(handle: string) {
+  if (!handle) return [];
+  return getSavedCommunityPosts(handle).filter((item) => !isDemoCommunityPost(item));
+}
+
+export type CommunityActivityKind = CommunityReactionKind | "comment" | "save";
+
+export type CommunityActivityItem = {
+  id: string;
+  kind: CommunityActivityKind;
+  postId: string;
+  createdAt: string;
+  excerpt?: string;
+};
+
+function getAllCommunityComments() {
+  return read<CommunityComment[]>(KEYS.comments, []);
+}
+
+function getAllCommunityReactions() {
+  return read<CommunityReaction[]>(KEYS.reactions, []);
+}
+
+/** Likes, comments, and saves this handle made on real (non-example) posts. */
+export function getMemberCommunityActivity(handle: string): CommunityActivityItem[] {
+  if (!handle) return [];
+  const comments: CommunityActivityItem[] = getAllCommunityComments()
+    .filter((item) => item.handle === handle)
+    .filter((item) => isLiveMemberPost(getCommunityPost(item.postId)))
+    .map((item) => ({
+      id: item.id,
+      kind: "comment",
+      postId: item.postId,
+      createdAt: item.createdAt,
+      excerpt: item.body,
+    }));
+  const reactions: CommunityActivityItem[] = getAllCommunityReactions()
+    .filter((item) => item.handle === handle)
+    .filter((item) => isLiveMemberPost(getCommunityPost(item.postId)))
+    .map((item) => ({
+      id: `${item.kind}-${item.postId}-${item.handle}`,
+      kind: item.kind,
+      postId: item.postId,
+      createdAt: "",
+    }));
+  const saves: CommunityActivityItem[] = getCommunitySaves(handle)
+    .filter((item) => isLiveMemberPost(getCommunityPost(item.postId)))
+    .map((item) => ({
+      id: `save-${item.postId}-${item.handle}`,
+      kind: "save",
+      postId: item.postId,
+      createdAt: "",
+    }));
+  return [...comments, ...reactions, ...saves].sort((a, b) => Date.parse(b.createdAt || "0") - Date.parse(a.createdAt || "0"));
 }
 
 /** Following a Community (Facebook-page style) is separate from joining a District's own profile/matching. */
@@ -403,8 +492,13 @@ export function toggleCommunityFollow(districtId: CommunityDistrictId, handle: s
 export type CommunityPostView = {
   post: CommunityPost;
   likeCount: number;
+  celebrateCount: number;
+  insightCount: number;
   commentCount: number;
+  saveCount: number;
   liked: boolean;
+  celebrated: boolean;
+  insighted: boolean;
   saved: boolean;
   followingCommunity: boolean;
 };
@@ -412,9 +506,14 @@ export type CommunityPostView = {
 export function viewCommunityPost(post: CommunityPost, handle?: string): CommunityPostView {
   return {
     post,
-    likeCount: getCommunityLikes(post.id).length,
+    likeCount: getCommunityReactions(post.id, "like").length,
+    celebrateCount: getCommunityReactions(post.id, "celebrate").length,
+    insightCount: getCommunityReactions(post.id, "insight").length,
     commentCount: getCommunityComments(post.id).length,
-    liked: handle ? hasLikedCommunityPost(post.id, handle) : false,
+    saveCount: getCommunitySaveCount(post.id),
+    liked: handle ? hasCommunityReaction(post.id, handle, "like") : false,
+    celebrated: handle ? hasCommunityReaction(post.id, handle, "celebrate") : false,
+    insighted: handle ? hasCommunityReaction(post.id, handle, "insight") : false,
     saved: handle ? hasSavedCommunityPost(post.id, handle) : false,
     followingCommunity: handle ? isFollowingCommunity(post.districtId, handle) : false,
   };

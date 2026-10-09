@@ -1,8 +1,9 @@
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClassName } from "@/components/ui/button";
 import {
+  IconBookmark,
   IconBriefcase,
   IconChevronRight,
   IconClock,
@@ -80,7 +81,7 @@ function GhostLink({ to, children }: { to: string; children: ReactNode }) {
       to={to}
       className={buttonClassName({
         variant: "outline",
-        className: "h-9 self-start rounded-full px-4 text-body-sm",
+        className: "h-9 self-start px-4 text-body-sm",
       })}
     >
       {children}
@@ -142,7 +143,7 @@ function RailHeader({
             type="button"
             aria-label="Scroll left"
             onClick={() => onScroll(-1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-foreground dark:hover:border-white/20"
           >
             <IconChevronRight className="h-4 w-4 rotate-180" />
           </button>
@@ -150,7 +151,7 @@ function RailHeader({
             type="button"
             aria-label="Scroll right"
             onClick={() => onScroll(1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-foreground dark:hover:border-white/20"
           >
             <IconChevronRight className="h-4 w-4" />
           </button>
@@ -453,54 +454,90 @@ const POST_KIND_ICON: Record<CommunityPostKind, typeof IconEdit> = {
   discussion: IconMessageCircle,
 };
 
-/** Same card language as the Community feed (kind chip, author, snippet) so the dashboard preview matches. */
+/** Same card language as Matches — circle photo, badge row, info, footer CTA. */
 function CommunityPostPreviewCard({ view }: { view: CommunityPostView }) {
   const { post } = view;
+  const [saved, setSaved] = useState(view.saved);
   const author = resolveCommunityAuthor(post.handle, post.districtId);
   const kind = communityPostKind(post);
   const kindLabel = kind === "collaboration" ? "Highlight" : communityPostKindLabel(kind);
   const KindIcon = POST_KIND_ICON[kind];
-  const districtLabel = communityDistrictLabel(post.districtId);
+  const name = author.name;
+  const initial = name.trim().charAt(0).toUpperCase() || "V";
+  const image = author.avatarUrl;
+  const district = communityDistrictLabel(post.districtId);
+
   return (
-    <Link
-      to={`/feed/${post.id}`}
-      className="group flex w-[22rem] shrink-0 snap-start flex-col gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-[#C99A28]/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] sm:w-96 dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-accent/30 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(255,157,69,0.2)]"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-caption font-medium text-muted">{districtLabel}</span>
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#FFC555]/15 px-2.5 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+    <article className="flex w-80 shrink-0 snap-start flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
+      <div className="flex items-center gap-3">
+        {image ? (
+          <img src={image} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]">
+            {initial}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-body font-medium text-foreground">{name}</p>
+          <p className="truncate text-body-sm text-muted">{formatCommunityTime(post.createdAt)}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-3 py-1 text-caption font-medium text-foreground">
+          {district}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-[#FFC555]/15 px-3 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
           <KindIcon className="h-3.5 w-3.5" aria-hidden />
           {kindLabel}
         </span>
       </div>
-      <div className="flex items-center gap-2.5">
-        <Avatar name={author.name} src={author.avatarUrl} size="sm" />
-        <div className="min-w-0">
-          <p className="truncate text-body-sm font-medium text-foreground">{author.name}</p>
-          <p className="text-caption text-muted">{formatCommunityTime(post.createdAt)}</p>
-        </div>
+
+      <p className="line-clamp-2 text-body-sm text-quiet">{post.title || post.body}</p>
+
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-subtle pt-3">
+        <button
+          type="button"
+          aria-label={saved ? "Remove from saved" : "Save post"}
+          aria-pressed={saved}
+          onClick={() => setSaved((value) => !value)}
+          className={cn(
+            "flex items-center gap-1.5 text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-150",
+            saved ? "text-[#0B0C0C] dark:text-[#F5F3EE]" : "text-quiet hover:text-[#0B0C0C] dark:hover:text-[#F5F3EE]",
+          )}
+        >
+          <IconBookmark className={cn("h-4 w-4", saved && "fill-current")} />
+          {saved ? "Saved" : "Save"}
+        </button>
+        <Link
+          to={`${PRODUCT_HOME}/community`}
+          className="group flex items-center gap-1 text-body-sm font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 hover:text-[#C99A28] dark:text-[#F5F3EE] dark:hover:text-accent"
+        >
+          View Post
+          <IconChevronRight className="h-3.5 w-3.5 motion-safe:transition-transform motion-safe:duration-150 group-hover:translate-x-0.5" />
+        </Link>
       </div>
-      {post.title ? (
-        <p className="line-clamp-1 text-body-sm font-semibold text-foreground">{post.title}</p>
-      ) : null}
-      <p className="line-clamp-2 text-body-sm text-muted">{post.body}</p>
-      <span className="mt-auto flex items-center gap-1 border-t border-border-subtle pt-3 text-body-sm font-medium text-[#C99A28] motion-safe:transition-colors motion-safe:duration-150 group-hover:text-foreground dark:text-accent">
-        Open
-        <IconChevronRight className="h-3.5 w-3.5 motion-safe:transition-transform motion-safe:duration-150 group-hover:translate-x-0.5" />
-      </span>
-    </Link>
+    </article>
   );
 }
 
-export function CommunityRail({ posts }: { posts: CommunityPostView[] }) {
+export function CommunityRail({
+  posts,
+  title = "From the Community",
+  description = "Recent posts from across VAEL.",
+}: {
+  posts: CommunityPostView[];
+  title?: string;
+  description?: string;
+}) {
   const railRef = useRef<HTMLDivElement>(null);
   const recent = posts.slice(0, 3);
   return (
     <section>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-h4 font-medium text-foreground">From the Community</p>
-          <p className="mt-1 text-body-sm text-muted">Recent posts from across VAEL.</p>
+          <p className="text-h4 font-medium text-foreground">{title}</p>
+          <p className="mt-1 text-body-sm text-muted">{description}</p>
         </div>
         <Link
           to={`${PRODUCT_HOME}/community`}

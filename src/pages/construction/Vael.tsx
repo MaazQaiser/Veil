@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { Alert } from "@/components/ui/feedback";
 import { Button, buttonClassName } from "@/components/ui/button";
@@ -38,12 +38,16 @@ export function ConstructionVaelPage() {
 
 function VaelInner() {
   const { listing, latestListing, saveListing, clearListing, handle, vaelKind, ensureMine } = useConstruction();
-  const [step, setStep] = useState<"intent" | "form" | "saving" | "saved" | "error">(listing ? "form" : "intent");
+  const [params] = useSearchParams();
+  const requestedSide = params.get("side") === "out" ? "out" : params.get("side") === "in" ? "in" : "";
+  const [step, setStep] = useState<"intent" | "form" | "saving" | "saved" | "error">(
+    listing ? "form" : requestedSide ? "form" : "intent",
+  );
   const [error, setError] = useState("");
   const profile = ensureMine();
 
   const [form, setForm] = useState(() => ({
-    side: (listing?.side ?? "in") as VaelSide,
+    side: (listing?.side ?? (requestedSide || "in")) as VaelSide,
     trade: listing?.trade || profile?.trade || "Electrical",
     jobType: listing?.jobType ?? "Renovation",
     capabilities: listing?.capabilities.join(", ") || profile?.capabilities.join(", ") || "",
@@ -108,7 +112,7 @@ function VaelInner() {
         title="Create VAEL"
         description="Vael In if you are available for construction work. Vael Out if you need construction capability. Free Daily VAEL lasts 24 hours."
         crumbs={[
-          { label: "Construction", href: BASE },
+          { label: "Contractor Exchange", href: BASE },
           { label: "Vael" },
         ]}
       />

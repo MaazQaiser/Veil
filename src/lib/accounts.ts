@@ -31,6 +31,11 @@ function write(next: CityAccount[]) {
   localStorage.setItem(KEY, JSON.stringify(next));
 }
 
+/** Removes every saved account on this device. */
+export function clearAllAccounts() {
+  write([]);
+}
+
 /** Removes every account except the given handles. Used by the demo reset. */
 export function clearAccountsExcept(keepHandles: string[]) {
   const keep = new Set(keepHandles);
@@ -57,6 +62,21 @@ export function findAccountByEmail(email: string): CityAccount | undefined {
 
 export function findAccountByHandle(handle: string): CityAccount | undefined {
   return read().find((account) => account.handle === handle);
+}
+
+/** Email, handle, or display name — so a demo can sign in as "Akshay Amjad". */
+export function findAccountByIdentity(raw: string): CityAccount | undefined {
+  const value = raw.trim();
+  if (!value) return undefined;
+  const byEmail = findAccountByEmail(value);
+  if (byEmail) return byEmail;
+  const handle = sanitizeHandle(value);
+  if (handle.length >= 3) {
+    const byHandle = findAccountByHandle(handle);
+    if (byHandle) return byHandle;
+  }
+  const wanted = value.toLowerCase();
+  return read().find((account) => account.displayName.trim().toLowerCase() === wanted);
 }
 
 const RESERVED_HANDLES = new Set(["admin", "vael", "support", "member", "city", "join", "explore", "feed", "account"]);

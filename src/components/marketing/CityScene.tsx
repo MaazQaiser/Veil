@@ -374,32 +374,9 @@ function buildCity(
     tierY += height;
   });
 
-  const spireGeometry = new THREE.ConeGeometry(0.55, 9, 8);
-  spireGeometry.translate(0, 4.5, 0);
-  const spireMaterial = new THREE.MeshStandardMaterial({
-    color: GOLD,
-    emissive: GOLD,
-    emissiveIntensity: 0.6,
-    roughness: 0.25,
-    metalness: 0.75,
-    envMapIntensity: 1.2,
-  });
-  const spire = new THREE.Mesh(spireGeometry, spireMaterial);
-  spire.position.y = tierY;
-  heroGroup.add(spire);
-
   const beacon = new THREE.PointLight(GOLD, 6, 30, 2);
-  beacon.position.set(0, tierY + 6, 0);
+  beacon.position.set(0, tierY + 1.5, 0);
   heroGroup.add(beacon);
-
-  const tipMaterial = new THREE.MeshStandardMaterial({
-    color: 0xff3b30,
-    emissive: 0xff3b30,
-    emissiveIntensity: 2.2,
-  });
-  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), tipMaterial);
-  tip.position.y = tierY + 9;
-  heroGroup.add(tip);
 
   scene.add(heroGroup);
 
@@ -511,7 +488,7 @@ export function CityScene() {
       resizeObserver.observe(container);
       resize();
 
-      const LOOP_SECONDS = 46;
+      const LOOP_SECONDS = 30;
       let frameId = 0;
       let visible = true;
       let start = performance.now();

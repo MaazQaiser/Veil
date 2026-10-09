@@ -10,12 +10,15 @@ import { ProfileCompleteness, ProfileDocumentsSection, ProfileTrustPanel, TrustS
 import { ConstructionTradeBadge } from "@/components/construction/ConstructionCards";
 import { CityPage } from "@/components/city/CityShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { IconCheck, IconChevronLeft } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
 import { useConstruction } from "@/lib/constructionCore";
 import { CX_TRADES, type ConstructionProfile } from "@/lib/constructionStore";
+import { addManualDistricts } from "@/lib/myDistricts";
 import { DOC_TYPES } from "@/lib/vaelStore";
 
 const BASE = "/districts/contractor";
+const DISTRICT_OVERVIEW = "/media-technology/districts/construction";
 
 function split(value: string | string[]) {
   if (Array.isArray(value)) return value;
@@ -63,7 +66,7 @@ export function ConstructionProfilePage() {
         title={profile.displayName}
         description={`@${profile.handle} · ${profile.profileType}`}
         crumbs={[
-          { label: "Construction", href: BASE },
+          { label: "Contractor Exchange", href: BASE },
           { label: `@${profile.handle}` },
         ]}
         primaryAction={
@@ -207,21 +210,46 @@ export function ConstructionProfileEditPage() {
   const cx = useConstruction();
   const [status, setStatus] = useState<"default" | "editing" | "saving" | "saved" | "error">("editing");
   const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
   const mine = cx.ensureMine();
   const [form, setForm] = useState<ConstructionProfile | null>(mine ?? null);
 
   if (!session.signedIn || session.handle !== username || !form) {
     return (
-      <CityPage>
-        <EmptyState
-          title="You can only edit your own Construction profile on this device"
-          description="Continue locally as this handle to edit."
-          action={
-            <Link to="/account" className={buttonClassName({ variant: "outline" })}>
-              Account
-            </Link>
-          }
-        />
+      <CityPage width="narrow" className="-mt-4 sm:-mt-6">
+        <BackToDistrict />
+        <div className="mt-8">
+          <EmptyState
+            title="This district profile is not yours"
+            description="Complete the Contractor Exchange profile from your own account."
+            action={
+              <Link to={DISTRICT_OVERVIEW} className={buttonClassName({ variant: "outline" })}>
+                Back to Contractor Exchange
+              </Link>
+            }
+          />
+        </div>
+      </CityPage>
+    );
+  }
+
+  if (done) {
+    return (
+      <CityPage width="narrow" className="-mt-4 sm:-mt-6">
+        <div className="mt-16 flex flex-col items-center gap-6 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-success-muted text-success">
+            <IconCheck className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="vael-h3">You're live in Contractor Exchange</p>
+            <p className="mt-2 text-body-sm text-muted">
+              Your district profile is saved. Contractor Exchange is now your active district.
+            </p>
+          </div>
+          <Link to={BASE} className={buttonClassName()}>
+            Open Contractor Exchange →
+          </Link>
+        </div>
       </CityPage>
     );
   }
@@ -238,11 +266,18 @@ export function ConstructionProfileEditPage() {
       setStatus("error");
       return;
     }
+    if (!form.trade) {
+      setError("Choose a trade, then continue.");
+      setStatus("error");
+      return;
+    }
     setStatus("saving");
     try {
       cx.writeProfile(form);
+      addManualDistricts(session.handle, ["construction"]);
       setError("");
       setStatus("saved");
+      setDone(true);
     } catch {
       setError("Could not save on this device.");
       setStatus("error");
@@ -252,17 +287,16 @@ export function ConstructionProfileEditPage() {
   const docs = cx.documents(form.handle);
 
   return (
-    <CityPage width="narrow">
-      <PageHeader
-        kicker="Construction profile"
-        title="Edit profile"
-        crumbs={[
-          { label: `@${form.handle}`, href: `${BASE}/profile/${form.handle}` },
-          { label: "Edit" },
-        ]}
-      />
+    <CityPage width="narrow" className="-mt-4 sm:-mt-6">
+      <BackToDistrict />
+      <div className="mt-4">
+        <PageHeader
+          title="Complete District Profile"
+          description="Tell Contractor Exchange what you do. Saving this makes it your active district."
+        />
+      </div>
       <form
-        className="mt-8 max-w-narrow space-y-12"
+        className="mt-8 space-y-10 rounded-2xl border border-border bg-surface p-6"
         onSubmit={(event) => {
           event.preventDefault();
           save();
@@ -301,7 +335,7 @@ export function ConstructionProfileEditPage() {
         </section>
         <section className="space-y-5">
           <p className="vael-kicker">Trade</p>
-          <Field label="Trade" htmlFor="trade">
+          <Field label="Trade" htmlFor="trade" required>
             <Select id="trade" value={form.trade} onChange={(e) => set("trade", e.target.value)}>
               <option value="">Select</option>
               {CX_TRADES.map((item) => (
@@ -358,9 +392,7 @@ export function ConstructionProfileEditPage() {
         </section>
         <section className="space-y-5">
           <p className="vael-kicker">Documents</p>
-          <p className="text-caption text-muted">
-            License, insurance, capability statement — local preview. NOT YET CONNECTED to cloud storage.
-          </p>
+          <p className="text-caption text-muted">License, insurance, or a capability statement. Optional.</p>
           {docs.map((doc) => (
             <DocumentCard
               key={doc.id}
@@ -397,20 +429,27 @@ export function ConstructionProfileEditPage() {
             {error}
           </p>
         ) : null}
-        {status === "saved" ? (
-          <p role="status" className="text-caption">
-            Saved on this device.
-          </p>
-        ) : null}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3 border-t border-border-subtle pt-6">
           <Button type="submit" loading={status === "saving"}>
-            Save profile
+            Continue
           </Button>
-          <Button type="button" variant="ghost" onClick={() => navigate(`${BASE}/profile/${form.handle}`)}>
-            Cancel
+          <Button type="button" variant="ghost" onClick={() => navigate(DISTRICT_OVERVIEW)}>
+            Back
           </Button>
         </div>
       </form>
     </CityPage>
+  );
+}
+
+function BackToDistrict() {
+  return (
+    <Link
+      to={DISTRICT_OVERVIEW}
+      className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
+    >
+      <IconChevronLeft className="h-3.5 w-3.5" />
+      Back to Contractor Exchange
+    </Link>
   );
 }

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { EmptyState } from "@/components/ui/feedback";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,6 @@ import { Input, Textarea } from "@/components/ui/controls";
 import { TagField, splitTags } from "@/components/ui/tags";
 import { Avatar } from "@/components/ui/avatar";
 import { PortfolioEditor } from "@/components/vael/profileForm";
-import { Dialog } from "@/components/ui/overlays";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   IconBriefcase,
@@ -24,40 +23,59 @@ import {
 } from "@/components/ui/icons";
 import { SearchInput } from "@/components/ui/search";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
+import { DashboardShell } from "@/components/mt/DashboardShell";
 import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
 import { primaryDistricts } from "@/lib/districts";
 import { DISTRICT_CARDS } from "@/lib/marketingDirectory";
-import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
+import { profileCompletion } from "@/lib/providerJourney";
 import { useVael } from "@/lib/vaelCore";
 import { useConstruction } from "@/lib/constructionCore";
 import { useTrucking } from "@/lib/truckingCore";
 import { useResidential } from "@/lib/residentialCore";
 import { useCommercial } from "@/lib/commercialCore";
-import { useJoinedDistricts, siblingCompletion } from "@/components/mt/DistrictsRow";
-import { addManualDistricts } from "@/lib/myDistricts";
-import { getOnboardingDraft } from "@/lib/onboarding";
+import { useJoinedDistricts, useDistrictCards, siblingCompletion } from "@/components/mt/DistrictsRow";
+import { addManualDistricts, getActiveDistrictId } from "@/lib/myDistricts";
+import { districtProfileEditRoute, getOnboardingDraft } from "@/lib/onboarding";
 import { capabilityOptions, disciplineOptions, certificationOptions, LOOKING_FOR_OPTIONS, M_T_OFFERS } from "@/lib/vaelStore";
-import { CX_TRADES, CX_SKILLS, CX_OFFERS, CX_CREDENTIAL_TYPES } from "@/lib/constructionStore";
-import { TX_EQUIPMENT, TX_SKILLS, TX_OFFERS, TX_CREDENTIAL_TYPES } from "@/lib/truckingStore";
-import { RX_SERVICES, RX_SKILLS, RX_OFFERS, RX_CREDENTIAL_TYPES } from "@/lib/residentialStore";
-import { CM_CAPABILITIES, CM_SKILLS, CM_OFFERS, CM_CREDENTIAL_TYPES } from "@/lib/commercialStore";
+import { CX_TRADES, CX_SKILLS, CX_OFFERS, CX_CREDENTIAL_TYPES, subscribeConstruction } from "@/lib/constructionStore";
+import { TX_EQUIPMENT, TX_SKILLS, TX_OFFERS, TX_CREDENTIAL_TYPES, subscribeTrucking } from "@/lib/truckingStore";
+import { RX_SERVICES, RX_SKILLS, RX_OFFERS, RX_CREDENTIAL_TYPES, subscribeResidential } from "@/lib/residentialStore";
+import { CM_CAPABILITIES, CM_SKILLS, CM_OFFERS, CM_CREDENTIAL_TYPES, subscribeCommercial } from "@/lib/commercialStore";
+import { subscribeVael } from "@/lib/vaelStore";
 
 const MANAGE_ROUTE = "/media-technology/districts";
+const SIBLING_PROFILE_DISTRICTS = new Set(["construction", "trucking", "residential", "commercial"]);
+
+function districtProfileHref(districtId: string, handle: string) {
+  if (SIBLING_PROFILE_DISTRICTS.has(districtId)) return districtProfileEditRoute(districtId, handle);
+  return `${MANAGE_ROUTE}/${districtId}/edit`;
+}
+
+/** Longer, two-line blurbs for this card grid only — the shared `district.blurb` stays
+ * short for the places that need a single line (marketing, onboarding). */
+const DISTRICT_CARD_BLURB: Record<string, string> = {
+  "media-technology": "Technology, design, media, and digital professionals — matched by real-time availability, not job posts.",
+  construction: "Vael In if you are available for construction work. Vael Out if you need a contractor.",
+  trucking: "Carriers, drivers, and freight capacity for regional and long-haul freight moves, matched on availability.",
+  residential: "Home services for homeowner projects, from repairs and installs to renovations and everything between.",
+  commercial: "Business services and commercial providers supporting local companies, offices, and facilities.",
+};
 
 /** Same backdrop the generic profile banner uses — one consistent look across the app. */
 const DEFAULT_COVER_IMAGE = "/scenes/city-skyline-wide.jpg";
 
 const EDIT_TABS = ["role", "skills", "experience", "capabilities", "lookingFor", "work", "credentials"] as const;
 
-function BackToDashboard() {
-  return (
-    <Link to={PRODUCT_HOME} className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground">
-      <IconChevronLeft className="h-3.5 w-3.5" />
-      Back to dashboard
-    </Link>
-  );
-}
+const EDIT_TAB_LABEL: Record<(typeof EDIT_TABS)[number], string> = {
+  role: "Your Role",
+  skills: "Skills & Expertise",
+  experience: "Experience",
+  capabilities: "Capabilities",
+  lookingFor: "Looking For",
+  work: "Work",
+  credentials: "Credentials",
+};
 
 function BackToDistricts() {
   return (
@@ -73,18 +91,17 @@ function BackToDistricts() {
 export function DistrictsPage() {
   const { session } = useCitySession();
   const vael = useVael();
-  const navigate = useNavigate();
   const handle = session.handle;
   const mine = vael.profile(handle);
   const docs = vael.documents(handle);
-  const joined = useJoinedDistricts(handle, mine, docs);
-  const percentByDistrict = new Map(joined.map((row) => [row.district.id, row.percent]));
+  const cards = useDistrictCards(handle, mine, docs);
+  const percentByDistrict = new Map(cards.map((row) => [row.district.id, row.percent]));
+  const activeByDistrict = new Map(cards.map((row) => [row.district.id, row.isActive]));
+  const visitedByDistrict = new Map(cards.map((row) => [row.district.id, row.hasVisited]));
   const homeDistrictId = getOnboardingDraft(handle)?.districtId || "media-technology";
+  const vaelIn = getOnboardingDraft(handle)?.intent !== "out";
 
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [joining, setJoining] = useState(false);
-  const [confirmDistrict, setConfirmDistrict] = useState<(typeof primaryDistricts)[number] | null>(null);
 
   const visibleDistricts = primaryDistricts.filter((district) => {
     const q = query.trim().toLowerCase();
@@ -92,57 +109,33 @@ export function DistrictsPage() {
     return `${district.name} ${district.blurb}`.toLowerCase().includes(q);
   });
 
-  function toggleSelect(districtId: string) {
-    setSelected((prev) => (prev.includes(districtId) ? prev.filter((id) => id !== districtId) : [...prev, districtId]));
-  }
-
-  function joinSelected() {
-    if (selected.length === 0) return;
-    setJoining(true);
-    addManualDistricts(handle, selected);
-    setSelected([]);
-    setJoining(false);
-  }
-
-  function confirmJoin() {
-    if (!confirmDistrict) return;
-    addManualDistricts(handle, [confirmDistrict.id]);
-    navigate(`${MANAGE_ROUTE}/${confirmDistrict.id}/edit`);
-    setConfirmDistrict(null);
-  }
-
   return (
-    <CityPage className="-mt-4 sm:-mt-6">
-      <BackToDashboard />
-      <div className="mt-4">
-        <PageHeader
-          title="Districts"
-          description="Explore the Districts across VAEL and manage the ones you belong to."
-          actions={
-            <SearchInput
-              label="Search districts"
-              placeholder="Search districts"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="sm:w-64"
-            />
-          }
+    <DashboardShell>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+        <div className="min-w-0">
+          <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+            Districts
+          </h1>
+          <p className="mt-1 text-body-sm text-muted">
+            {vaelIn
+              ? "You are live in one district. Switch when you want to become live in another."
+              : "Explore the Districts across VAEL and manage the ones you belong to."}
+          </p>
+        </div>
+        <SearchInput
+          label="Search districts"
+          placeholder="Search districts"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className="sm:w-64"
         />
       </div>
 
-      {selected.length > 0 ? (
-        <div className="mt-6 flex justify-end">
-          <Button onClick={joinSelected} loading={joining} className="rounded-full">
-            Join {selected.length} selected district{selected.length > 1 ? "s" : ""}
-          </Button>
-        </div>
-      ) : null}
-
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleDistricts.map((district) => {
-          const percent = percentByDistrict.get(district.id);
-          const isMine = percent !== undefined;
-          const isSelected = selected.includes(district.id);
+          const percent = percentByDistrict.get(district.id) ?? 0;
+          const isActive = Boolean(activeByDistrict.get(district.id));
+          const hasVisited = Boolean(visitedByDistrict.get(district.id));
           const isHome = district.id === homeDistrictId;
           const image = DISTRICT_CARDS.find((card) => card.id === district.id)?.image;
           return (
@@ -150,56 +143,54 @@ export function DistrictsPage() {
               key={district.id}
               className={cn(
                 "flex flex-col gap-4 rounded-2xl border bg-surface p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] motion-safe:transition-shadow motion-safe:duration-200 hover:shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-8px_rgba(17,17,17,0.14)]",
-                "dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_16px_36px_-12px_rgba(255,157,69,0.15)]",
-                isHome
-                  ? "border-[#FFC555] ring-1 ring-[#FFC555] dark:border-accent dark:ring-accent"
-                  : isSelected
-                    ? "border-foreground dark:border-accent/40"
-                    : "border-border",
+                "dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_16px_36px_-12px_rgba(0,0,0,0.4)]",
+                isActive ? "border-accent/50" : "border-border",
               )}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
                 <span className="h-11 w-11 shrink-0 overflow-hidden rounded-full border border-border bg-surface-muted">
                   {image ? <img src={image} alt="" className="h-full w-full object-cover" /> : null}
                 </span>
-                <label className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center">
-                  <span className="sr-only">Select {district.name}</span>
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded border-border text-foreground accent-foreground"
-                    checked={isSelected}
-                    onChange={() => toggleSelect(district.id)}
-                  />
-                </label>
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="vael-h4">{district.name}</p>
-                  {isHome ? (
-                    <span className="inline-flex items-center rounded-full bg-[#FFC555]/15 px-2.5 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
-                      Your District
-                    </span>
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <p className="truncate vael-h4">{district.name}</p>
+                  {isActive ? (
+                    <Badge tone="live">{vaelIn ? "Live" : "Current"}</Badge>
                   ) : (
-                    <Badge tone={isMine ? (percent === 100 ? "live" : "outline") : "muted"}>
-                      {isMine ? `${percent}% complete` : "Available"}
+                    <Badge tone={percent === 100 ? "live" : percent > 0 ? "gold" : "outline"}>
+                      {percent}% complete
                     </Badge>
                   )}
+                  {isHome && !isActive ? <Badge tone="outline">Home</Badge> : null}
                 </div>
-                <p className="mt-1 text-body-sm text-muted">{district.blurb}</p>
               </div>
-              <div className="mt-auto flex items-center justify-end gap-3 border-t border-border-subtle pt-4">
-                {isMine ? (
-                  <Link to={`${MANAGE_ROUTE}/${district.id}/edit`} className={buttonClassName({ size: "sm", className: "rounded-full" })}>
-                    View District
-                  </Link>
+              <p className="line-clamp-2 text-body-sm text-muted">
+                {DISTRICT_CARD_BLURB[district.id] ?? district.blurb}
+              </p>
+              <div className="mt-auto flex items-end justify-between gap-3 border-t border-border-subtle pt-4">
+                {isActive ? (
+                  <>
+                    <p className="text-caption text-muted">
+                      {vaelIn ? "You're live in this district" : "You're in this district"}
+                    </p>
+                    <Link
+                      to={district.id === "construction" ? "/districts/contractor" : `${MANAGE_ROUTE}/${district.id}/edit`}
+                      className="shrink-0 text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground dark:text-accent"
+                    >
+                      {district.id === "construction" ? "Open exchange →" : "View district →"}
+                    </Link>
+                  </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDistrict(district)}
-                    className={buttonClassName({ size: "sm", className: "rounded-full" })}
-                  >
-                    Join District
-                  </button>
+                  <>
+                    <p className="text-caption text-muted">
+                      {percent}% complete · you&rsquo;re not in this district yet
+                    </p>
+                    <Link
+                      to={`${MANAGE_ROUTE}/${district.id}`}
+                      className={buttonClassName({ size: "sm", className: "shrink-0 whitespace-nowrap" })}
+                    >
+                      {vaelIn ? "Switch district" : hasVisited ? "Join again" : "Join District"}
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -209,33 +200,35 @@ export function DistrictsPage() {
           <p className="col-span-full py-10 text-center text-body-sm text-muted">No districts match "{query}".</p>
         ) : null}
       </div>
-
-      <Dialog
-        open={confirmDistrict !== null}
-        onClose={() => setConfirmDistrict(null)}
-        title={confirmDistrict ? `Join ${confirmDistrict.name}?` : ""}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setConfirmDistrict(null)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmJoin}>Join District</Button>
-          </>
-        }
-      >
-        <p className="text-body-sm text-muted">
-          You'll become visible to matches in {confirmDistrict?.name}. This creates a separate District profile with its
-          own matching — it does not change your Media & Technology profile.
-        </p>
-      </Dialog>
-    </CityPage>
+    </DashboardShell>
   );
 }
 
 /* ------------------------------------------------------------------ per-district bundle */
 
-/** Everything the Overview and Edit pages need, normalized to one shape per District. */
+/**
+ * Everything the Overview and Edit pages need, normalized to one shape per District.
+ *
+ * Each district's Core provider only re-renders itself on writes (its `useMemo`
+ * value doesn't depend on the write tick), so a write here doesn't reliably cascade
+ * down to this hook's callers. Subscribe locally, the same way `useCxProjects` does
+ * for the Opportunity store, so edits to role/skills/experience show up immediately
+ * instead of only after an unrelated re-render (e.g. switching tabs) or a reload.
+ */
 function useDistrictBundle(districtId: string | undefined, handle: string) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setTick((n) => n + 1);
+    const unsubs = [
+      subscribeVael(bump),
+      subscribeConstruction(bump),
+      subscribeTrucking(bump),
+      subscribeResidential(bump),
+      subscribeCommercial(bump),
+    ];
+    return () => unsubs.forEach((unsub) => unsub());
+  }, []);
+
   const vael = useVael();
   const construction = useConstruction();
   const trucking = useTrucking();
@@ -293,7 +286,7 @@ function useDistrictBundle(districtId: string | undefined, handle: string) {
       isSample: profile.sample,
       set: (patch: Record<string, unknown>) => construction.writeProfile({ ...profile, ...patch }),
       setCredentials: (next: string[]) => construction.writeProfile({ ...profile, credentials: next }),
-      setWork: (next: { label: string; url: string; note?: string }[]) => construction.writeProfile({ ...profile, portfolio: next.map(({ label, url }) => ({ label, url })) }),
+      setWork: (next: { label: string; url: string; note?: string }[]) => construction.writeProfile({ ...profile, portfolio: next }),
       docsCount: 0,
     };
   }
@@ -319,7 +312,7 @@ function useDistrictBundle(districtId: string | undefined, handle: string) {
       isSample: profile.sample,
       set: (patch: Record<string, unknown>) => trucking.writeProfile({ ...profile, ...patch }),
       setCredentials: (next: string[]) => trucking.writeProfile({ ...profile, credentials: next }),
-      setWork: (next: { label: string; url: string; note?: string }[]) => trucking.writeProfile({ ...profile, history: next.map(({ label, url }) => ({ label, url })) }),
+      setWork: (next: { label: string; url: string; note?: string }[]) => trucking.writeProfile({ ...profile, history: next }),
       docsCount: 0,
     };
   }
@@ -345,7 +338,7 @@ function useDistrictBundle(districtId: string | undefined, handle: string) {
       isSample: profile.sample,
       set: (patch: Record<string, unknown>) => residential.writeProfile({ ...profile, ...patch }),
       setCredentials: (next: string[]) => residential.writeProfile({ ...profile, credentials: next }),
-      setWork: (next: { label: string; url: string; note?: string }[]) => residential.writeProfile({ ...profile, history: next.map(({ label, url }) => ({ label, url })) }),
+      setWork: (next: { label: string; url: string; note?: string }[]) => residential.writeProfile({ ...profile, history: next }),
       docsCount: 0,
     };
   }
@@ -371,7 +364,7 @@ function useDistrictBundle(districtId: string | undefined, handle: string) {
       isSample: profile.sample,
       set: (patch: Record<string, unknown>) => commercial.writeProfile({ ...profile, ...patch }),
       setCredentials: (next: string[]) => commercial.writeProfile({ ...profile, credentials: next }),
-      setWork: (next: { label: string; url: string; note?: string }[]) => commercial.writeProfile({ ...profile, history: next.map(({ label, url }) => ({ label, url })) }),
+      setWork: (next: { label: string; url: string; note?: string }[]) => commercial.writeProfile({ ...profile, history: next }),
       docsCount: 0,
     };
   }
@@ -388,8 +381,7 @@ export function DistrictOverviewPage() {
   const handle = session.handle;
   const bundle = useDistrictBundle(districtId, handle);
   const joined = useJoinedDistricts(handle, vael.profile(handle), vael.documents(handle));
-  const [joining, setJoining] = useState(false);
-  const [showJoin, setShowJoin] = useState(false);
+  const cards = useDistrictCards(handle, vael.profile(handle), vael.documents(handle));
 
   if (!session.signedIn) {
     return <Navigate to={JOIN_ROUTE} replace />;
@@ -408,13 +400,7 @@ export function DistrictOverviewPage() {
   }
 
   const isMember = joined.some((row) => row.district.id === districtId);
-
-  function join() {
-    setJoining(true);
-    addManualDistricts(handle, [district!.id]);
-    setJoining(false);
-    setShowJoin(false);
-  }
+  const currentDistrictName = cards.find((row) => row.isActive && row.district.id !== district.id)?.district.name;
 
   return (
     <CityPage width="narrow" className="-mt-4 sm:-mt-6">
@@ -432,8 +418,8 @@ export function DistrictOverviewPage() {
             </div>
             <div className="mt-5">
               <Link
-                to={`${MANAGE_ROUTE}/${district.id}/edit`}
-                className={buttonClassName({ className: "rounded-full" })}
+                to={districtProfileHref(district.id, handle)}
+                className={buttonClassName()}
               >
                 {bundle.percent <= 20 ? "Complete District Profile" : "Edit District Profile"} →
               </Link>
@@ -442,35 +428,20 @@ export function DistrictOverviewPage() {
         ) : (
           <>
             <p className="text-body text-muted">You're not part of this District yet.</p>
+            {currentDistrictName ? (
+              <p className="mt-2 text-body-sm text-muted">
+                Currently live in {currentDistrictName}. Continuing will make {district.name} your active district
+                instead.
+              </p>
+            ) : null}
             <div className="mt-5">
-              <Button className="rounded-full" onClick={() => setShowJoin(true)}>
-                Join District →
-              </Button>
+              <Link to={districtProfileHref(district.id, handle)} className={buttonClassName()}>
+                Complete District Profile →
+              </Link>
             </div>
           </>
         )}
       </div>
-
-      <Dialog
-        open={showJoin}
-        onClose={() => setShowJoin(false)}
-        title={`Join ${district.name}?`}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setShowJoin(false)}>
-              Cancel
-            </Button>
-            <Button loading={joining} onClick={join}>
-              Join District
-            </Button>
-          </>
-        }
-      >
-        <p className="text-body-sm text-muted">
-          Join this District to create your District profile, discover relevant matches, and participate in the
-          community.
-        </p>
-      </Dialog>
     </CityPage>
   );
 }
@@ -502,15 +473,33 @@ export function EditDistrictProfilePage() {
     );
   }
 
+  const districtProfile = bundle;
+
   function save() {
-    // The bundle already writes through on every change — this step just marks
-    // the District as joined and confirms.
+    const vaelIn = getOnboardingDraft(handle)?.intent !== "out";
+    const becomingLive = vaelIn && getActiveDistrictId(handle) !== district!.id;
+    if (becomingLive && districtId !== "media-technology") {
+      const missing: { label: string; tab: (typeof EDIT_TABS)[number] }[] = [];
+      if (districtProfile.role.length === 0) missing.push({ label: "your role", tab: "role" });
+      if (!districtProfile.skillFields.some((field) => field.values.length > 0)) {
+        missing.push({ label: "your skills", tab: "skills" });
+      }
+      if (!districtProfile.experienceSummary?.trim()) missing.push({ label: "your experience", tab: "experience" });
+      if (missing.length > 0) {
+        setTab(missing[0]!.tab);
+        setError(
+          `Add ${missing.map((item) => item.label).join(", ")} on the ${missing.map((item) => EDIT_TAB_LABEL[item.tab]).join(", ")} tab${missing.length > 1 ? "s" : ""} before you go live.`,
+        );
+        return;
+      }
+    }
     addManualDistricts(handle, [district!.id]);
     setError("");
     setStep("saved");
   }
 
   if (step === "saved") {
+    const vaelIn = getOnboardingDraft(handle)?.intent !== "out";
     return (
       <CityPage width="narrow" className="-mt-4 sm:-mt-6">
         <div className="mt-16 flex flex-col items-center gap-6 text-center">
@@ -518,12 +507,22 @@ export function EditDistrictProfilePage() {
             <IconCheck className="h-6 w-6" />
           </span>
           <div>
-            <p className="vael-h3">District Profile Updated</p>
-            <p className="mt-2 text-body-sm text-muted">Your {district.name} profile has been updated.</p>
+            <p className="vael-h3">{vaelIn ? "You're live" : "District Profile Updated"}</p>
+            <p className="mt-2 text-body-sm text-muted">
+              {vaelIn
+                ? `You're now live in ${district.name}. Only this district is active.`
+                : `Your ${district.name} profile has been updated.`}
+            </p>
           </div>
-          <Link to={`${MANAGE_ROUTE}/${district.id}`} className={buttonClassName({ className: "rounded-full" })}>
-            Back to District
-          </Link>
+          {district.id === "construction" ? (
+            <Link to="/districts/contractor" className={buttonClassName()}>
+              Open Contractor Exchange →
+            </Link>
+          ) : (
+            <Link to={vaelIn ? MANAGE_ROUTE : `${MANAGE_ROUTE}/${district.id}`} className={buttonClassName()}>
+              {vaelIn ? "Back to Districts" : "Back to District"}
+            </Link>
+          )}
         </div>
       </CityPage>
     );
@@ -544,11 +543,11 @@ export function EditDistrictProfilePage() {
         <div className="relative isolate h-24 overflow-hidden bg-surface-muted md:h-32">
           <img src={DEFAULT_COVER_IMAGE} alt="" className="h-full w-full object-cover" />
         </div>
-        <div className="bg-white px-6 pb-5 pt-4 md:px-8 dark:bg-white/[0.04] dark:backdrop-blur-xl">
+        <div className="bg-white px-6 pb-5 pt-4 md:px-8 dark:bg-white/[0.04]">
           <Avatar
             name={handle}
             size="xl"
-            className="-mt-9 shrink-0 bg-white ring-4 ring-white shadow-[0_8px_24px_rgba(11,12,12,0.12)] dark:bg-white/10 dark:ring-[#100E0B] md:-mt-10"
+            className="-mt-9 shrink-0 bg-white ring-4 ring-white shadow-[0_8px_24px_rgba(11,12,12,0.12)] dark:bg-white/10 dark:ring-[#0B0C0C] md:-mt-10"
           />
           <div className="mt-3 min-w-0">
             <p className="truncate text-h4 font-medium tracking-tight text-foreground">{district.name}</p>

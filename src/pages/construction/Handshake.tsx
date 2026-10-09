@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { projectHandshakeHref } from "@/lib/cxRoutes";
 import { PageHeader } from "@/components/ui/headers";
 import { Alert, EmptyState, ErrorState } from "@/components/ui/feedback";
 import { Button, buttonClassName } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function ConstructionConnectionsPage() {
 
 function ConnectionsInner() {
   const { myConnections, handle, otherParty } = useConstruction();
+  const rooms = myConnections.filter((item) => item.source !== "project_interest");
   return (
     <CityPage>
       <PageHeader
@@ -39,11 +41,11 @@ function ConnectionsInner() {
         title="Handshakes"
         description="The same VAEL lock. Full Construction profiles stay closed until both parties accept."
         crumbs={[
-          { label: "Construction", href: BASE },
+          { label: "Contractor Exchange", href: BASE },
           { label: "Handshakes" },
         ]}
       />
-      {myConnections.length === 0 ? (
+      {rooms.length === 0 ? (
         <EmptyState
           title="No Handshakes yet"
           description="Request one from a Construction match or profile."
@@ -55,7 +57,7 @@ function ConnectionsInner() {
         />
       ) : (
         <ul className="mt-6 divide-y divide-border">
-          {myConnections.map((item) => {
+          {rooms.map((item) => {
             const other = otherParty(item, handle);
             return (
               <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
@@ -96,6 +98,25 @@ function DetailInner() {
   useEffect(() => {
     if (revealed && connection) cx.readThread(connection.id, cx.handle);
   }, [connection?.id, revealed, cx.handle, messages.length]);
+
+  if (connection?.source === "project_interest" && connection.projectId) {
+    const party = connection.requesterHandle === cx.handle || connection.counterpartHandle === cx.handle;
+    if (!party) {
+      return (
+        <CityPage>
+          <ErrorState
+            title="Handshake not found"
+            action={
+              <Link to={`${BASE}/connections`} className={buttonClassName({ variant: "outline" })}>
+                Handshakes
+              </Link>
+            }
+          />
+        </CityPage>
+      );
+    }
+    return <Navigate to={projectHandshakeHref(connection.projectId, connection.id)} replace />;
+  }
 
   if (!connection || (connection.district && connection.district !== "construction")) {
     return (

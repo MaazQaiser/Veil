@@ -2,36 +2,36 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { Alert, EmptyState } from "@/components/ui/feedback";
-import { FilterBar, FilterChip, SearchInput } from "@/components/ui/search";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input, Select, Textarea } from "@/components/ui/controls";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, buttonClassName } from "@/components/ui/button";
-import { IconChevronLeft, IconChevronRight, IconHash, IconImage, IconVideo } from "@/components/ui/icons";
+import { IconChevronLeft, IconChevronRight } from "@/components/ui/icons";
 import { CityPage } from "@/components/city/CityShell";
+import { DashboardShell, dashboardSideFromListing } from "@/components/mt/DashboardShell";
 import { PostCard } from "@/components/community/PostCard";
-import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 import { DistrictStatus } from "@/components/vael/status";
+import { communityComposerDefaultKind, communityComposerPlaceholder } from "@/lib/vaelCopy";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { useCitySession } from "@/lib/citySession";
 import { useCommunity } from "@/lib/communityCore";
-import { useVael } from "@/lib/vaelCore";
-import { useJoinedDistricts } from "@/components/mt/DistrictsRow";
-import { getSavedListingIds, toggleSavedListing } from "@/lib/savedMatches";
-import { getProfiles } from "@/lib/vaelStore";
 import { resolveCommunityAuthor } from "@/lib/communityPresent";
+import { useVael } from "@/lib/vaelCore";
+import { getSavedListingIds, toggleSavedListing } from "@/lib/savedMatches";
 import {
   communityDistrictFromLot,
   communityDistrictLabel,
   communityPostKind,
-  communityProfileHref,
   formatCommunityTime,
   type CommunityDistrictId,
+  type CommunityPostKind,
   type CommunityPostView,
+  type CommunityReactionKind,
 } from "@/lib/communityStore";
-import { districts, districtBySlug, districtFromPath, isDistrictEnterable } from "@/lib/districts";
+import { districtBySlug, districtFromPath, isDistrictEnterable } from "@/lib/districts";
 
 export function FeedPage() {
-  return <GlobalCommunityPage />;
+  return <DistrictFeedPage />;
 }
 
 /** Same card language as Matches/Handshakes — circle photo, badge row, info, footer CTA. */
@@ -318,52 +318,153 @@ function BackToDashboard() {
   );
 }
 
-/** Opens the composer — same control everywhere a feed appears. */
-function ComposerTeaser({ onOpen }: { onOpen: () => void }) {
-  const vael = useVael();
-  const mine = vael.handle ? vael.profile(vael.handle) : undefined;
+const COMPOSER_KINDS: { id: CommunityPostKind; label: string }[] = [
+  { id: "update", label: "Update" },
+  { id: "opportunity", label: "Opportunity" },
+  { id: "collaboration", label: "Highlight" },
+  { id: "discussion", label: "Discussion" },
+];
+
+const COMPOSER_TAGS = ["", "Hiring", "Available", "Question"] as const;
+
+function FeedFilterTabs({
+  value,
+  onChange,
+}: {
+  value: FeedFilter;
+  onChange: (next: FeedFilter) => void;
+}) {
   return (
-    <div className="rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04)] dark:bg-white/[0.05] dark:backdrop-blur-xl">
-      <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 text-left">
-        <Avatar name={mine?.displayName ?? vael.handle ?? "You"} src={mine?.avatarUrl} size="md" />
-        <span className="flex-1 rounded-full border border-border-subtle bg-surface-muted px-4 py-2.5 text-body-sm text-muted">
-          Share an update, ask a question, or celebrate a win...
-        </span>
-      </button>
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-border-subtle pt-4">
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onOpen}
-            aria-label="Add an image"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-surface-muted hover:text-foreground"
+    <Tabs value={value} onValueChange={(next) => onChange(next as FeedFilter)} defaultValue="all">
+      <TabsList>
+        {FEED_FILTERS.map((item) => (
+          <TabsTrigger key={item.id} value={item.id}>
+            {item.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
+}
+
+function FeedComposer({
+  districtId,
+  onRequireSignIn,
+}: {
+  districtId: CommunityDistrictId;
+  onRequireSignIn: () => void;
+}) {
+  const community = useCommunity();
+  const { session } = useCitySession();
+  const { latestListing } = useVael();
+  const side = dashboardSideFromListing(latestListing);
+  const defaultKind = communityComposerDefaultKind(side) as CommunityPostKind;
+  const [kind, setKind] = useState<CommunityPostKind>(defaultKind);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [tag, setTag] = useState("");
+  const [error, setError] = useState("");
+  const [publishing, setPublishing] = useState(false);
+
+  function publish() {
+    if (!session.signedIn) {
+      onRequireSignIn();
+      return;
+    }
+    const text = [body.trim(), tag ? `#${tag}` : ""].filter(Boolean).join("\n\n");
+    if (!text) {
+      setError("Write something to share.");
+      return;
+    }
+    setPublishing(true);
+    setError("");
+    try {
+      community.publish({ districtId, body: text, kind, title: title.trim() || undefined });
+      setTitle("");
+      setBody("");
+      setTag("");
+      setKind(defaultKind);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The post could not be saved on this device.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  const author = session.signedIn
+    ? resolveCommunityAuthor(session.handle, districtId)
+    : { name: "You", handle: "you" };
+
+  return (
+    <div className="rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] sm:p-6 dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
+      <div className="flex items-start gap-3">
+        <Avatar name={author.name} src={author.avatarUrl} size="md" />
+        <div className="min-w-0 pt-0.5">
+          <p className="truncate text-body-sm font-medium text-foreground">
+            {session.signedIn ? `@${session.handle}` : "Share as you"}
+          </p>
+          <p className="text-caption font-medium text-accent">
+            {side === "out" ? "Share an opportunity with the community" : "Share something with the community"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Textarea
+          aria-label="Post"
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          placeholder={communityComposerPlaceholder(side)}
+          className="min-h-[6.5rem]"
+        />
+      </div>
+
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="sm:w-40 sm:shrink-0">
+          <Select
+            aria-label="Post type"
+            value={kind}
+            onChange={(event) => setKind(event.target.value as CommunityPostKind)}
           >
-            <IconImage className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onOpen}
-            aria-label="Add a video"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-surface-muted hover:text-foreground"
-          >
-            <IconVideo className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onOpen}
-            aria-label="Tag a topic"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-surface-muted hover:text-foreground"
-          >
-            <IconHash className="h-4 w-4" />
-          </button>
+            {COMPOSER_KINDS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <Input
+          aria-label="Title"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Add title"
+          className="min-w-0 flex-1"
+        />
+        <div className="sm:w-36 sm:shrink-0">
+          <Select aria-label="Tag" value={tag} onChange={(event) => setTag(event.target.value)}>
+            <option value="">No tag</option>
+            {COMPOSER_TAGS.filter(Boolean).map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </Select>
         </div>
         <Button
-          onClick={onOpen}
-          className="rounded-full bg-[#FFC555] px-6 text-[#0B0C0C] hover:bg-[#FFC555]/90 dark:bg-accent dark:text-primary-foreground dark:hover:bg-accent-hover"
+          type="button"
+          onClick={publish}
+          loading={publishing}
+          disabled={!body.trim()}
+          className="h-12 shrink-0 rounded-md bg-[#DE7C40] px-6 text-[#0B0C0C] hover:bg-[#E89E6E] dark:bg-[#DE7C40] dark:text-[#0B0C0C] dark:hover:bg-[#E89E6E]"
         >
           Post
         </Button>
       </div>
+      {error ? (
+        <p role="alert" className="mt-3 text-caption text-destructive">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -372,17 +473,15 @@ function FeedList({
   items,
   emptyTitle,
   emptyDescription,
-  onLike,
+  onReact,
   onSave,
-  onShare,
   onComment,
 }: {
   items: CommunityPostView[];
   emptyTitle: string;
   emptyDescription: string;
-  onLike: (id: string) => void;
+  onReact: (id: string, kind: CommunityReactionKind) => void;
   onSave: (id: string) => void;
-  onShare: (id: string) => void;
   onComment: (id: string, body: string) => void;
 }) {
   if (items.length === 0) {
@@ -398,9 +497,8 @@ function FeedList({
         <li key={item.post.id}>
           <PostCard
             view={item}
-            onLike={() => onLike(item.post.id)}
+            onReact={(kind) => onReact(item.post.id, kind)}
             onSave={() => onSave(item.post.id)}
-            onShare={() => onShare(item.post.id)}
             onComment={(body) => onComment(item.post.id, body)}
           />
         </li>
@@ -409,371 +507,87 @@ function FeedList({
   );
 }
 
-/** Discovery rail — the same joined-district logic the Dashboard and Districts page use. */
-function CommunitiesSidebar() {
-  const { session } = useCitySession();
-  const vael = useVael();
-  const handle = session.signedIn ? session.handle : "";
-  const mine = handle ? vael.profile(handle) : undefined;
-  const docs = handle ? vael.documents(handle) : [];
-  const joined = useJoinedDistricts(handle, mine, docs);
-
-  return (
-    <aside className="space-y-6 lg:sticky lg:top-24">
-      <div className="rounded-2xl border border-border bg-white p-5">
-        <p className="vael-kicker">Your Communities</p>
-        {joined.length === 0 ? (
-          <p className="mt-3 text-body-sm text-muted">You haven't joined a Community yet.</p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {joined.map(({ district, percent }) => (
-              <li key={district.id}>
-                <p className="text-body-sm font-medium text-foreground">{district.name}</p>
-                <p className="text-caption text-muted">Your District · {percent}%</p>
-                <Link
-                  to={`${district.route}/community`}
-                  className="mt-1 inline-block text-caption font-medium text-foreground hover:underline"
-                >
-                  Open Community →
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-        <Link
-          to="/media-technology/districts"
-          className="mt-4 inline-block text-caption font-medium text-[#C99A28] hover:text-foreground"
-        >
-          + Add Community
-        </Link>
-      </div>
-
-      <div className="rounded-2xl border border-border bg-white p-5">
-        <p className="vael-kicker">Explore Communities</p>
-        <ul className="mt-3 space-y-2.5">
-          {districts.map((district) => (
-            <li key={district.id}>
-              <Link
-                to={`${district.route}/community`}
-                className="flex items-center justify-between gap-2 text-body-sm text-foreground hover:underline"
-              >
-                <span>{district.name}</span>
-                {district.status !== "live" ? <DistrictStatus status={district.status} /> : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </aside>
-  );
-}
-
-function SearchResultsView({ query, posts }: { query: string; posts: CommunityPostView[] }) {
-  const q = query.trim().toLowerCase();
-  const people = getProfiles()
-    .filter((p) => p.displayName.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q))
-    .slice(0, 6);
-  const communities = districts.filter((d) => d.name.toLowerCase().includes(q));
-
-  return (
-    <div className="mt-6 space-y-8">
-      <section>
-        <p className="vael-kicker">Posts</p>
-        {posts.length === 0 ? (
-          <p className="mt-2 text-body-sm text-muted">No posts match "{query}".</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-3">
-            {posts.slice(0, 8).map((item) => (
-              <li key={item.post.id}>
-                <Link
-                  to={`/feed/${item.post.id}`}
-                  className="block rounded-xl border border-border bg-white px-4 py-3 text-body-sm hover:border-[#C99A28]/30"
-                >
-                  {item.post.title || item.post.body.slice(0, 100)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <p className="vael-kicker">People</p>
-        {people.length === 0 ? (
-          <p className="mt-2 text-body-sm text-muted">No people match "{query}".</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {people.map((person) => (
-              <li key={person.handle}>
-                <Link
-                  to={`/media-technology/profile/${person.handle}`}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 hover:border-[#C99A28]/30"
-                >
-                  <Avatar name={person.displayName} src={person.avatarUrl} size="sm" />
-                  <span>
-                    <span className="block text-body-sm font-medium text-foreground">{person.displayName}</span>
-                    {person.headline ? <span className="block text-caption text-muted">{person.headline}</span> : null}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <p className="vael-kicker">Communities</p>
-        {communities.length === 0 ? (
-          <p className="mt-2 text-body-sm text-muted">No communities match "{query}".</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {communities.map((district) => (
-              <li key={district.id}>
-                <Link
-                  to={`${district.route}/community`}
-                  className="block rounded-xl border border-border bg-white px-4 py-3 text-body-sm font-medium text-foreground hover:border-[#C99A28]/30"
-                >
-                  {district.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
-  );
-}
-
-/** The main Community landing page — a global social feed, not one district's Room. */
-function GlobalCommunityPage() {
+/** A District's own Community — the same feed, filtered to one District. */
+function DistrictFeedPage({ districtId }: { districtId?: CommunityDistrictId }) {
   const community = useCommunity();
   const { session, signIn } = useCitySession();
   const [filter, setFilter] = useState<FeedFilter>("all");
-  const [query, setQuery] = useState("");
-  const [composerOpen, setComposerOpen] = useState(false);
+  const isCity = !districtId || districtId === "city";
+  const inDashboard = districtId === "media-technology" && session.signedIn;
 
-  const allPosts = community.posts();
-  const searching = query.trim().length > 0;
-
+  const allPosts = isCity ? community.posts() : community.posts(districtId);
   const items = useMemo(
     () => allPosts.filter((v) => matchesFeedFilter(v.post, filter)),
     [allPosts, filter],
   );
 
-  const searchedPosts = useMemo(() => {
-    if (!searching) return [];
-    const q = query.trim().toLowerCase();
-    return allPosts.filter((v) => v.post.body.toLowerCase().includes(q) || v.post.title?.toLowerCase().includes(q));
-  }, [allPosts, query, searching]);
-
-  function requireSignIn() {
-    signIn("member");
-  }
-
-  function handleLike(id: string) {
-    if (!session.signedIn) return requireSignIn();
-    community.like(id);
+  function handleReact(id: string, kind: CommunityReactionKind) {
+    if (!session.signedIn) return signIn("member");
+    community.react(id, kind);
   }
   function handleSave(id: string) {
-    if (!session.signedIn) return requireSignIn();
+    if (!session.signedIn) return signIn("member");
     community.save(id);
   }
-  function handleShare(id: string) {
-    const url = `${window.location.origin}/feed/${id}`;
-    navigator.clipboard?.writeText(url).catch(() => undefined);
-  }
   function handleComment(id: string, body: string) {
-    if (!session.signedIn) return requireSignIn();
+    if (!session.signedIn) return signIn("member");
     community.comment(id, body);
   }
 
-  return (
-    <CityPage width="wide" className="-mt-4 sm:-mt-6">
-      <p className="vael-kicker">Community</p>
-      <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-header">
-          <h1 className="vael-h1">What's happening across VAEL?</h1>
-          <p className="mt-3 text-body text-muted">
-            Discover conversations, opportunities, updates, and people from across the VAEL network.
+  const body = (
+    <>
+      {isCity || inDashboard ? null : <BackToDashboard />}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+            Community Feed
+          </h1>
+          <p className="mt-1 max-w-xl text-body-sm text-muted">
+            {isCity
+              ? "Updates, opportunities, highlights, and discussion from across VAEL."
+              : `Updates, opportunities, highlights, and discussion in ${communityDistrictLabel(districtId)}.`}
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <SearchInput
-            label="Search community"
-            placeholder="Search community..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="w-64"
-          />
-          <Button
-            className="rounded-full"
-            onClick={() => (session.signedIn ? setComposerOpen(true) : requireSignIn())}
+        {session.signedIn ? (
+          <Link
+            to={`${PRODUCT_HOME}/community/dashboard`}
+            className="shrink-0 text-body-sm font-medium text-accent hover:underline"
           >
-            + Create Post
-          </Button>
-        </div>
+            Your dashboard →
+          </Link>
+        ) : null}
       </div>
 
-      {!searching ? (
-        <div className="mt-6 overflow-x-auto">
-          <FilterBar>
-            {FEED_FILTERS.map((item) => (
-              <FilterChip key={item.id} label={item.label} active={filter === item.id} onClick={() => setFilter(item.id)} />
-            ))}
-          </FilterBar>
-        </div>
-      ) : null}
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
-        <div className="min-w-0">
-          {searching ? (
-            <SearchResultsView query={query} posts={searchedPosts} />
-          ) : (
-            <>
-              <ComposerTeaser onOpen={() => (session.signedIn ? setComposerOpen(true) : requireSignIn())} />
-              <FeedList
-                items={items}
-                emptyTitle="Nothing shared yet"
-                emptyDescription="Community stays empty until someone shares. Be the first."
-                onLike={handleLike}
-                onSave={handleSave}
-                onShare={handleShare}
-                onComment={handleComment}
-              />
-            </>
-          )}
-        </div>
-        <CommunitiesSidebar />
+      <div className="mx-auto mt-6 max-w-3xl">
+        <FeedComposer districtId={districtId ?? "city"} onRequireSignIn={() => signIn("member")} />
       </div>
 
-      <CreatePostDialog
-        open={composerOpen}
-        onClose={() => setComposerOpen(false)}
-        defaultDistrictId="city"
-      />
+      <div className="mx-auto mt-6 max-w-3xl">
+        <FeedFilterTabs value={filter} onChange={setFilter} />
+      </div>
 
-      {!session.signedIn ? (
-        <p className="mt-8 text-caption text-muted">
-          Continue locally from Account to post, like, save, or comment. Visitors can still read.
-        </p>
-      ) : null}
-    </CityPage>
-  );
-}
-
-/** A District's own Community — the same feed, filtered to one District. */
-function DistrictFeedPage({ districtId }: { districtId: CommunityDistrictId }) {
-  const community = useCommunity();
-  const { session, signIn } = useCitySession();
-  const [tab, setTab] = useState<"feed" | "opportunity" | "discussion" | "people">("feed");
-  const [composerOpen, setComposerOpen] = useState(false);
-  const isCity = districtId === "city";
-
-  const allPosts = community.posts(districtId);
-  const items = useMemo(() => {
-    if (tab === "opportunity") return allPosts.filter((v) => communityPostKind(v.post) === "opportunity");
-    if (tab === "discussion") return allPosts.filter((v) => communityPostKind(v.post) === "discussion");
-    return allPosts;
-  }, [allPosts, tab]);
-
-  const people = useMemo(() => {
-    const seen = new Set<string>();
-    return allPosts
-      .filter((v) => {
-        if (seen.has(v.post.handle)) return false;
-        seen.add(v.post.handle);
-        return true;
-      })
-      .map((v) => resolveCommunityAuthor(v.post.handle, districtId));
-  }, [allPosts, districtId]);
-
-  function handleLike(id: string) {
-    if (!session.signedIn) return signIn("member");
-    community.like(id);
-  }
-  function handleSave(id: string) {
-    if (!session.signedIn) return signIn("member");
-    community.save(id);
-  }
-  function handleShare(id: string) {
-    navigator.clipboard?.writeText(`${window.location.origin}/feed/${id}`).catch(() => undefined);
-  }
-  function handleComment(id: string, body: string) {
-    if (!session.signedIn) return signIn("member");
-    community.comment(id, body);
-  }
-
-  return (
-    <CityPage className="-mt-4 sm:-mt-6">
-      <BackToDashboard />
-      <div className="mt-4">
-        <PageHeader
-          title={isCity ? "City-wide" : communityDistrictLabel(districtId)}
-          description={
-            isCity
-              ? "What people across VAEL are sharing city-wide."
-              : `People, conversations, opportunities, and updates for ${communityDistrictLabel(districtId)}.`
-          }
+      <div className="mx-auto mt-4 max-w-3xl">
+        <FeedList
+          items={items}
+          emptyTitle="Nothing shared yet"
+          emptyDescription="Community stays empty until someone shares. Be the first."
+          onReact={handleReact}
+          onSave={handleSave}
+          onComment={handleComment}
         />
       </div>
 
-      <div className="mx-auto mt-6 max-w-3xl">
-        <ComposerTeaser onOpen={() => (session.signedIn ? setComposerOpen(true) : signIn("member"))} />
-      </div>
-
-      <div className="mx-auto mt-6 max-w-3xl overflow-x-auto">
-        <Tabs value={tab} onValueChange={(next) => setTab(next as typeof tab)} defaultValue="feed">
-          <TabsList>
-            <TabsTrigger value="feed">Feed</TabsTrigger>
-            <TabsTrigger value="opportunity">Opportunities</TabsTrigger>
-            <TabsTrigger value="discussion">Discussions</TabsTrigger>
-            <TabsTrigger value="people">People</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      <div className="mx-auto mt-6 max-w-3xl">
-        {tab === "people" ? (
-          people.length === 0 ? (
-            <EmptyState title="No one has posted here yet" />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {people.map((person) => (
-                <li key={person.handle}>
-                  <Link
-                    to={communityProfileHref(districtId, person.handle)}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 hover:border-[#C99A28]/30 dark:bg-white/[0.05] dark:backdrop-blur-xl dark:hover:border-accent/30"
-                  >
-                    <Avatar name={person.name} src={person.avatarUrl} size="sm" />
-                    <span>
-                      <span className="block text-body-sm font-medium text-foreground">{person.name}</span>
-                      {person.headline ? <span className="block text-caption text-muted">{person.headline}</span> : null}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )
-        ) : (
-          <FeedList
-            items={items}
-            emptyTitle="Nothing shared yet"
-            emptyDescription="Community stays empty until someone shares. Be the first."
-            onLike={handleLike}
-            onSave={handleSave}
-            onShare={handleShare}
-            onComment={handleComment}
-          />
-        )}
-      </div>
-
-      <CreatePostDialog open={composerOpen} onClose={() => setComposerOpen(false)} defaultDistrictId={districtId} />
-
       {!session.signedIn ? (
         <p className="mt-8 text-caption text-muted">
           Continue locally from Account to post, like, save, or comment. Visitors can still read.
         </p>
       ) : null}
-    </CityPage>
+    </>
   );
+
+  if (inDashboard) {
+    return <DashboardShell>{body}</DashboardShell>;
+  }
+
+  return <CityPage className={isCity ? undefined : "-mt-4 sm:-mt-6"}>{body}</CityPage>;
 }

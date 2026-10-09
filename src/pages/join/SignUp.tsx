@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -7,8 +7,12 @@ import { Checkbox } from "@/components/ui/choice";
 import { IconEye, IconEyeOff } from "@/components/ui/icons";
 import { createAccount, findAccountByEmail, suggestHandle } from "@/lib/accounts";
 import { useCitySession } from "@/lib/citySession";
-import { prepareDemoWorkspace } from "@/lib/demoJourney";
-import { onboardingRoute, patchOnboarding, startOnboarding } from "@/lib/onboarding";
+import { seedDemoSampleContent } from "@/lib/demoJourney";
+import { parseGoVisibleEntry } from "@/lib/goVisible";
+import { patchOnboarding, startOnboarding } from "@/lib/onboarding";
+import { NEED_CONTINUE_PATH, NEED_PATH } from "@/lib/cxRoutes";
+import { PRODUCT_HOME } from "@/lib/providerJourney";
+import { readNeedWork } from "@/lib/needWork";
 import { ensureProfile, saveProfile } from "@/lib/vaelStore";
 import { JoinHead } from "./JoinLayout";
 
@@ -30,13 +34,28 @@ const INITIAL_FORM = {
 };
 
 export function JoinSignUpPage() {
-  const { signIn } = useCitySession();
+  const { session, signIn } = useCitySession();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const presetIntent = params.get("intent") === "out" ? "out" : params.get("intent") === "in" ? "in" : "";
-  const [form, setForm] = useState(INITIAL_FORM);
+  const entry = parseGoVisibleEntry(params.get("entry"));
+  const fromProject = params.get("from") === "project";
+  const savedWork = fromProject ? readNeedWork() : undefined;
+  const [form, setForm] = useState({
+    ...INITIAL_FORM,
+    email: savedWork?.saveEmail ?? "",
+    phone: savedWork?.savePhone ?? "",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const arrivedSignedIn = useRef(session.signedIn);
+  const published = useRef(false);
+
+  useEffect(() => {
+    if (!fromProject || !arrivedSignedIn.current || !session.handle || published.current) return;
+    published.current = true;
+    navigate(NEED_CONTINUE_PATH, { replace: true });
+  }, [fromProject, navigate, session.handle]);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -57,31 +76,43 @@ export function JoinSignUpPage() {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    prepareDemoWorkspace();
+    seedDemoSampleContent();
     const displayName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
     let account = findAccountByEmail(form.email);
     if (!account) {
       const handle = suggestHandle(displayName, form.email);
       account = createAccount({ email: form.email, handle, displayName, phone: form.phone });
     }
-    // Start from a blank profile — onboarding (Identity, Credentials, etc.) is what
-    // actually fills this in. Only the name from this step carries over.
     saveProfile({ ...ensureProfile(account.handle), displayName });
-    // "Create account" always replays the full wizard from the top, even for an account
-    // that already exists (or already finished onboarding) on this device — this is a
-    // demo flow that needs to show every step every time, never skip straight to the
-    // product because a prior run marked it done.
     startOnboarding(account.handle);
-    if (presetIntent) patchOnboarding(account.handle, { intent: presetIntent });
+    const intent = entry === "out" || presetIntent === "out" ? "out" : "in";
+    patchOnboarding(account.handle, {
+      intent,
+      completedStep: "Done",
+      completedAt: new Date().toISOString(),
+      ...(intent === "out" ? { outStep: "submitted" as const } : {}),
+    });
     signIn(account.handle);
-    navigate(onboardingRoute(account.handle), { replace: true });
+    if (fromProject) {
+      navigate(NEED_CONTINUE_PATH, { replace: true });
+      return;
+    }
+    if (entry === "opportunities") {
+      navigate(NEED_PATH, { replace: true });
+      return;
+    }
+    navigate(PRODUCT_HOME, { replace: true });
   }
 
   return (
     <div>
       <JoinHead
         title="Create an account."
-        lede="Takes about a minute. We'll build the rest of your profile from there."
+        lede={
+          fromProject
+            ? "To publish your project, enter your details."
+            : "Takes about a minute. We'll build the rest of your profile from there."
+        }
       />
       <form className="mt-10 space-y-6" onSubmit={onSubmit} noValidate>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -168,13 +199,17 @@ export function JoinSignUpPage() {
           {errors.agree ? <p className="mt-2 text-label text-destructive">{errors.agree}</p> : null}
         </div>
 
-        <Button type="submit" size="lg" className="w-full rounded-full">
+        {errors.form ? <p className="text-label text-destructive">{errors.form}</p> : null}
+        <Button type="submit" size="lg" className="w-full rounded-lg">
           Create my account →
         </Button>
       </form>
       <p className="mt-4 text-center text-body-sm text-muted">
         Already have an account?{" "}
-        <Link to="/sign-in" className="text-foreground underline underline-offset-4">
+        <Link
+          to={fromProject ? "/sign-in?from=project" : entry ? `/sign-in?entry=${entry}` : "/sign-in"}
+          className="text-foreground underline underline-offset-4"
+        >
           Sign in
         </Link>
       </p>

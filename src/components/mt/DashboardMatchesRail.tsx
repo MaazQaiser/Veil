@@ -2,7 +2,8 @@ import { useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { MatchDashboardCard } from "@/components/mt/MatchDashboardCard";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
-import type { RankedMatch } from "@/lib/vaelStore";
+import type { RankedMatch, VaelSide } from "@/lib/vaelStore";
+import { matchesRailEmpty, matchesRailLede } from "@/lib/vaelCopy";
 
 function isToday(iso: string) {
   const date = new Date(iso);
@@ -15,7 +16,15 @@ function isToday(iso: string) {
 }
 
 /** "Your matches" — the dashboard's primary rail, badged with today's new count. Real data only. */
-export function DashboardMatchesRail({ matches, visible }: { matches: RankedMatch[]; visible: boolean }) {
+export function DashboardMatchesRail({
+  matches,
+  visible,
+  side = "in",
+}: {
+  matches: RankedMatch[];
+  visible: boolean;
+  side?: VaelSide;
+}) {
   const railRef = useRef<HTMLDivElement>(null);
   const newToday = useMemo(() => matches.filter((match) => isToday(match.listing.createdAt)).length, [matches]);
   const top = useMemo(() => [...matches].sort((a, b) => b.percent - a.percent).slice(0, 10), [matches]);
@@ -32,7 +41,7 @@ export function DashboardMatchesRail({ matches, visible }: { matches: RankedMatc
               </span>
             ) : null}
           </p>
-          <p className="mt-1 text-body-sm text-muted">People VAEL has identified as a strong fit for you.</p>
+          <p className="mt-1 text-body-sm text-muted">{matchesRailLede(side)}</p>
         </div>
         <Link
           to={`${PRODUCT_HOME}/matches`}
@@ -43,13 +52,13 @@ export function DashboardMatchesRail({ matches, visible }: { matches: RankedMatc
       </div>
 
       <div className="relative mt-5">
-        {!visible ? (
+        {top.length === 0 ? (
           <p className="rounded-xl border border-dashed border-[#C99A28]/25 bg-[#FFC555]/[0.05] px-5 py-8 text-center text-body-sm text-muted dark:border-accent/25 dark:bg-accent/[0.05]">
-            Vael In or Vael Out to become visible to relevant matches.
-          </p>
-        ) : top.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[#C99A28]/25 bg-[#FFC555]/[0.05] px-5 py-8 text-center text-body-sm text-muted dark:border-accent/25 dark:bg-accent/[0.05]">
-            No matches yet. Check back once more availability opens in your district.
+            {side === "in"
+              ? visible
+                ? "No matches yet. People relevant to what you offer will show up here."
+                : "Go Visible so people who fit what you offer can find you."
+              : matchesRailEmpty(side, visible)}
           </p>
         ) : (
           <div

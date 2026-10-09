@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>VAEL — Website, Vael In, and Vael Out</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0b0c0c;
+    color: #f5f3ee;
+    font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    padding: 18mm 16mm 16mm;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 50% at 100% -10%, rgba(222, 124, 64, 0.22), transparent 55%),
+      #0b0c0c;
+  }
+  .page:last-child { page-break-after: auto; }
+  .eyebrow {
+    margin: 0;
+    color: #de7c40;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 10px 0 0;
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+  h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  p { margin: 0; }
+  .lede {
+    margin-top: 12px;
+    max-width: 150mm;
+    color: #b7b3ab;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .board {
+    margin-top: 18px;
+    border: 1px solid rgba(222, 124, 64, 0.45);
+    border-radius: 12px;
+    background: #141414;
+    padding: 18px 18px 16px;
+  }
+  .nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .pill {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #f5f3ee;
+    background: #1a1a1a;
+  }
+  .pill strong { font-weight: 600; }
+  .pill.accent {
+    background: #de7c40;
+    border-color: #de7c40;
+    color: #1a1410;
+    font-weight: 600;
+  }
+  .note {
+    margin-top: 12px;
+    color: #b7b3ab;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .card {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    background: #1a1a1a;
+    padding: 14px 14px 13px;
+  }
+  .card .tag {
+    display: inline-block;
+    border-radius: 8px;
+    background: rgba(222, 124, 64, 0.2);
+    color: #f2ba8b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+  }
+  .card h3 {
+    margin: 10px 0 0;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .card p {
+    margin-top: 6px;
+    color: #b7b3ab;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .steps { margin: 16px 0 0; padding: 0; list-style: none; }
+  .steps li {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 9px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .steps li:first-child { border-top: 0; padding-top: 0; }
+  .num {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(222, 124, 64, 0.15);
+    color: #de7c40;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .steps strong { font-weight: 600; }
+  .steps span { color: #b7b3ab; }
+  .arrive {
+    margin-top: 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(222, 124, 64, 0.45);
+    background: #141414;
+    padding: 14px 16px;
+  }
+  .arrive p { color: #b7b3ab; font-size: 13px; line-height: 1.45; margin-top: 4px; }
+  .footer {
+    position: absolute;
+    left: 16mm;
+    right: 16mm;
+    bottom: 12mm;
+    display: flex;
+    justify-content: space-between;
+    color: #8a8680;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<section class="page">
+  <p class="eyebrow">Client walkthrough</p>
+  <h1>The website, Vael In, and Vael Out.</h1>
+  <p class="lede">One website. Two ways in. Vael In is for someone available to work. Vael Out is for someone looking for a person.</p>
+
+  <div class="board">
+    <p class="eyebrow">The website</p>
+    <h2 style="margin-top:10px">Start on the public site.</h2>
+    <p class="note">These links sit at the top of the home page, Districts, Projects, and Community. No account is needed to look around.</p>
+    <div class="nav">
+      <div class="pill">Explore Districts</div>
+      <div class="pill">Projects</div>
+      <div class="pill">Community</div>
+      <div class="pill">Sign in</div>
+      <div class="pill accent">Go Visible</div>
+    </div>
+    <p class="note">To enter Vael In or Vael Out, choose <strong style="color:#f5f3ee">Go Visible</strong>.</p>
+  </div>
+
+  <div class="board">
+    <p class="eyebrow">Go Visible</p>
+    <h2 style="margin-top:10px">What are you here to do?</h2>
+    <p class="note">Select one card, then press Next.</p>
+    <div class="cards">
+      <div class="card">
+        <span class="tag">Vael In</span>
+        <h3>I’m available for work.</h3>
+        <p>Next opens account creation, then the Vael In setup.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Vael Out</span>
+        <h3>I’m looking for someone.</h3>
+        <p>Next opens account creation, then the Vael Out setup.</p>
+      </div>
+    </div>
+    <p class="note">A third card, Opportunities, posts a home job without an account. It is not Vael In or Vael Out.</p>
+  </div>
+
+  <div class="footer"><span>VAEL</span><span>1</span></div>
+</section>
+
+<section class="page">
+  <p class="eyebrow">Vael In</p>
+  <h1>I’m available for work.</h1>
+  <p class="lede">This path is for the person offering skills and availability. Follow it from the website.</p>
+
+  <ol class="steps">
+    <li><span class="num">1</span><div><strong>Go Visible</strong><br><span>On the website, press the orange Go Visible button.</span></div></li>
+    <li><span class="num">2</span><div><strong>Vael In</strong><br><span>Select “I’m available for work.”</span></div></li>
+    <li><span class="num">3</span><div><strong>Next</strong><br><span>Create an account: name, email, phone, and password.</span></div></li>
+    <li><span class="num">4</span><div><strong>Welcome</strong><br><span>Continue into profile setup.</span></div></li>
+    <li><span class="num">5</span><div><strong>Your VAEL identity</strong><br><span>Handle, how you will use VAEL, and your district.</span></div></li>
+    <li><span class="num">6</span><div><strong>Build your profile</strong><br><span>Name, photo, location, and what you do.</span></div></li>
+    <li><span class="num">7</span><div><strong>What you can do</strong><br><span>The work you take, how you work, and whether you are available now.</span></div></li>
+    <li><span class="num">8</span><div><strong>Review</strong><br><span>Edit any section, then go visible.</span></div></li>
+  </ol>
+
+  <div class="arrive">
+    <p class="eyebrow">You land here</p>
+    <h2 style="margin-top:8px;font-size:22px">Hey Vael In</h2>
+    <p>The dashboard shows your availability, your district, and people who are hiring. This account does not use the Vael Out hiring steps.</p>
+  </div>
+
+  <div class="footer"><span>VAEL</span><span>2</span></div>
+</section>
+
+<section class="page">
+  <p class="eyebrow">Vael Out</p>
+  <h1>I’m looking for someone.</h1>
+  <p class="lede">This path is for the person who needs someone. It uses its own steps after the account is created.</p>
+
+  <ol class="steps">
+    <li><span class="num">1</span><div><strong>Go Visible</strong><br><span>On the website, press the orange Go Visible button.</span></div></li>
+    <li><span class="num">2</span><div><strong>Vael Out</strong><br><span>Select “I’m looking for someone.”</span></div></li>
+    <li><span class="num">3</span><div><strong>Next</strong><br><span>Create an account: name, email, phone, and password.</span></div></li>
+    <li><span class="num">4</span><div><strong>What I need</strong><br><span>Who is hiring, the role, and a short description.</span></div></li>
+    <li><span class="num">5</span><div><strong>Who I’m looking for</strong><br><span>Discipline and skills.</span></div></li>
+    <li><span class="num">6</span><div><strong>Location</strong><br><span>Where the work is based.</span></div></li>
+    <li><span class="num">7</span><div><strong>Requirements</strong><br><span>Optional skills or certifications.</span></div></li>
+    <li><span class="num">8</span><div><strong>Timing</strong><br><span>When you need someone.</span></div></li>
+    <li><span class="num">9</span><div><strong>Additional details</strong><br><span>Optional. Then review and post.</span></div></li>
+  </ol>
+
+  <div class="arrive">
+    <p class="eyebrow">You land here</p>
+    <h2 style="margin-top:8px;font-size:22px">Hey Vael Out</h2>
+    <p>The dashboard shows people who match what you are hiring. The orange button is Create an Opportunity. This account does not use the Vael In availability steps.</p>
+  </div>
+
+  <div class="footer"><span>VAEL</span><span>3</span></div>
+</section>
+
+</body>
+</html>

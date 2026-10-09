@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { CityLayout } from "@/components/city/CityLayout";
 import { CitySessionProvider } from "@/lib/citySession";
 import { ThemeProvider } from "@/lib/theme";
@@ -16,18 +16,22 @@ import {
   JoinIdentityPage,
   JoinIntentPage,
   JoinLayout,
+  JoinNeedPage,
   JoinPreviewPage,
   JoinSetupPage,
   JoinSignUpPage,
   JoinWelcomePage,
+  VaelOutStepPage,
 } from "@/pages/join";
 import { DemoResetPage } from "@/pages/city/DemoReset";
 import { DemoResetVaelPage } from "@/pages/city/DemoResetVael";
 import { GoVisiblePage, HomePage, SearchPage } from "@/pages/city/Home";
 import { ExplorePage } from "@/pages/city/Explore";
 import { DistrictCommunityPage, FeedPage, SavedPostsPage, UnavailableCommunityPage } from "@/pages/community/Feed";
+import { CommunityDashboardPage } from "@/pages/community/Dashboard";
 import { CreatePostPage, PostDetailPage } from "@/pages/community/Post";
 import { DistrictPlaceholderPage, DistrictsPage } from "@/pages/city/Districts";
+import { WebsiteProjectsPage } from "@/pages/city/Projects";
 import { DistrictHomePage, HowItWorksPage } from "@/pages/mt/DistrictHome";
 import {
   DistrictOverviewPage,
@@ -38,10 +42,35 @@ import { AllMatchesPage } from "@/pages/mt/AllMatches";
 import { MatchesPage } from "@/pages/city/Matches";
 import { MessagesPage } from "@/pages/city/Messages";
 import { HandshakeRequestPage, MatchDetailPage } from "@/pages/mt/Board";
-import { ActiveVaelPage, PostOpportunityPage, VaelPage } from "@/pages/mt/Vael";
+import { PostOpportunityPage, VaelPage } from "@/pages/mt/Vael";
 import { ProfileEditPage, ProfilePage } from "@/pages/mt/Profile";
 import { ConnectionDetailPage, ConnectionsPage } from "@/pages/mt/Handshake";
 import { ConstructionHomePage, ConstructionHowItWorksPage } from "@/pages/construction/Home";
+import { OpportunityHomePage } from "@/pages/opportunities/Home";
+import { NeedLayout } from "@/pages/need/NeedLayout";
+import { NeedPlacePage } from "@/pages/need/Place";
+import { NeedCategoriesPage } from "@/pages/need/Categories";
+import { NeedDescribePage } from "@/pages/need/Describe";
+import { NeedMediaPage } from "@/pages/need/Media";
+import { NeedSavePage } from "@/pages/need/Save";
+import { NeedLocationPage } from "@/pages/need/Location";
+import { NeedTimingPage } from "@/pages/need/Timing";
+import { NeedBudgetPage } from "@/pages/need/Budget";
+import { NeedReviewPage } from "@/pages/need/Review";
+import { NeedAccountPage } from "@/pages/need/Account";
+import { NeedConfirmPage } from "@/pages/need/Confirm";
+import { NeedContinuePage } from "@/pages/need/Continue";
+import { NeedVerifyPage } from "@/pages/need/Verify";
+import { NeedPublishPage } from "@/pages/need/Publish";
+import { NeedPublishedPage } from "@/pages/need/Published";
+import { NeedProjectWizardPage } from "@/pages/need/ProjectWizard";
+import { ContractorProjectsLayout, ProjectsListPage } from "@/pages/projects/List";
+import { ProjectDetailPage } from "@/pages/projects/Detail";
+import { ProjectHandshakeRoomPage } from "@/pages/projects/HandshakeRoom";
+import { OpportunitiesListPage } from "@/pages/cxOpportunities/List";
+import { OpportunityDetailPage } from "@/pages/cxOpportunities/Detail";
+import { VaelanceSetupPage } from "@/pages/cxOpportunities/VaelanceSetup";
+import { VaelanceComparePage, VaelancePage } from "@/pages/cx/Vaelance";
 import { ConstructionMatchDetailPage } from "@/pages/construction/Board";
 import { ConstructionVaelPage } from "@/pages/construction/Vael";
 import { ConstructionProfileEditPage, ConstructionProfilePage } from "@/pages/construction/Profile";
@@ -93,6 +122,7 @@ export default function App() {
             <Route path="/join" element={<JoinLayout />}>
               <Route index element={<JoinSignUpPage />} />
               <Route path="intent" element={<JoinIntentPage />} />
+              <Route path="need" element={<JoinNeedPage />} />
               <Route path="welcome" element={<JoinWelcomePage />} />
               <Route path="setup" element={<JoinSetupPage />} />
               <Route path="handle" element={<Navigate to="/join/setup" replace />} />
@@ -103,6 +133,7 @@ export default function App() {
               <Route path="work" element={<Navigate to="/join/identity" replace />} />
               <Route path="credentials" element={<JoinCredentialsPage />} />
               <Route path="profile" element={<Navigate to="/join/identity" replace />} />
+              <Route path="out/:step" element={<VaelOutStepPage />} />
               <Route path="preview" element={<JoinPreviewPage />} />
               <Route path="vael" element={<Navigate to="/join/preview" replace />} />
               <Route path="done" element={<Navigate to={PRODUCT_HOME} replace />} />
@@ -115,6 +146,7 @@ export default function App() {
             <Route path="/feed/:postId" element={<PostDetailPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/go-visible" element={<GoVisiblePage />} />
+            <Route path="/opportunities" element={<OpportunityHomePage />} />
             <Route path="/districts" element={<DistrictsPage />} />
             <Route path="/districts/contractor" element={<ConstructionHomePage />} />
             <Route path="/districts/contractor/how-it-works" element={<ConstructionHowItWorksPage />} />
@@ -126,6 +158,39 @@ export default function App() {
             <Route path="/districts/contractor/connections" element={<ConstructionConnectionsPage />} />
             <Route path="/districts/contractor/connections/:id" element={<ConstructionConnectionDetailPage />} />
             <Route path="/districts/contractor/community" element={<DistrictCommunityPage />} />
+            <Route path="/districts/contractor/opportunities" element={<OpportunitiesListPage />} />
+            <Route path="/districts/contractor/opportunities/:projectId" element={<OpportunityDetailPage />} />
+            <Route path="/districts/contractor/vaelance" element={<VaelanceSetupPage />} />
+            <Route path="/districts/contractor/residential" element={<ConstructionHomePage category="residential" />} />
+            <Route path="/districts/contractor/commercial" element={<ConstructionHomePage category="commercial" />} />
+            <Route path="/districts/contractor/residential/start" element={<Navigate to="/need/project" replace />} />
+            <Route path="/need" element={<NeedLayout />}>
+              <Route index element={<NeedPlacePage />} />
+              <Route path="home" element={<NeedCategoriesPage />} />
+              <Route path="describe" element={<NeedDescribePage />} />
+              <Route path="media" element={<NeedMediaPage />} />
+              <Route path="save" element={<NeedSavePage />} />
+              <Route path="location" element={<NeedLocationPage />} />
+              <Route path="timing" element={<NeedTimingPage />} />
+              <Route path="budget" element={<NeedBudgetPage />} />
+              <Route path="account" element={<NeedAccountPage />} />
+              <Route path="confirm" element={<NeedConfirmPage />} />
+              <Route path="continue" element={<NeedContinuePage />} />
+              <Route path="review" element={<NeedReviewPage />} />
+              <Route path="verify" element={<NeedVerifyPage />} />
+              <Route path="publish" element={<NeedPublishPage />} />
+              <Route path="published/:projectId" element={<NeedPublishedPage />} />
+              <Route path="project" element={<NeedProjectWizardPage />} />
+            </Route>
+            <Route path="/districts/contractor/projects" element={<ContractorProjectsLayout />}>
+              <Route index element={<ProjectsListPage />} />
+              <Route path=":projectId" element={<ProjectDetailPage />} />
+              <Route path=":projectId/handshake/:connectionId" element={<ProjectHandshakeRoomPage />} />
+            </Route>
+            <Route path="/projects" element={<WebsiteProjectsPage />} />
+            <Route path="/projects/*" element={<LegacyProjectsRedirect />} />
+            <Route path="/vaelance/compare" element={<VaelanceComparePage />} />
+            <Route path="/vaelance/:handle" element={<VaelancePage />} />
             <Route path="/construction" element={<Navigate to="/districts/contractor" replace />} />
             <Route path="/districts/trucking" element={<TruckingHomePage />} />
             <Route path="/districts/trucking/how-it-works" element={<TruckingHowItWorksPage />} />
@@ -180,7 +245,6 @@ export default function App() {
             <Route path="/media-technology/board/:listingId" element={<MatchDetailPage />} />
             <Route path="/media-technology/board/:listingId/handshake" element={<HandshakeRequestPage />} />
             <Route path="/media-technology/vael" element={<VaelPage />} />
-            <Route path="/media-technology/vael/active" element={<ActiveVaelPage />} />
             <Route path="/media-technology/post-opportunity" element={<PostOpportunityPage />} />
             <Route path="/media-technology/profile/member" element={<Navigate to="/media-technology/profile/alexmorgan" replace />} />
             <Route path="/media-technology/profile/member/edit" element={<Navigate to="/media-technology/profile/alexmorgan/edit" replace />} />
@@ -188,6 +252,7 @@ export default function App() {
             <Route path="/media-technology/profile/:username/edit" element={<ProfileEditPage />} />
             <Route path="/media-technology/connections" element={<ConnectionsPage />} />
             <Route path="/media-technology/connections/:id" element={<ConnectionDetailPage />} />
+            <Route path="/media-technology/community/dashboard" element={<CommunityDashboardPage />} />
             <Route path="/media-technology/community" element={<DistrictCommunityPage />} />
             <Route path="/board" element={<Navigate to="/matches" replace />} />
             <Route path="/profile/:username" element={<LegacyProfileRedirect />} />
@@ -234,4 +299,10 @@ function LegacyProfileRedirect() {
 function LegacyConnectionRedirect() {
   const { id } = useParams();
   return <Navigate to={`/media-technology/connections/${id}`} replace />;
+}
+
+function LegacyProjectsRedirect() {
+  const { pathname, search, hash } = useLocation();
+  const next = pathname.replace(/^\/projects/, "/districts/contractor/projects");
+  return <Navigate to={`${next}${search}${hash}`} replace />;
 }

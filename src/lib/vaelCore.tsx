@@ -1,5 +1,6 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCitySession } from "./citySession";
+import { getOnboardingDraft, patchOnboarding } from "./onboarding";
 import {
   acceptHandshake,
   addDocument,
@@ -19,6 +20,7 @@ import {
   getMessages,
   getNotices,
   getProfile,
+  listingFromProfile,
   hoursLeft,
   markNoticesRead,
   markThreadRead,
@@ -39,6 +41,7 @@ import {
   type VaelListing,
 } from "./vaelStore";
 import { DEMO_HANDLE, prepareDemoWorkspace } from "./demoJourney";
+import { ensureVaelOutAccount } from "./vaelPair";
 
 type Ctx = {
   handle: string;
@@ -89,7 +92,9 @@ export function VaelCoreProvider({ children }: { children: ReactNode }) {
   }, [session.signedIn, session.handle]);
 
   useEffect(() => {
-    if (session.signedIn && session.handle) ensureProfile(session.handle);
+    if (!session.signedIn || !session.handle) return;
+    ensureProfile(session.handle);
+    ensureVaelOutAccount();
   }, [session.signedIn, session.handle]);
 
   const handle = session.signedIn ? session.handle : "";
@@ -109,10 +114,22 @@ export function VaelCoreProvider({ children }: { children: ReactNode }) {
       signedIn: Boolean(handle),
       listing,
       latestListing,
-      matches: listing ? rankMatches(listing) : [],
+      matches: (() => {
+        const mine = handle ? getProfile(handle) : undefined;
+        const intent = handle ? getOnboardingDraft(handle)?.intent : "";
+        const side = intent === "out" || listing?.side === "out" ? "out" : "in";
+        const source =
+          listing && listing.side === side ? listing : mine ? listingFromProfile(mine, side) : listing;
+        return source ? rankMatches(source) : [];
+      })(),
       saveListing: (input) => {
         const published = publishListing(input);
         setVael(published.side);
+        patchOnboarding(input.handle, {
+          intent: published.side,
+          ...(published.side === "out" ? { outStep: "submitted" as const } : {}),
+        });
+        if (published.side === "in") ensureVaelOutAccount();
         return published;
       },
       clearListing: () => {

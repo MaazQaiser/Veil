@@ -56,7 +56,7 @@ export function resolveCommunityAuthor(handle: string, districtId: CommunityDist
   return {
     name: profile?.displayName || `@${handle}`,
     handle,
-    avatarUrl: profile?.avatarUrl,
+    avatarUrl: profile?.avatarUrl || profile?.coverUrl,
     coverUrl: profile?.coverUrl,
     location: profile?.location,
     headline: profile?.headline,

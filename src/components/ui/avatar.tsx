@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 
 export function Avatar({
@@ -14,6 +15,7 @@ export function Avatar({
   locked?: boolean;
   className?: string;
 }) {
+  const [broken, setBroken] = useState(false);
   const dim =
     size === "sm"
       ? "h-8 w-8 text-caption"
@@ -28,6 +30,13 @@ export function Avatar({
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
+
+  const showPhoto = Boolean(src) && !broken;
+
   return (
     <span
       className={cn(
@@ -38,17 +47,18 @@ export function Avatar({
       aria-hidden={false}
       aria-label={locked ? `${name}, photo hidden until you connect` : name}
     >
-      {src ? (
+      {showPhoto ? (
         <img
           src={src}
           alt=""
-          loading="lazy"
+          loading="eager"
+          onError={() => setBroken(true)}
           className={cn("h-full w-full object-cover", locked && "scale-105 blur-[5px]")}
         />
       ) : (
         initials || "V"
       )}
-      {locked && src ? <span className="absolute inset-0 bg-foreground/10" aria-hidden /> : null}
+      {locked && showPhoto ? <span className="absolute inset-0 bg-foreground/10" aria-hidden /> : null}
     </span>
   );
 }

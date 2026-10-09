@@ -9,24 +9,21 @@ import { Avatar } from "@/components/ui/avatar";
 import { DistrictStatus } from "@/components/vael/status";
 import {
   IconBell,
-  IconCheck,
   IconClose,
   IconGrid,
   IconHome,
   IconMenu,
   IconMessage,
-  IconMoon,
   IconSearch,
-  IconSun,
   IconUsers,
 } from "@/components/ui/icons";
 import { CITY_CONTEXT, districtFromPath, primaryDistricts } from "@/lib/districts";
 import { useCitySession } from "@/lib/citySession";
-import { useTheme } from "@/lib/theme";
 import { useVael } from "@/lib/vaelCore";
-import { onboardingComplete, onboardingRoute } from "@/lib/onboarding";
-import { PRODUCT_HOME, isDarkModeFlowPath, profileCompletion } from "@/lib/providerJourney";
+import { onboardingComplete, onboardingRoute, signedInLanding } from "@/lib/onboarding";
+import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
 import { relativeTime } from "@/lib/time";
+import { isHomeownerPath } from "@/lib/cxRoutes";
 
 type VaelApi = ReturnType<typeof useVael>;
 
@@ -36,23 +33,39 @@ const DEFAULT_AVATAR_URL = "/people/p04.jpg";
 /** Site-header pill links — shown on the public marketing site only, not inside the product. */
 const cityEntryNav = [
   { id: "explore", label: "Explore Districts", to: "/districts" },
-  { id: "how", label: "How VAEL Works", to: "/#how-it-works" },
+  { id: "projects", label: "Projects", to: "/projects" },
   { id: "community", label: "Community", to: "/feed" },
 ] as const;
 
 export const JOIN_ROUTE = "/join";
+export const GO_VISIBLE_ROUTE = "/go-visible";
 
 function enterProductHref(signedIn: boolean, handle: string) {
   if (!signedIn) return JOIN_ROUTE;
   if (!onboardingComplete(handle)) return onboardingRoute(handle);
-  return PRODUCT_HOME;
+  return signedInLanding(handle);
 }
 
 /** Public website surfaces keep marketing chrome even when a member is signed in. */
 export function isSitePath(pathname: string) {
   if (pathname === "/" || pathname === "/explore") return true;
-  if (pathname === "/sign-in" || pathname === "/sign-up") return true;
-  return pathname === "/join" || pathname.startsWith("/join/");
+  if (pathname === "/districts" || pathname === "/projects") return true;
+  if (pathname === "/feed" || pathname.startsWith("/feed/")) return true;
+  if (pathname === "/sign-in" || pathname === "/sign-up" || pathname === "/go-visible") return true;
+  if (pathname === "/join" || pathname.startsWith("/join/")) return true;
+  return isHomeownerPath(pathname);
+}
+
+/** Dark marketing bar — homepage, and the public pages that share its header. */
+function isWebsiteNavPath(pathname: string) {
+  if (pathname === "/" || pathname === "/districts" || pathname === "/projects") return true;
+  return pathname === "/feed" || pathname.startsWith("/feed/");
+}
+
+function siteNavActive(pathname: string, hash: string, to: string) {
+  if (to === "/#how-it-works") return pathname === "/" && hash === "#how-it-works";
+  if (to === "/feed") return pathname === "/feed" || pathname.startsWith("/feed/");
+  return pathname === to;
 }
 
 const mobilePrimary = [
@@ -92,105 +105,6 @@ function BellIllustration({ className }: { className?: string }) {
   );
 }
 
-/** Dark-mode toggle — visible in the header while on the dashboard, where dark styling exists so far. */
-function DarkModeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
-  return (
-    <button
-      type="button"
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      aria-pressed={isDark}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-[#FFC555]/15 hover:text-[#C99A28] dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10 dark:hover:text-[#F5F3EE]"
-      onClick={toggleTheme}
-    >
-      {isDark ? <IconSun className="h-5 w-5" /> : <IconMoon className="h-5 w-5" />}
-    </button>
-  );
-}
-
-/** Accent picker — only meaningful in dark mode, lets the viewer choose the orange or yellow CTA palette. */
-function AccentPicker() {
-  const { theme, accent, setAccent } = useTheme();
-  const id = useId();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onDoc(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, []);
-
-  const options: Array<{ value: "orange" | "yellow"; label: string; swatch: string }> = [
-    { value: "orange", label: "Orange", swatch: "#FF9D45" },
-    { value: "yellow", label: "Yellow", swatch: "#FFC555" },
-  ];
-
-  if (theme !== "dark") return null;
-
-  return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={id}
-        aria-label="Accent color"
-        title="Accent color"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] motion-safe:transition-colors motion-safe:duration-200 hover:bg-white/10"
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span
-          aria-hidden
-          className={cn(
-            "h-4 w-4 rounded-full ring-1 ring-inset ring-white/25",
-            accent === "yellow" ? "bg-[#FFC555]" : "bg-[#FF9D45]",
-          )}
-        />
-      </button>
-      {open ? (
-        <div
-          id={id}
-          role="menu"
-          aria-label="Accent color"
-          className="absolute right-0 z-40 mt-2 w-44 rounded-2xl border border-white/10 bg-surface-elevated p-2 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
-        >
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={accent === option.value}
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-body-sm font-medium text-foreground hover:bg-white/10",
-                accent === option.value ? "bg-white/10" : null,
-              )}
-              onClick={() => {
-                setAccent(option.value);
-                setOpen(false);
-              }}
-            >
-              <span aria-hidden className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: option.swatch }} />
-              {option.label}
-              {accent === option.value ? <IconCheck className="ml-auto h-4 w-4 shrink-0" /> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 /** A glimpse of recent notices from the header — full history lives at /notifications. */
 function NotificationsMenu({ notices, unread }: { notices: VaelApi["notices"]; unread: number }) {
@@ -271,22 +185,35 @@ function NotificationsMenu({ notices, unread }: { notices: VaelApi["notices"]; u
             </div>
           ) : (
             <ul className="flex-1 divide-y divide-border-subtle overflow-y-auto">
-              {rows.map((item) => (
-                <li key={item.id} className="flex items-start gap-3 px-5 py-4">
-                  {!item.read ? (
-                    <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#FFC555] dark:bg-accent" />
-                  ) : (
-                    <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-transparent" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-body-sm font-medium text-foreground">{item.title}</span>
-                      <span className="shrink-0 text-caption text-quiet">{relativeTime(item.createdAt)}</span>
-                    </span>
-                    <span className="mt-0.5 block truncate text-caption text-muted">{item.body}</span>
-                  </div>
-                </li>
-              ))}
+              {rows.map((item) => {
+                const row = (
+                  <>
+                    {!item.read ? (
+                      <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#FFC555] dark:bg-accent" />
+                    ) : (
+                      <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-transparent" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-body-sm font-medium text-foreground">{item.title}</span>
+                        <span className="shrink-0 text-caption text-quiet">{relativeTime(item.createdAt)}</span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-caption text-muted">{item.body}</span>
+                    </div>
+                  </>
+                );
+                return (
+                  <li key={item.id}>
+                    {item.href ? (
+                      <Link to={item.href} className="flex items-start gap-3 px-5 py-4 hover:bg-surface-muted" onClick={() => setOpen(false)}>
+                        {row}
+                      </Link>
+                    ) : (
+                      <div className="flex items-start gap-3 px-5 py-4">{row}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -460,12 +387,15 @@ function AccountMenu({
   avatarUrl,
   profileHref,
   className,
+  tone = "default",
 }: {
   handle: string;
   displayName: string;
   avatarUrl?: string;
   profileHref: string;
   className?: string;
+  /** Dark hero header. The menu sits on the near-black site, not the paper surface. */
+  tone?: "default" | "dark";
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -474,6 +404,11 @@ function AccountMenu({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const currentDistrict = districtFromPath(location.pathname);
+  const dark = tone === "dark";
+  const itemClassName = cn(
+    accountMenuItemClassName,
+    dark && "text-[#F5F3EE] hover:bg-white/10",
+  );
 
   useEffect(() => {
     setOpen(false);
@@ -512,8 +447,8 @@ function AccountMenu({
           size="md"
           className={
             avatarUrl
-              ? "ring-2 ring-[#FFC555]/40 ring-offset-2 ring-offset-background dark:ring-accent/50 dark:ring-offset-[#100E0B]"
-              : "border-transparent bg-gradient-to-br from-[#FDBA74] to-[#C99A28] font-medium text-[#0B0C0C] dark:from-accent-hover dark:to-accent dark:text-[#1A1410]"
+              ? "ring-2 ring-[#FFC555]/40 ring-offset-2 ring-offset-background dark:ring-accent/50 dark:ring-offset-[#0B0C0C]"
+              : "border-transparent bg-gradient-to-br from-[#FDBA74] to-[#C99A28] font-medium text-[#0B0C0C] dark:from-accent-hover dark:to-accent dark:text-[#0B0C0C]"
           }
         />
       </button>
@@ -522,16 +457,21 @@ function AccountMenu({
           id={menuId}
           role="menu"
           aria-label="Account"
-          className="absolute right-0 z-40 mt-2 w-[min(16rem,calc(100vw-2.5rem))] rounded-xl border border-border bg-surface-elevated p-2 shadow-md dark:border-white/10 dark:backdrop-blur-2xl"
+          className={cn(
+            "absolute right-0 z-40 mt-2 w-[min(16rem,calc(100vw-2.5rem))] rounded-lg border p-2 shadow-md",
+            dark
+              ? "border-white/15 bg-[#141414] text-[#F5F3EE] shadow-[0_16px_48px_rgba(0,0,0,0.5)]"
+              : "border-border bg-surface-elevated dark:border-white/10 dark:backdrop-blur-2xl",
+          )}
         >
-          <div className="mb-1 border-b border-border-subtle px-3 py-2">
+          <div className={cn("mb-1 border-b px-3 py-2", dark ? "border-white/10" : "border-border-subtle")}>
             <p className="truncate text-body-sm font-medium">{displayName}</p>
-            <p className="truncate text-caption text-muted">@{handle}</p>
+            <p className={cn("truncate text-caption", dark ? "text-white/55" : "text-muted")}>@{handle}</p>
           </div>
           <Link
             role="menuitem"
             to={profileHref}
-            className={accountMenuItemClassName}
+            className={itemClassName}
             onClick={() => setOpen(false)}
           >
             Profile
@@ -539,20 +479,26 @@ function AccountMenu({
           <Link
             role="menuitem"
             to="/account"
-            className={accountMenuItemClassName}
+            className={itemClassName}
             onClick={() => setOpen(false)}
           >
             Settings
           </Link>
-          <div role="separator" className="my-1 border-t border-border-subtle" />
-          <p className="px-3 py-1 text-label text-muted">Switch district</p>
+          <div role="separator" className={cn("my-1 border-t", dark ? "border-white/10" : "border-border-subtle")} />
+          {isHomeownerPath(location.pathname) ? null : (
+            <>
+          <p className={cn("px-3 py-1 text-label", dark ? "text-white/45" : "text-muted")}>Switch district</p>
           {primaryDistricts.map((district) => (
             <button
               key={district.id}
               type="button"
               role="menuitem"
               aria-current={currentDistrict?.id === district.id ? "true" : undefined}
-              className={cn(accountMenuItemClassName, "items-center justify-between gap-2")}
+              className={cn(
+                itemClassName,
+                "items-center justify-between gap-2",
+                dark && "[&>span:last-child]:border-transparent [&>span:last-child]:bg-[#16361C] [&>span:last-child]:text-[#4ADE80]",
+              )}
               onClick={() => {
                 setOpen(false);
                 navigate(district.route);
@@ -562,11 +508,13 @@ function AccountMenu({
               <DistrictStatus status={district.status} />
             </button>
           ))}
-          <div role="separator" className="my-1 border-t border-border-subtle" />
+          <div role="separator" className={cn("my-1 border-t", dark ? "border-white/10" : "border-border-subtle")} />
+            </>
+          )}
           <button
             type="button"
             role="menuitem"
-            className={accountMenuItemClassName}
+            className={itemClassName}
             onClick={() => {
               setOpen(false);
               signOut();
@@ -735,11 +683,20 @@ export function CityShell() {
   const onSite = isSitePath(location.pathname);
   const onHero = location.pathname === "/";
   const inProduct = session.signedIn && !onSite;
-  const inJoinFlow = location.pathname.startsWith("/join");
+  const inJoinFlow =
+    location.pathname.startsWith("/join") ||
+    location.pathname === "/sign-in" ||
+    location.pathname === "/sign-up" ||
+    location.pathname === "/go-visible" ||
+    isHomeownerPath(location.pathname);
+  const darkNav = isWebsiteNavPath(location.pathname) || inJoinFlow;
+  const onNeedFlow = location.pathname === "/need" || location.pathname.startsWith("/need/");
 
   useEffect(() => {
     setMoreOpen(false);
   }, [location.pathname]);
+
+  if (onNeedFlow) return null;
 
   return (
     <>
@@ -753,10 +710,12 @@ export function CityShell() {
       <header
         className={cn(
           "z-40 text-foreground",
-          onHero
-            ? "absolute inset-x-0 top-0 border-b border-transparent bg-transparent"
+          darkNav
+            ? onHero
+              ? "absolute inset-x-0 top-0 border-b border-transparent bg-transparent"
+              : "sticky top-0 border-b border-white/10 bg-[#0B0C0C]"
             : inProduct
-              ? "sticky top-0 border-b border-border-subtle bg-white dark:relative dark:border-white/5 dark:bg-[#15130F]/70 dark:backdrop-blur-xl dark:supports-[backdrop-filter]:bg-[#15130F]/50 dark:after:absolute dark:after:inset-x-0 dark:after:bottom-[-1px] dark:after:h-px dark:after:bg-gradient-to-r dark:after:from-transparent dark:after:via-accent/40 dark:after:to-transparent dark:after:content-['']"
+              ? "sticky top-0 border-b border-border-subtle bg-white dark:border-white/5 dark:bg-[#0B0C0C]/70 dark:backdrop-blur-xl dark:supports-[backdrop-filter]:bg-[#0B0C0C]/50 dark:after:absolute dark:after:inset-x-0 dark:after:bottom-[-1px] dark:after:h-px dark:after:bg-gradient-to-r dark:after:from-transparent dark:after:via-accent/40 dark:after:to-transparent dark:after:content-['']"
               : "sticky top-0 border-b border-border-subtle bg-background",
         )}
       >
@@ -768,33 +727,35 @@ export function CityShell() {
         >
           <Link to="/" className="flex shrink-0 items-center gap-2.5">
             <img src="/vael-medallion.png" alt="" className="h-9 w-9 sm:h-10 sm:w-10" />
-            <span
-              className={cn(
-                "font-sans text-[1.0625rem] font-medium tracking-tight",
-                onHero ? "text-white" : "text-foreground",
-              )}
-            >
-              VAEL
-            </span>
-            <span className="sr-only"> — City home</span>
+            <span className="sr-only">VAEL — City home</span>
           </Link>
           {!inProduct ? (
             <nav
               className="hidden min-w-0 items-center gap-8 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
               aria-label="Site"
             >
-              {cityEntryNav.map((item) => (
-                <Link
-                  key={item.id}
-                  to={item.to}
-                  className={cn(
-                    "px-0 py-2 text-[0.9375rem] font-medium motion-safe:transition-colors motion-safe:duration-200",
-                    onHero ? "text-white/85 hover:text-white" : "text-muted hover:text-foreground",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {cityEntryNav.map((item) => {
+                const active = siteNavActive(location.pathname, location.hash, item.to);
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.to}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "px-0 py-2 font-sans text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-200",
+                      darkNav
+                        ? active
+                          ? "text-white"
+                          : "text-white/85 hover:text-white"
+                        : active
+                          ? "text-foreground"
+                          : "text-muted hover:text-foreground",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
           ) : null}
           <div className="ml-auto flex min-w-0 items-center gap-3">
@@ -802,7 +763,7 @@ export function CityShell() {
               <>
                 <form
                   role="search"
-                  className="hidden min-w-0 items-center gap-2 rounded-full border border-border bg-white px-4 md:flex md:w-72 lg:w-[26rem] dark:border-white/10 dark:bg-white/[0.05] dark:backdrop-blur-md"
+                  className="hidden min-w-0 items-center gap-2 rounded-lg border border-border bg-white px-4 md:flex md:w-72 lg:w-[26rem] dark:border-white/10 dark:bg-white/[0.05] dark:backdrop-blur-md"
                   onSubmit={(event) => {
                     event.preventDefault();
                     const query = String(new FormData(event.currentTarget).get("q") || "").trim();
@@ -821,12 +782,6 @@ export function CityShell() {
                     className="h-11 min-w-0 flex-1 bg-transparent text-body-sm text-foreground placeholder:text-quiet focus:outline-none"
                   />
                 </form>
-                {isDarkModeFlowPath(location.pathname) ? (
-                  <>
-                    <DarkModeToggle />
-                    <AccentPicker />
-                  </>
-                ) : null}
                 <NotificationsMenu notices={vael.notices} unread={unreadNotifications} />
                 <MessagesMenu
                   handle={session.handle}
@@ -852,16 +807,20 @@ export function CityShell() {
                     avatarUrl={vael.profile(session.handle)?.avatarUrl || DEFAULT_AVATAR_URL}
                     profileHref={profileHrefForHandle(session.handle)}
                     className="hidden sm:block"
+                    tone={darkNav ? "dark" : "default"}
                   />
                 )}
                 <Link
                   to={enterProductHref(true, session.handle)}
                   className={cn(
-                    "hidden items-center justify-center rounded-full bg-[#FFC555] px-5 text-button font-medium text-[#0B0C0C] transition-opacity hover:opacity-90 sm:inline-flex",
-                    onHero ? "h-11" : "h-12",
+                    "hidden h-12 items-center justify-center gap-2 rounded-md px-5 font-sans text-body-sm font-medium leading-none transition-colors sm:inline-flex",
+                    darkNav
+                      ? "bg-[#DE7C40] text-[#0B0C0C] hover:bg-[#E89E6E]"
+                      : "bg-[#FFC555] text-[#0B0C0C] hover:bg-[#FFC555]/90",
                   )}
                 >
                   Open VAEL
+                  <span aria-hidden>→</span>
                 </Link>
               </>
             ) : (
@@ -869,25 +828,27 @@ export function CityShell() {
                 <Link
                   to="/sign-in"
                   className={cn(
-                    "hidden px-2 py-2 text-button font-medium sm:inline-flex",
-                    onHero ? "text-white/85 hover:text-white" : "text-muted hover:text-foreground",
+                    "hidden px-2 py-2 font-sans text-body-sm font-medium sm:inline-flex",
+                    darkNav ? "text-white/85 hover:text-white" : "text-muted hover:text-foreground",
                   )}
                 >
                   Sign in
                 </Link>
                 <Link
-                  to={JOIN_ROUTE}
+                  to={GO_VISIBLE_ROUTE}
                   className={cn(
-                    "hidden items-center justify-center rounded-full bg-[#FFC555] px-5 text-button font-medium text-[#0B0C0C] transition-opacity hover:opacity-90 sm:inline-flex",
-                    onHero ? "h-11" : "h-12",
+                    "hidden h-12 items-center justify-center rounded-md px-5 font-sans text-body-sm font-medium leading-none transition-colors sm:inline-flex",
+                    darkNav
+                      ? "bg-[#DE7C40] text-[#0B0C0C] hover:bg-[#E89E6E]"
+                      : "bg-[#FFC555] text-[#0B0C0C] hover:bg-[#FFC555]/90",
                   )}
                 >
-                  Join VAEL →
+                  Go Visible →
                 </Link>
               </>
             )}
             <IconButton
-              className={cn("lg:hidden", onHero && "text-white hover:bg-white/10")}
+              className={cn("lg:hidden", darkNav && "text-white hover:bg-white/10")}
               label="More City destinations"
               onClick={() => setMoreOpen(true)}
             >
@@ -976,13 +937,23 @@ export function CityShell() {
                 </Link>
               </li>
             </ul>
-            <Link
-              to={enterProductHref(session.signedIn, session.handle)}
-              className={buttonClassName({ size: "lg", className: "mt-6 w-full" })}
-              onClick={() => setMoreOpen(false)}
-            >
-              {session.signedIn ? "Open VAEL" : "Join VAEL"}
-            </Link>
+            {session.signedIn ? (
+              <Link
+                to={enterProductHref(true, session.handle)}
+                className={buttonClassName({ size: "lg", className: "mt-6 w-full" })}
+                onClick={() => setMoreOpen(false)}
+              >
+                Open VAEL →
+              </Link>
+            ) : (
+              <Link
+                to={GO_VISIBLE_ROUTE}
+                className={buttonClassName({ size: "lg", className: "mt-6 w-full" })}
+                onClick={() => setMoreOpen(false)}
+              >
+                Go Visible →
+              </Link>
+            )}
           </>
         )}
       </Drawer>

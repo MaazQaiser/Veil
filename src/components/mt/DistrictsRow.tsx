@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { IconChevronRight, IconHome } from "@/components/ui/icons";
+import { IconHome } from "@/components/ui/icons";
 import { primaryDistricts } from "@/lib/districts";
 import { profileCompletion } from "@/lib/providerJourney";
 import { useConstruction } from "@/lib/constructionCore";
@@ -8,7 +8,7 @@ import { useTrucking } from "@/lib/truckingCore";
 import { useResidential } from "@/lib/residentialCore";
 import { useCommercial } from "@/lib/commercialCore";
 import { useVael } from "@/lib/vaelCore";
-import { getManuallyJoinedDistrictIds, subscribeMyDistricts } from "@/lib/myDistricts";
+import { getActiveDistrictId, getDistrictHistory, subscribeMyDistricts } from "@/lib/myDistricts";
 import type { ProfileDocument, ProfileRecord } from "@/lib/vaelStore";
 
 /** The four sibling districts share this exact profile shape — one checklist covers all of them. */
@@ -27,55 +27,47 @@ export function siblingCompletion(
 }
 
 /**
- * Districts the member has joined — either by Vaeling in/out at least once, or by
- * explicitly adding the district from Manage → Add District (before ever setting
- * availability there). The blank skeleton profile every signed-in account gets in
- * every district automatically does not by itself count. Shared by DistrictsRow,
- * the My Districts page, and the Home action-items gate.
+ * Completion for every primary district, plus which one the member is in.
+ * A member can only be in one district at a time.
  */
-export function useJoinedDistricts(handle: string, mine: ProfileRecord | undefined, docs: ProfileDocument[]) {
+export function useDistrictCards(handle: string, mine: ProfileRecord | undefined, docs: ProfileDocument[]) {
   const construction = useConstruction();
   const trucking = useTrucking();
   const residential = useResidential();
   const commercial = useCommercial();
+  const vael = useVael();
   const [, setTick] = useState(0);
 
   useEffect(() => subscribeMyDistricts(() => setTick((n) => n + 1)), []);
 
-  const manual = new Set(getManuallyJoinedDistrictIds(handle));
-
-  const vael = useVael();
-  const percentByDistrictId: Record<string, number | null> = {
-    "media-technology": mine
-      ? profileCompletion(mine, docs, vael.latestListing?.side ?? "in").percent
-      : manual.has("media-technology")
-        ? 0
-        : null,
-    construction: construction.latestListing
-      ? siblingCompletion(construction.profile(handle))
-      : manual.has("construction")
-        ? siblingCompletion(construction.profile(handle)) ?? 0
-        : null,
-    trucking: trucking.latestListing
-      ? siblingCompletion(trucking.profile(handle))
-      : manual.has("trucking")
-        ? siblingCompletion(trucking.profile(handle)) ?? 0
-        : null,
-    residential: residential.latestListing
-      ? siblingCompletion(residential.profile(handle))
-      : manual.has("residential")
-        ? siblingCompletion(residential.profile(handle)) ?? 0
-        : null,
-    commercial: commercial.latestListing
-      ? siblingCompletion(commercial.profile(handle))
-      : manual.has("commercial")
-        ? siblingCompletion(commercial.profile(handle)) ?? 0
-        : null,
+  const storedActive = getActiveDistrictId(handle);
+  const history = new Set(getDistrictHistory(handle));
+  const percentByDistrictId: Record<string, number> = {
+    "media-technology": mine ? profileCompletion(mine, docs, vael.latestListing?.side ?? "in").percent : 0,
+    construction: siblingCompletion(construction.profile(handle)) ?? 0,
+    trucking: siblingCompletion(trucking.profile(handle)) ?? 0,
+    residential: siblingCompletion(residential.profile(handle)) ?? 0,
+    commercial: siblingCompletion(commercial.profile(handle)) ?? 0,
   };
 
-  return primaryDistricts
-    .map((district) => ({ district, percent: percentByDistrictId[district.id] }))
-    .filter((row): row is { district: (typeof primaryDistricts)[number]; percent: number } => row.percent !== null);
+  const fallbackActive = mine || vael.latestListing ? "media-technology" : undefined;
+  const activeId = storedActive ?? fallbackActive;
+
+  return primaryDistricts.map((district) => {
+    const percent = percentByDistrictId[district.id] ?? 0;
+    const isActive = district.id === activeId;
+    const hasVisited = history.has(district.id) || isActive || percent > 0;
+    return { district, percent, isActive, hasVisited };
+  });
+}
+
+/**
+ * Districts the member is currently in — exactly one, after they join or switch.
+ */
+export function useJoinedDistricts(handle: string, mine: ProfileRecord | undefined, docs: ProfileDocument[]) {
+  return useDistrictCards(handle, mine, docs)
+    .filter((row) => row.isActive)
+    .map(({ district, percent }) => ({ district, percent }));
 }
 
 /**
@@ -87,46 +79,42 @@ export function DistrictsRow({
   handle,
   mine,
   docs,
+  className,
 }: {
   handle: string;
   mine: ProfileRecord | undefined;
   docs: ProfileDocument[];
+  className?: string;
 }) {
   const joined = useJoinedDistricts(handle, mine, docs);
+  const primary = joined.find((row) => row.district.id === "media-technology") ?? joined[0];
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
+    <div
+      className={`flex items-center justify-between gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] motion-safe:transition-shadow motion-safe:duration-200 hover:shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-8px_rgba(17,17,17,0.14)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_16px_36px_-12px_rgba(0,0,0,0.4)]${className ? ` ${className}` : ""}`}
+    >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-[#0B0C0C] dark:bg-gradient-to-br dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent">
           <IconHome className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <p className="text-body font-semibold text-foreground">Your Districts</p>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-muted">
-            {joined.map(({ district, percent }) => (
-              <Link
-                key={district.id}
-                to={`/media-technology/districts/${district.id}`}
-                className="tabular-nums hover:text-foreground hover:underline"
-              >
-                {district.name} · {percent}%
-              </Link>
-            ))}
-            <Link
-              to="/media-technology/districts"
-              className="font-medium text-[#C99A28] hover:text-foreground dark:text-accent"
-            >
-              + Add District
-            </Link>
-          </div>
+          <p className="text-body font-semibold text-foreground">Your District</p>
+          <p className="mt-0.5 truncate text-body-sm text-muted">
+            {primary ? (
+              <>
+                {primary.district.name} · {primary.percent}%
+              </>
+            ) : (
+              "No district yet"
+            )}
+          </p>
         </div>
       </div>
       <Link
         to="/media-technology/districts"
-        className="inline-flex h-10 shrink-0 items-center gap-1.5 self-start rounded-full bg-[#0B0C0C] px-5 text-body-sm font-medium text-white sm:self-auto dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25"
+        className="shrink-0 text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground dark:text-accent"
       >
-        Manage
-        <IconChevronRight className="h-3.5 w-3.5" />
+        Change district →
       </Link>
     </div>
   );

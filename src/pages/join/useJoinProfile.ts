@@ -37,14 +37,14 @@ export function useJoinProfile() {
   function persist(next = form) {
     // Falling back to disciplines is fine — falling back to the person's own name would
     // turn "no headline yet" into a fake one that then leaks into discipline/category.
-    const headline = next.headline.trim() || next.disciplines[0] || "";
+    const headline = (next.headline ?? "").trim() || next.disciplines?.[0] || "";
     vael.writeProfile({
       ...next,
       handle: session.handle,
-      displayName: next.displayName.trim(),
+      displayName: (next.displayName ?? "").trim(),
       headline,
-      location: next.location.trim(),
-      portfolio: normalizePortfolio(next.portfolio),
+      location: (next.location ?? "").trim(),
+      portfolio: normalizePortfolio(next.portfolio ?? []),
     });
   }
 

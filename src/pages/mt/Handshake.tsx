@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
-import { EmptyState, ErrorState } from "@/components/ui/feedback";
+import { ErrorState } from "@/components/ui/feedback";
 import { Button, buttonClassName } from "@/components/ui/button";
-import { CityPage } from "@/components/city/CityShell";
+import { DashboardShell, dashboardSideFromListing } from "@/components/mt/DashboardShell";
 import { Avatar } from "@/components/ui/avatar";
 import { HandshakeStatus, ProfileCard } from "@/components/vael";
 import { SkillChips } from "@/components/mt/BoardMatchCard";
 import { RequireMember } from "@/components/mt/RequireMember";
-import { IconChevronRight } from "@/components/ui/icons";
+import { IconChevronRight, IconHandshake, IconInfo, IconMessage } from "@/components/ui/icons";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useVael } from "@/lib/vaelCore";
 import { isMtSampleHandle, type ConnectionRecord, type ProfileRecord } from "@/lib/vaelStore";
@@ -16,6 +16,7 @@ import { seedDemoConversation } from "@/lib/demoJourney";
 import { cn } from "@/lib/cn";
 import { relativeTime } from "@/lib/time";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
+import { handshakePageLede, handshakeRequestsEmpty, handshakeWindowNote } from "@/lib/vaelCopy";
 import type { HandshakeKind } from "@/components/vael/status";
 
 function kindOf(connection: ConnectionRecord, handle: string): HandshakeKind {
@@ -43,7 +44,38 @@ function ctaFor(kind: HandshakeKind): { label: string; emphasis: "solid" | "outl
   return { label: "View", emphasis: "ghost" };
 }
 
-type HandshakeTab = "connected" | "pending";
+type HandshakeTab = "requests" | "handshake" | "closed";
+
+function tabFor(kind: HandshakeKind): HandshakeTab {
+  if (kind === "connected") return "handshake";
+  if (kind === "declined" || kind === "closed" || kind === "blocked") return "closed";
+  return "requests";
+}
+
+function HandshakeEmpty({
+  title,
+  description,
+  cta,
+  to,
+}: {
+  title: string;
+  description: string;
+  cta?: string;
+  to?: string;
+}) {
+  return (
+    <div className="flex min-h-[14rem] flex-col items-center justify-center rounded-2xl border border-border bg-white px-6 py-12 text-center dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
+      <IconHandshake className="h-8 w-8 text-muted" aria-hidden />
+      <p className="mt-3 text-body text-foreground">{title}</p>
+      <p className="mt-1 text-body-sm text-muted">{description}</p>
+      {cta && to ? (
+        <Link to={to} className="mt-3 text-body-sm font-medium text-[#DE7C40] hover:underline">
+          {cta} →
+        </Link>
+      ) : null}
+    </div>
+  );
+}
 
 /** Same card language as the Matches cards — circle photo, badge row, info, footer CTA. */
 function HandshakeCard({
@@ -70,12 +102,12 @@ function HandshakeCard({
   return (
     <Link
       to={connected ? `/messages?c=${connection.id}` : `/media-technology/connections/${connection.id}`}
-      className="group flex w-80 shrink-0 snap-start flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-[#C99A28]/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-accent/30 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(255,157,69,0.2)]"
+      className="group flex w-full flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-[#C99A28]/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(0,0,0,0.4)]"
     >
       {image ? (
         <img src={image} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
       ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-gradient-to-br dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]">
           {initial}
         </span>
       )}
@@ -113,8 +145,9 @@ function HandshakeCard({
 }
 
 function ConnectionsInner() {
-  const { myConnections, handle, otherParty, profile, thread } = useVael();
-  const [tab, setTab] = useState<HandshakeTab>("connected");
+  const { myConnections, handle, otherParty, profile, thread, latestListing } = useVael();
+  const side = dashboardSideFromListing(latestListing);
+  const [tab, setTab] = useState<HandshakeTab>("requests");
 
   const rows = useMemo(
     () =>
@@ -124,82 +157,86 @@ function ConnectionsInner() {
         const messages = thread(item.id);
         const last = messages[messages.length - 1];
         const kind = kindOf(item, handle);
-        return { item, other, otherProfile, last, kind };
+        return { item, other, otherProfile, last, kind, tab: tabFor(kind) };
       }),
     [myConnections, handle, otherParty, profile, thread],
   );
 
   const counts = {
-    connected: rows.filter((row) => row.kind === "connected").length,
-    pending: rows.filter((row) => row.kind !== "connected").length,
+    requests: rows.filter((row) => row.tab === "requests").length,
+    handshake: rows.filter((row) => row.tab === "handshake").length,
+    closed: rows.filter((row) => row.tab === "closed").length,
   };
 
-  const filtered = useMemo(
-    () => rows.filter((row) => (tab === "connected" ? row.kind === "connected" : row.kind !== "connected")),
-    [rows, tab],
-  );
+  const filtered = useMemo(() => rows.filter((row) => row.tab === tab), [rows, tab]);
+
+  const requestsEmpty = handshakeRequestsEmpty(side);
+  const empty =
+    tab === "requests"
+      ? {
+          ...requestsEmpty,
+          to: `${PRODUCT_HOME}/matches`,
+        }
+      : tab === "handshake"
+        ? {
+            title: "No handshakes yet.",
+            description: "When a request is accepted, the private conversation lives here.",
+            cta: requestsEmpty.cta,
+            to: `${PRODUCT_HOME}/matches`,
+          }
+        : {
+            title: "Nothing archived.",
+            description: "Closed and declined handshakes show up here.",
+            cta: undefined,
+            to: undefined,
+          };
 
   return (
-    <CityPage width="full" className="-mt-4 sm:-mt-6">
-      <div className="mx-auto w-full max-w-[92rem] px-5 py-12 md:px-6 lg:px-8">
-        <Link to={PRODUCT_HOME} className="text-body-sm font-medium text-muted hover:text-foreground">
-          ← Back to Dashboard
-        </Link>
-
-        <h1 className="mt-4 font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-semibold tracking-tight text-foreground">
-          Handshakes
+    <DashboardShell>
+      <div>
+        <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+          Handshakes & Matches
         </h1>
-        <p className="mt-2 text-body text-muted">Handshakes and private conversations on this device.</p>
-
-        {myConnections.length === 0 ? (
-          <div className="mt-8">
-            <EmptyState
-              title="No Handshakes yet"
-              description="Request a Handshake from a match."
-              action={
-                <Link to="/media-technology/matches" className={buttonClassName()}>
-                  View matches
-                </Link>
-              }
-            />
-          </div>
-        ) : (
-          <>
-            <div className="mt-8 overflow-x-auto">
-              <Tabs value={tab} onValueChange={(next) => setTab(next as HandshakeTab)} defaultValue="connected">
-                <TabsList>
-                  <TabsTrigger value="connected">Connected ({counts.connected})</TabsTrigger>
-                  <TabsTrigger value="pending">Pending ({counts.pending})</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {filtered.length === 0 ? (
-              <div className="mt-6">
-                <EmptyState
-                  title={tab === "connected" ? "No connected Handshakes" : "No pending Handshakes"}
-                  description="Nothing here yet."
-                />
-              </div>
-            ) : (
-              <div className="mt-6 flex flex-wrap gap-4">
-                {filtered.map((row) => (
-                  <HandshakeCard
-                    key={row.item.id}
-                    connection={row.item}
-                    otherHandle={row.other}
-                    otherProfile={row.otherProfile}
-                    lastBody={row.last?.body}
-                    lastAt={row.last?.createdAt}
-                    kind={row.kind}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
+        <p className="mt-2 text-body-sm text-muted">{handshakePageLede(side)}</p>
       </div>
-    </CityPage>
+
+      <div className="flex gap-3 rounded-md border border-dashed border-border px-4 py-3 dark:border-white/15">
+        <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
+        <p className="text-body-sm text-muted">{handshakeWindowNote(side)}</p>
+      </div>
+
+      <Tabs value={tab} onValueChange={(next) => setTab(next as HandshakeTab)} defaultValue="requests">
+        <TabsList>
+          <TabsTrigger value="requests" className="inline-flex items-center gap-2">
+            <IconMessage className="h-3.5 w-3.5" aria-hidden />
+            Requests ({counts.requests})
+          </TabsTrigger>
+          <TabsTrigger value="handshake" className="inline-flex items-center gap-2">
+            <IconHandshake className="h-3.5 w-3.5" aria-hidden />
+            Handshake area ({counts.handshake})
+          </TabsTrigger>
+          <TabsTrigger value="closed">Closed & archived ({counts.closed})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {filtered.length === 0 ? (
+        <HandshakeEmpty title={empty.title} description={empty.description} cta={empty.cta} to={empty.to} />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {filtered.map((row) => (
+            <HandshakeCard
+              key={row.item.id}
+              connection={row.item}
+              otherHandle={row.other}
+              otherProfile={row.otherProfile}
+              lastBody={row.last?.body}
+              lastAt={row.last?.createdAt}
+              kind={row.kind}
+            />
+          ))}
+        </div>
+      )}
+    </DashboardShell>
   );
 }
 
@@ -226,7 +263,7 @@ function DetailInner() {
 
   if (!connection) {
     return (
-      <CityPage>
+      <DashboardShell>
         <ErrorState
           title="Connection not found"
           action={
@@ -235,7 +272,7 @@ function DetailInner() {
             </Link>
           }
         />
-      </CityPage>
+      </DashboardShell>
     );
   }
 
@@ -243,7 +280,10 @@ function DetailInner() {
   const kind = kindOf(connection, vael.handle);
   const otherProfile = vael.profile(other);
   const otherName = otherProfile?.displayName ?? `@${other}`;
-  const listing = connection.listingId ? vael.listingById(connection.listingId) : undefined;
+  const listed = connection.listingId ? vael.listingById(connection.listingId) : undefined;
+  const listing =
+    vael.matches.find((item) => item.listing.handle === other)?.listing ??
+    (listed && listed.handle === other ? listed : undefined);
   const match = listing ? vael.matches.find((item) => item.listing.id === listing.id) : undefined;
   const role = otherProfile?.headline || listing?.category || listing?.discipline || "Media & Technology";
   const docs = vael.documents(other);
@@ -251,7 +291,7 @@ function DetailInner() {
 
   if (kind === "pending") {
     return (
-      <CityPage width="narrow">
+      <DashboardShell>
         <PageHeader
           title="Handshake sent"
           description="Your request is waiting for a response."
@@ -261,10 +301,10 @@ function DetailInner() {
           ]}
           actions={<HandshakeStatus kind="pending" />}
         />
-        <p className="mt-6 text-body-sm text-muted">No chat yet. A private conversation opens when they accept.</p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <p className="text-body-sm text-muted">No chat yet. A private conversation opens when they accept.</p>
+        <div className="flex flex-wrap gap-3">
           <Link to={opportunityHref} className={buttonClassName({ variant: "outline" })}>
-            View Opportunity
+            View Listing
           </Link>
           <Button variant="ghost" onClick={() => vael.decline(connection.id)}>
             Withdraw Request
@@ -281,13 +321,13 @@ function DetailInner() {
             </Button>
           ) : null}
         </div>
-      </CityPage>
+      </DashboardShell>
     );
   }
 
   if (kind === "accepted") {
     return (
-      <CityPage width="narrow">
+      <DashboardShell>
         <PageHeader
           title="Handshake request"
           description={`${otherName} asked to connect. Accept to open the private connection.`}
@@ -297,7 +337,7 @@ function DetailInner() {
           ]}
           actions={<HandshakeStatus kind="accepted" />}
         />
-        <div className="mt-8">
+        <div>
           <ProfileCard
             name={otherName}
             handle={other}
@@ -307,7 +347,7 @@ function DetailInner() {
             photoLocked
           />
         </div>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => {
               vael.accept(connection.id, vael.handle);
@@ -320,30 +360,30 @@ function DetailInner() {
             Decline
           </Button>
           <Link to={opportunityHref} className={buttonClassName({ variant: "ghost" })}>
-            View Opportunity
+            View Listing
           </Link>
         </div>
-      </CityPage>
+      </DashboardShell>
     );
   }
 
   if (kind === "declined" || kind === "closed" || kind === "blocked") {
     return (
-      <CityPage width="narrow">
+      <DashboardShell>
         <PageHeader
           title={otherName}
           description="This Handshake is not open."
           actions={<HandshakeStatus kind={kind} />}
         />
-        <Link to="/media-technology/matches" className={buttonClassName({ className: "mt-8", variant: "outline" })}>
+        <Link to="/media-technology/matches" className={buttonClassName({ variant: "outline" })}>
           Back to matches
         </Link>
-      </CityPage>
+      </DashboardShell>
     );
   }
 
   return (
-    <CityPage>
+    <DashboardShell>
       <PageHeader
         kicker="You're connected"
         title={otherName}
@@ -427,6 +467,6 @@ function DetailInner() {
           View full profile
         </Link>
       </div>
-    </CityPage>
+    </DashboardShell>
   );
 }

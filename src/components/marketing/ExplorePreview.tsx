@@ -4,7 +4,6 @@ import { cn } from "@/lib/cn";
 import { primaryDistricts } from "@/lib/districts";
 import { AVAILABILITY_LABEL, MARKETING_DIRECTORY } from "@/lib/marketingDirectory";
 import { Reveal } from "./Reveal";
-import { PillCta } from "./primitives";
 
 const TABS = ["All", ...primaryDistricts.map((district) => district.name)];
 
@@ -21,7 +20,7 @@ export function ExplorePreview() {
     <section
       id="explore"
       data-surface="site-dark"
-      className="relative overflow-hidden border-t border-border bg-[#0B0C0C] py-20 text-white md:py-28"
+      className="relative overflow-hidden border-t border-white/10 bg-[#0B0C0C] py-20 text-white md:py-28"
     >
       <img
         src="/scenes/city-skyline-wide.jpg"
@@ -32,16 +31,15 @@ export function ExplorePreview() {
 
       <div className="site-container relative z-[2]">
         <Reveal className="flex flex-col items-center text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-[0.75rem] font-medium uppercase tracking-[0.12em] text-[#0B0C0C]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#0B0C0C]" aria-hidden />
+          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
             Available Now
           </span>
-          <h2 className="hero-display mt-5 max-w-2xl">
+          <h2 className="mt-5 max-w-2xl font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-white">
             See who&apos;s
             <br />
-            <span className="text-white/80">available right now.</span>
+            <span className="text-white/65">available right now.</span>
           </h2>
-          <p className="hero-lede mt-5 max-w-lg text-white/70">
+          <p className="mt-5 max-w-lg font-sans text-[1.0625rem] leading-[1.55] text-white/65">
             Real people, ranked by fit — not by who applied first. Every profile below is live on
             VAEL today.
           </p>
@@ -55,10 +53,10 @@ export function ExplorePreview() {
               onClick={() => setActiveTab(tab)}
               aria-pressed={activeTab === tab}
               className={cn(
-                "rounded-full px-5 py-2.5 text-[0.9375rem] font-medium motion-safe:transition-colors motion-safe:duration-200",
+                "rounded-md px-5 py-2.5 font-sans text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-200",
                 activeTab === tab
-                  ? "bg-white text-[#0B0C0C]"
-                  : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white",
+                  ? "bg-[#DE7C40] text-[#0B0C0C]"
+                  : "border border-white/10 bg-white/[0.05] text-white/70 hover:border-[#DE7C40]/50 hover:text-white",
               )}
             >
               {tab}
@@ -66,17 +64,22 @@ export function ExplorePreview() {
           ))}
         </Reveal>
 
-        <Reveal delay={150} className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-md">
+        <Reveal delay={150} className="mt-10 overflow-hidden rounded-md border border-[#DE7C40]/50 bg-[#141414]/90">
+          {rows.length === 0 ? (
+            <p className="px-8 py-10 text-center font-sans text-body-sm text-white/60">
+              No one in {activeTab} is listed right now.
+            </p>
+          ) : null}
           {rows.map((person, index) => (
             <Link
               key={person.id}
-              to="/explore"
+              to={`/explore?q=${encodeURIComponent(person.name)}`}
               className={cn(
                 "flex flex-col gap-3 px-6 py-6 motion-safe:transition-all motion-safe:duration-200 hover:bg-white/[0.05] sm:flex-row sm:items-center sm:gap-6 sm:px-8",
                 index > 0 && "border-t border-dashed border-white/10",
               )}
             >
-              <span className="hero-display text-[1.5rem] text-white/35 sm:w-10">
+              <span className="font-sans text-[1.25rem] font-medium text-white/35 sm:w-10">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <img
@@ -94,7 +97,7 @@ export function ExplorePreview() {
                 <span className="whitespace-nowrap text-white/50">{person.role}</span>
                 <span className="whitespace-nowrap">{AVAILABILITY_LABEL[person.availability]}</span>
               </div>
-              <span className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-white/25 px-5 text-body-sm font-medium text-white motion-safe:transition-colors motion-safe:duration-200 hover:bg-white hover:text-[#0B0C0C]">
+              <span className="inline-flex h-12 shrink-0 items-center justify-center rounded-md bg-white px-5 font-sans text-body-sm font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-white/90">
                 View Profile
               </span>
             </Link>
@@ -102,9 +105,13 @@ export function ExplorePreview() {
         </Reveal>
 
         <Reveal delay={200} className="mt-10 flex justify-center">
-          <PillCta to="/explore" tone="light">
+          <Link
+            to="/explore"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#DE7C40] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#E89E6E]"
+          >
             Open Explore
-          </PillCta>
+            <span aria-hidden>→</span>
+          </Link>
         </Reveal>
       </div>
     </section>
