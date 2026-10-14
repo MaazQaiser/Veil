@@ -9,7 +9,7 @@ import { createAccount, findAccountByEmail, suggestHandle } from "@/lib/accounts
 import { useCitySession } from "@/lib/citySession";
 import { seedDemoSampleContent } from "@/lib/demoJourney";
 import { parseGoVisibleEntry } from "@/lib/goVisible";
-import { patchOnboarding, startOnboarding, vaelOutPath } from "@/lib/onboarding";
+import { ONBOARDING_PATH, patchOnboarding, startOnboarding, vaelOutPath } from "@/lib/onboarding";
 import { NEED_CONTINUE_PATH, NEED_PATH } from "@/lib/cxRoutes";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { readNeedWork } from "@/lib/needWork";
@@ -86,14 +86,16 @@ export function JoinSignUpPage() {
     saveProfile({ ...ensureProfile(account.handle), displayName });
     startOnboarding(account.handle);
     const intent = entry === "out" || presetIntent === "out" ? "out" : "in";
-    // Vael Out sign-ups continue into the Vael Out onboarding; they must not
-    // be marked complete here or they skip straight to the dashboard.
-    const startsOutFlow = intent === "out" && !fromProject && entry !== "opportunities";
+    // Vael In and Vael Out sign-ups continue into their onboarding; they must
+    // not be marked complete here or they skip straight to the dashboard.
+    const startsOnboarding = !fromProject && entry !== "opportunities";
     patchOnboarding(
       account.handle,
-      startsOutFlow
-        ? { intent, completedStep: "Intent", outStep: "need" }
-        : { intent, completedStep: "Done", completedAt: new Date().toISOString() },
+      !startsOnboarding
+        ? { intent, completedStep: "Done", completedAt: new Date().toISOString() }
+        : intent === "out"
+          ? { intent, completedStep: "Intent", outStep: "need" }
+          : { intent, completedStep: "Intent" },
     );
     signIn(account.handle);
     if (fromProject) {
@@ -104,7 +106,10 @@ export function JoinSignUpPage() {
       navigate(NEED_PATH, { replace: true });
       return;
     }
-    navigate(startsOutFlow ? vaelOutPath("need") : PRODUCT_HOME, { replace: true });
+    navigate(
+      !startsOnboarding ? PRODUCT_HOME : intent === "out" ? vaelOutPath("need") : ONBOARDING_PATH.Welcome,
+      { replace: true },
+    );
   }
 
   return (
