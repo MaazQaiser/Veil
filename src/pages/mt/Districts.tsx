@@ -532,11 +532,13 @@ export function EditDistrictProfilePage() {
   return (
     <CityPage className="-mt-4 sm:-mt-6">
       <BackToDistricts />
-      <div className="mt-4">
-        <PageHeader
-          title="Edit District Profile"
-          description="Add information specific to this District to improve your matches."
-        />
+      <div className="mt-4 min-w-0">
+        <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+          Edit district profile
+        </h1>
+        <p className="mt-1 text-body-sm text-muted">
+          Add information specific to this District to improve your matches.
+        </p>
       </div>
 
       <div className="mt-8 overflow-hidden rounded-xl border border-border shadow-[0_1px_2px_rgba(11,12,12,0.04),0_18px_36px_-10px_rgba(11,12,12,0.12)] md:rounded-2xl">
