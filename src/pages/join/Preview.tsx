@@ -9,7 +9,7 @@ import { clearDemoDraft, loadDemoDraft } from "@/lib/demoJourney";
 import { finishOnboarding, getOnboardingDraft } from "@/lib/onboarding";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { useVael } from "@/lib/vaelCore";
-import { CardChips } from "./JoinLayout";
+import { CardChips, JoinFooterBar, JoinHead } from "./JoinLayout";
 
 function EditLink({ to, label }: { to: string; label: string }) {
   return (
@@ -277,34 +277,66 @@ function VaelInReview() {
     navigate(PRODUCT_HOME, { replace: true });
   }
 
+  const firstName = profile.displayName.split(" ")[0] || profile.displayName;
+  const certifications = profile.credentials
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const offers = profile.offers ?? [];
+
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <h1 className="text-h3 font-medium tracking-tight text-foreground">Review your VAEL IN profile</h1>
-      <p className="mt-2 text-body-sm text-muted">
-        This is saved to your account. Other people will see that you are available. The full profile, including contact, opens after a Handshake.
-      </p>
+    <>
+      <JoinHead title="Review" lede="Edit any section below, then go visible when you're ready." center />
+      <div className="mt-8 rounded-lg border border-[#DE7C40]/25 bg-[#141414] p-6 sm:p-7">
+        <h2 className="text-h4 font-medium text-white">Ready to go visible, {firstName}!</h2>
+        <p className="mt-2 max-w-md text-body-sm text-white/70">
+          Other people will see that you are available. The full profile, including contact, opens after a Handshake.
+        </p>
+      </div>
 
       <div className="mt-6 space-y-4">
-        <SectionCard title={business ? "Business" : "Individual"} editTo="/join/setup" editLabel="Edit profile type">
+        <SectionCard title={business ? "About my business" : "About me"} editTo="/join/setup" editLabel="Edit about me">
           <ReviewRow label="Profile type" value={business ? "Business" : "Individual"} />
           <ReviewRow label={business ? "Company discipline" : "Discipline"} value={profile.disciplines.join(", ")} />
           <ReviewRow label="Location" value={profile.location} />
-          <ReviewRow label="Experience" value={profile.experience} />
           <ReviewRow
             label="Experience level"
             value={profile.experienceYears ? `${profile.experienceYears} years` : ""}
           />
           <ReviewRow label="Employment type" value={draft?.engagement ?? ""} />
-          <ReviewRow label={business ? "Team skills" : "Additional skills"} value={profile.skills.join(", ")} />
-          <ReviewRow label={business ? "Company description" : "Short description"} value={profile.bio} />
+          <div className="border-t border-border-subtle pt-3">
+            <p className="text-body-sm text-muted">{business ? "Company description" : "Short description"}</p>
+            <p className="mt-1.5 text-body-sm leading-relaxed text-foreground">
+              {profile.bio || profile.experience || "Not added yet."}
+            </p>
+          </div>
+        </SectionCard>
+
+        <SectionCard title={business ? "Team skills & tools" : "Skills & tools"} editTo="/join/credentials" editLabel="Edit skills and tools">
+          {profile.skills.length > 0 ? <CardChips items={profile.skills} /> : <p className="text-body-sm text-quiet">Not added yet.</p>}
+          {profile.tools.length > 0 ? (
+            <div className="mt-3">
+              <p className="mb-2 text-body-sm text-muted">Tools and tech stack</p>
+              <CardChips items={profile.tools} />
+            </div>
+          ) : null}
         </SectionCard>
 
         <SectionCard title="Work and capability" editTo="/join/credentials" editLabel="Edit work and capability">
-          <ReviewRow label="Project categories" value={(profile.offers ?? []).join(", ")} />
+          {offers.length > 0 ? (
+            <div className="mb-3">
+              <p className="mb-2 text-body-sm text-muted">Project categories</p>
+              <CardChips items={offers} />
+            </div>
+          ) : null}
           <ReviewRow label="Participation" value={profile.specialization ?? ""} />
-          <ReviewRow label="Certifications" value={profile.credentials} />
-          <ReviewRow label="Tools and tech stack" value={profile.tools.join(", ")} />
           <ReviewRow label={business ? "Workstation" : "Own gear"} value={draft?.requirements ?? ""} />
+          {certifications.length > 0 ? (
+            <div className="mt-3">
+              <p className="mb-2 text-body-sm text-muted">Certifications</p>
+              <CardChips items={certifications} />
+            </div>
+          ) : null}
         </SectionCard>
 
         <SectionCard title="Working preference" editTo="/join/credentials" editLabel="Edit working preference">
@@ -325,11 +357,11 @@ function VaelInReview() {
         </p>
       ) : null}
 
-      <div className="mt-8">
-        <Button type="button" size="lg" className="w-full rounded-lg" onClick={goVisible}>
-          VAEL — GO VISIBLE
+      <JoinFooterBar>
+        <Button type="button" size="lg" className="rounded-lg px-10" onClick={goVisible}>
+          Vael In
         </Button>
-      </div>
-    </div>
+      </JoinFooterBar>
+    </>
   );
 }
