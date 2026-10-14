@@ -11,7 +11,8 @@ export function NeedPlacePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { session } = useCitySession();
-  const fromGoVisible = (location.state as { from?: string } | null)?.from === "go-visible";
+  const goVisibleState = location.state as { from?: string; opportunityIntent?: "create" | "avail" } | null;
+  const fromGoVisible = goVisibleState?.from === "go-visible";
 
   function chooseHome() {
     if (session.handle) setContractorExperience(session.handle, "residential");
@@ -20,7 +21,9 @@ export function NeedPlacePage() {
 
   function goBack() {
     if (fromGoVisible) {
-      navigate(GO_VISIBLE_ROUTE, { state: { opportunityStep: true } });
+      navigate(GO_VISIBLE_ROUTE, {
+        state: { opportunityStep: true, districtStep: true, opportunityIntent: goVisibleState?.opportunityIntent ?? "create" },
+      });
       return;
     }
     const historyIndex = (window.history.state as { idx?: number } | null)?.idx ?? 0;

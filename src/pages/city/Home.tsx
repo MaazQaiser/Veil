@@ -9,6 +9,8 @@ import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { IconBriefcase, IconSearch, IconUser } from "@/components/ui/icons";
 import { CONTRACTOR_OPPS_PATH, NEED_PATH } from "@/lib/cxRoutes";
+import { primaryDistricts } from "@/lib/districts";
+import { setActiveDistrict } from "@/lib/myDistricts";
 import { routeForGoVisibleEntry, type GoVisibleEntry } from "@/lib/goVisible";
 
 export function HomePage() {
@@ -169,18 +171,30 @@ export function GoVisiblePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [choice, setChoice] = useState<GoVisibleEntry | "">("");
-  const [opportunityIntent, setOpportunityIntent] = useState<"create" | "avail" | "">("");
-  const [onOpportunityStep, setOnOpportunityStep] = useState(
-    () => (location.state as { opportunityStep?: boolean } | null)?.opportunityStep === true,
+  const entryState = location.state as {
+    opportunityStep?: boolean;
+    districtStep?: boolean;
+    opportunityIntent?: "create" | "avail";
+  } | null;
+  const [opportunityIntent, setOpportunityIntent] = useState<"create" | "avail" | "">(
+    () => (entryState?.districtStep ? entryState.opportunityIntent ?? "" : ""),
   );
+  const [onOpportunityStep, setOnOpportunityStep] = useState(() => entryState?.opportunityStep === true);
+  const [onDistrictStep, setOnDistrictStep] = useState(
+    () => entryState?.districtStep === true && Boolean(entryState.opportunityIntent),
+  );
+  const [districtId, setDistrictId] = useState("");
 
   function onNext() {
+    if (onDistrictStep) {
+      if (!districtId || !opportunityIntent) return;
+      if (session.signedIn) setActiveDistrict(session.handle, districtId);
+      const state = { from: "go-visible", districtId, opportunityIntent };
+      navigate(opportunityIntent === "create" ? NEED_PATH : CONTRACTOR_OPPS_PATH, { state });
+      return;
+    }
     if (onOpportunityStep) {
-      if (opportunityIntent === "create") {
-        navigate(NEED_PATH, { state: { from: "go-visible" } });
-      } else if (opportunityIntent === "avail") {
-        navigate(CONTRACTOR_OPPS_PATH);
-      }
+      if (opportunityIntent) setOnDistrictStep(true);
       return;
     }
     if (!choice) return;
@@ -212,9 +226,17 @@ export function GoVisiblePage() {
         <header className="mx-auto max-w-xl text-center">
           <p className="site-eyebrow">Let's get you to the right place</p>
           <h1 className="mt-5 font-sans text-[clamp(1.875rem,3.4vw,2.75rem)] font-medium leading-[1.15] tracking-[-0.025em] text-foreground">
-            {onOpportunityStep ? "Create or avail an opportunity?" : "What are you here to do?"}
+            {onDistrictStep
+              ? "Which district is this for?"
+              : onOpportunityStep
+                ? "Create or avail an opportunity?"
+                : "What are you here to do?"}
           </h1>
-          {onOpportunityStep ? (
+          {onDistrictStep ? (
+            <p className="mt-3 font-sans text-[1.0625rem] leading-[1.55] text-muted">
+              Pick the district. We'll ask for the rest of the details next.
+            </p>
+          ) : onOpportunityStep ? (
             <div className="mt-3 space-y-1 font-sans text-[1.0625rem] leading-[1.55] text-muted">
               <p>Create one for your home or your business.</p>
               <p>Or avail one that's already posted.</p>
@@ -227,7 +249,22 @@ export function GoVisiblePage() {
         </header>
       </div>
       <div className="site-container relative flex flex-1 items-center py-10">
-        {onOpportunityStep ? (
+        {onDistrictStep ? (
+          <ul className="mx-auto grid w-full max-w-3xl gap-4 md:grid-cols-2 md:gap-5">
+            {primaryDistricts.map((district) => (
+              <li key={district.id}>
+                <EntryCard
+                  label="District"
+                  title={district.name}
+                  body={district.blurb}
+                  icon={IconBriefcase}
+                  selected={districtId === district.id}
+                  onClick={() => setDistrictId(district.id)}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : onOpportunityStep ? (
           <ul className="mx-auto grid w-full max-w-3xl gap-4 md:grid-cols-2 md:gap-5">
             {OPPORTUNITY_OPTIONS.map((option) => (
               <li key={option.id}>
@@ -256,6 +293,11 @@ export function GoVisiblePage() {
             variant="outline"
             className="rounded-lg px-8"
             onClick={() => {
+              if (onDistrictStep) {
+                setOnDistrictStep(false);
+                setDistrictId("");
+                return;
+              }
               setOnOpportunityStep(false);
               setOpportunityIntent("");
             }}
@@ -268,7 +310,7 @@ export function GoVisiblePage() {
         <Button
           type="button"
           className="rounded-lg px-8"
-          disabled={onOpportunityStep ? !opportunityIntent : !choice}
+          disabled={onDistrictStep ? !districtId : onOpportunityStep ? !opportunityIntent : !choice}
           onClick={onNext}
         >
           Next
