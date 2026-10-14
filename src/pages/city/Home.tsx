@@ -7,7 +7,7 @@ import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { MarketingHome } from "@/pages/city/Marketing";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
-import { IconBriefcase, IconSearch, IconUser } from "@/components/ui/icons";
+import { IconBriefcase, IconCheck, IconSearch, IconUser } from "@/components/ui/icons";
 import { CONTRACTOR_OPPS_PATH, NEED_PATH } from "@/lib/cxRoutes";
 import { primaryDistricts } from "@/lib/districts";
 import { setActiveDistrict } from "@/lib/myDistricts";
@@ -272,8 +272,18 @@ export function GoVisiblePage() {
                           prev.includes(district.id) ? prev.filter((id) => id !== district.id) : [...prev, district.id],
                         )
                       }
-                      className="mt-1 h-4 w-4 shrink-0 accent-[#DE7C40]"
+                      className="peer sr-only"
                     />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border bg-transparent",
+                        "peer-focus-visible:shadow-[0_0_0_3px_rgba(222,124,64,0.35)]",
+                        checked ? "border-accent bg-accent text-[#1A1410]" : "border-foreground/40 text-transparent",
+                      )}
+                    >
+                      <IconCheck className="h-3.5 w-3.5" />
+                    </span>
                     <span className="min-w-0">
                       <span className="block text-body font-medium text-foreground">{district.name}</span>
                       <span className="mt-0.5 block text-body-sm text-muted">{district.blurb}</span>
