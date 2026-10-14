@@ -4,6 +4,8 @@ import { Reveal } from "@/components/marketing/Reveal";
 import { LiveTicker } from "@/components/marketing/LiveTicker";
 import { FindYourWay } from "@/components/marketing/FindYourWay";
 import { IconChevronDown, IconSearch } from "@/components/ui/icons";
+import { JOIN_ROUTE } from "@/components/city/CityShell";
+import { useCitySession } from "@/lib/citySession";
 import { primaryDistricts } from "@/lib/districts";
 
 const ROLE_EXAMPLES = ["Product designer", "Site supervisor", "Freight carrier", "Brand strategist"];
@@ -48,6 +50,7 @@ function DistrictSelect({
 
 function HeroSearch() {
   const navigate = useNavigate();
+  const { session } = useCitySession();
   const [query, setQuery] = useState("");
   const [district, setDistrict] = useState("");
   const [exampleIndex, setExampleIndex] = useState(0);
@@ -59,6 +62,11 @@ function HeroSearch() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Matches are for members: visitors create an account (or sign in) first.
+    if (!session.signedIn) {
+      navigate(JOIN_ROUTE);
+      return;
+    }
     const params = new URLSearchParams();
     const trimmed = query.trim();
     if (trimmed) params.set("q", trimmed);
