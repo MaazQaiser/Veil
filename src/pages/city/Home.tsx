@@ -183,13 +183,15 @@ export function GoVisiblePage() {
   const [onDistrictStep, setOnDistrictStep] = useState(
     () => entryState?.districtStep === true && Boolean(entryState.opportunityIntent),
   );
-  const [districtId, setDistrictId] = useState("");
+  const [districtIds, setDistrictIds] = useState<string[]>([]);
 
   function onNext() {
     if (onDistrictStep) {
-      if (!districtId || !opportunityIntent) return;
+      if (districtIds.length === 0 || !opportunityIntent) return;
+      // The first pick leads the flow that follows; the rest travel along.
+      const districtId = districtIds[0];
       if (session.signedIn) setActiveDistrict(session.handle, districtId);
-      const state = { from: "go-visible", districtId, opportunityIntent };
+      const state = { from: "go-visible", districtId, districtIds, opportunityIntent };
       navigate(opportunityIntent === "create" ? NEED_PATH : CONTRACTOR_OPPS_PATH, { state });
       return;
     }
@@ -250,19 +252,36 @@ export function GoVisiblePage() {
       </div>
       <div className="site-container relative flex flex-1 items-center py-10">
         {onDistrictStep ? (
-          <ul className="mx-auto grid w-full max-w-3xl gap-4 md:grid-cols-2 md:gap-5">
-            {primaryDistricts.map((district) => (
-              <li key={district.id}>
-                <EntryCard
-                  label="District"
-                  title={district.name}
-                  body={district.blurb}
-                  icon={IconBriefcase}
-                  selected={districtId === district.id}
-                  onClick={() => setDistrictId(district.id)}
-                />
-              </li>
-            ))}
+          <ul className="mx-auto w-full max-w-xl space-y-3">
+            {primaryDistricts.map((district) => {
+              const checked = districtIds.includes(district.id);
+              return (
+                <li key={district.id}>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-4 rounded-lg border px-5 py-4",
+                      "motion-safe:transition-colors motion-safe:duration-150 hover:border-[#DE7C40]",
+                      checked ? "border-[#DE7C40] bg-[#DE7C40]/[0.08]" : "border-white/20",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setDistrictIds((prev) =>
+                          prev.includes(district.id) ? prev.filter((id) => id !== district.id) : [...prev, district.id],
+                        )
+                      }
+                      className="mt-1 h-4 w-4 shrink-0 accent-[#DE7C40]"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-body font-medium text-foreground">{district.name}</span>
+                      <span className="mt-0.5 block text-body-sm text-muted">{district.blurb}</span>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
           </ul>
         ) : onOpportunityStep ? (
           <ul className="mx-auto grid w-full max-w-3xl gap-4 md:grid-cols-2 md:gap-5">
@@ -286,7 +305,8 @@ export function GoVisiblePage() {
           </ul>
         )}
       </div>
-      <div className="site-container relative flex items-center justify-between gap-4 pb-8">
+      <div className="sticky bottom-0 z-10 border-t border-white/10 bg-background/95 backdrop-blur">
+        <div className="site-container flex items-center justify-between gap-4 py-4">
         {onOpportunityStep ? (
           <Button
             type="button"
@@ -295,7 +315,7 @@ export function GoVisiblePage() {
             onClick={() => {
               if (onDistrictStep) {
                 setOnDistrictStep(false);
-                setDistrictId("");
+                setDistrictIds([]);
                 return;
               }
               setOnOpportunityStep(false);
@@ -310,11 +330,12 @@ export function GoVisiblePage() {
         <Button
           type="button"
           className="rounded-lg px-8"
-          disabled={onDistrictStep ? !districtId : onOpportunityStep ? !opportunityIntent : !choice}
+          disabled={onDistrictStep ? districtIds.length === 0 : onOpportunityStep ? !opportunityIntent : !choice}
           onClick={onNext}
         >
           Next
         </Button>
+        </div>
       </div>
     </div>
   );
