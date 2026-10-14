@@ -75,7 +75,7 @@ function VaelInner() {
   const [error, setError] = useState("");
   const initialSide = requestedSide ?? listing?.side ?? "in";
 
-  const [form, setForm] = useState(() => ({
+  const [form] = useState(() => ({
     side: initialSide,
     category: listing?.category ?? draft?.category ?? fallback.category,
     discipline: listing?.discipline ?? draft?.discipline ?? profile?.disciplines[0] ?? fallback.discipline,

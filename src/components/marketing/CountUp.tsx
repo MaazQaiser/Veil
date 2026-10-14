@@ -42,7 +42,7 @@ export function CountUp({
     }
 
     function onScroll() {
-      const rect = node.getBoundingClientRect();
+      const rect = (node as HTMLElement).getBoundingClientRect();
       if (rect.top < window.innerHeight * 0.9 && rect.bottom > 0) start();
     }
 

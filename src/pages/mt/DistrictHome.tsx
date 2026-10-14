@@ -16,7 +16,6 @@ import { visibilityKindFromListing } from "@/lib/visibilityPlans";
 import { profileFieldsFor } from "@/lib/profileFields";
 import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
 import { hoursLeft, type VaelSide } from "@/lib/vaelStore";
-import { cn } from "@/lib/cn";
 import { getOnboardingDraft } from "@/lib/onboarding";
 import { handshakeIncomingLede, homeNetworkLede, vaelSideLabel, vaelSideStatusLabel } from "@/lib/vaelCopy";
 
