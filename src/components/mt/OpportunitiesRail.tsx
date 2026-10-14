@@ -52,7 +52,7 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
   const items = out
     ? [...mine].sort((a, b) => Date.parse(b.publishedAt || b.createdAt) - Date.parse(a.publishedAt || a.createdAt))
     : open;
-  const start = opportunityStart(out ? "create" : "avail");
+  const start = opportunityStart("avail");
 
   return (
     <section>
@@ -79,9 +79,11 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
           >
             View all →
           </Link>
-          <Link to={start.to} state={start.state} className={buttonClassName({ size: "sm" })}>
-            {out ? "Create an Opportunity" : "Find opportunities"}
-          </Link>
+          {out ? null : (
+            <Link to={start.to} state={start.state} className={buttonClassName({ size: "sm" })}>
+              Find opportunities
+            </Link>
+          )}
         </div>
       </div>
 
@@ -89,7 +91,7 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
         {items.length === 0 ? (
           <p className="rounded-xl border border-dashed border-[#C99A28]/25 bg-[#FFC555]/[0.05] px-5 py-8 text-center text-body-sm text-muted dark:border-accent/25 dark:bg-accent/[0.05]">
             {out
-              ? "No opportunities yet. Create one and people who can do the work will respond here."
+              ? "No opportunities yet. Opportunities you post, and the responses to them, will show up here."
               : "No open opportunities right now. New ones posted from Vael Out will show up here."}
           </p>
         ) : (
