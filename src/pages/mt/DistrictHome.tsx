@@ -7,6 +7,7 @@ import { IconCheck, IconHandshake, IconMapPin, IconUser } from "@/components/ui/
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { DashboardMatchesRail } from "@/components/mt/DashboardMatchesRail";
+import { OpportunitiesRail } from "@/components/mt/OpportunitiesRail";
 import { DistrictsRow, useJoinedDistricts } from "@/components/mt/DistrictsRow";
 import { CommunityRail } from "@/components/mt/HomeWidgets";
 import { useVael } from "@/lib/vaelCore";
@@ -287,6 +288,8 @@ export function DistrictHomePage() {
 
           {/* "Your matches" — the primary reason a member opens Home. */}
           <DashboardMatchesRail matches={matches} visible={visible} side={side} />
+
+          <OpportunitiesRail side={side} handle={handle} />
 
           <CommunityRail
             posts={posts}

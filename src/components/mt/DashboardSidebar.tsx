@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import {
+  IconBriefcase,
   IconChevronLeft,
   IconChevronRight,
   IconGrid,
@@ -12,6 +13,7 @@ import {
   IconUsers,
 } from "@/components/ui/icons";
 import { profileFieldsFor, type ProfileFieldId, type ProfileSectionId } from "@/lib/profileFields";
+import { opportunitiesHomeFor } from "@/lib/cxRoutes";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import type { ProfileDocument, ProfileRecord, VaelSide } from "@/lib/vaelStore";
 
@@ -95,7 +97,9 @@ export function DashboardSidebar({
   const nav = [
     base[0],
     { id: "districts", label: "Districts", to: `${PRODUCT_HOME}/districts`, end: false, icon: IconMapPin },
-    ...base.slice(1),
+    base[1],
+    { id: "opportunities", label: "Opportunities", to: opportunitiesHomeFor(side), end: false, icon: IconBriefcase },
+    ...base.slice(2),
   ];
   const [collapsed, setCollapsed] = useState(readCollapsed);
 

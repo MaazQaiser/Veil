@@ -5,7 +5,7 @@ import { Button, buttonClassName } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardMeta, CardTitle } from "@/components/ui/card";
 import { IconChevronLeft } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
-import { NEED_PATH, projectHref } from "@/lib/cxRoutes";
+import { opportunityStart, projectHref } from "@/lib/cxRoutes";
 import { extendCxProject, projectsForHandle, type CxProject } from "@/lib/cxProjectStore";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { useCxProjects } from "@/lib/useCxProjects";
@@ -90,13 +90,17 @@ export function ProjectsListPage() {
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
-            Create Opportunity
+            Your Opportunities
           </h1>
           <p className="mt-1 max-w-xl text-body-sm text-muted">
             Manage your projects and see what&apos;s happening with your opportunities.
           </p>
         </div>
-        <Link to={NEED_PATH} className={buttonClassName({ size: "lg", className: "shrink-0 rounded-lg px-8" })}>
+        <Link
+          to={opportunityStart("create").to}
+          state={opportunityStart("create").state}
+          className={buttonClassName({ size: "lg", className: "shrink-0 rounded-lg px-8" })}
+        >
           Create an Opportunity
         </Link>
       </div>

@@ -59,3 +59,19 @@ export function isHomeownerPath(pathname: string) {
   if (pathname === "/vaelance" || pathname.startsWith("/vaelance/")) return true;
   return false;
 }
+
+/** Go Visible is the one place an opportunity starts, from the website or from either dashboard. */
+export const GO_VISIBLE_PATH = "/go-visible";
+
+/** Opens Go Visible on the district step. Create is the Vael Out action, Avail is the Vael In action. */
+export function opportunityStart(intent: "create" | "avail") {
+  return {
+    to: GO_VISIBLE_PATH,
+    state: { opportunityStep: true, districtStep: true, opportunityIntent: intent },
+  };
+}
+
+/** Where each dashboard keeps its opportunities. Out posts them, In responds to them. */
+export function opportunitiesHomeFor(side: "in" | "out") {
+  return side === "out" ? PROJECTS_PATH : CONTRACTOR_OPPS_PATH;
+}
