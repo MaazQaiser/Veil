@@ -22,24 +22,6 @@ import { getOnboardingDraft } from "@/lib/onboarding";
 import { routeForGoVisibleEntry } from "@/lib/goVisible";
 import { handshakeIncomingLede, homeNetworkLede, vaelSideLabel, vaelSideStatusLabel } from "@/lib/vaelCopy";
 
-/** One headline number: label, big value and a small pill, like the product reference. */
-function StatCard({ label, value, pill, to }: { label: string; value: string; pill: string; to: string }) {
-  return (
-    <Link
-      to={to}
-      className="group rounded-2xl border border-border bg-white p-5 motion-safe:transition-colors motion-safe:duration-200 hover:border-accent/50 dark:border-white/10 dark:bg-surface"
-    >
-      <p className="text-body-sm text-muted">{label}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <span className="font-sans text-[1.875rem] font-medium leading-none tracking-tight text-foreground tabular-nums">
-          {value}
-        </span>
-        <span className="rounded-full bg-accent/15 px-2.5 py-1 text-caption font-medium text-accent">{pill}</span>
-      </div>
-    </Link>
-  );
-}
-
 /** One card in the "Action items" grid — icon, title, description, and a plain text link. No images, no button. */
 function ActionItemRow({
   icon,
@@ -222,34 +204,6 @@ export function DistrictHomePage() {
             </div>
           </div>
 
-          {vaelOutHome ? (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard
-              label="Matches"
-              value={String(matches.length)}
-              pill={`${matches.filter((match) => match.percent >= 80).length} strong`}
-              to={`${PRODUCT_HOME}/matches`}
-            />
-            <StatCard
-              label="Handshakes"
-              value={String(myConnections.filter((connection) => connection.status === "connected").length)}
-              pill={`${incoming.length} pending`}
-              to={`${PRODUCT_HOME}/connections`}
-            />
-            <StatCard
-              label="Profile"
-              value={`${completion.percent}%`}
-              pill={completion.percent >= 100 ? "Complete" : "In progress"}
-              to={`${editHref}#${editHash}`}
-            />
-            <StatCard
-              label="Visibility"
-              value={visibleHours !== null ? `${visibleHours}h` : "Off"}
-              pill={visibleHours !== null ? "Visible" : "Hidden"}
-              to={vaelOutHome ? outHref : inHref}
-            />
-          </div>
-          ) : null}
 
           {vaelOutHome ? (
           <div>
