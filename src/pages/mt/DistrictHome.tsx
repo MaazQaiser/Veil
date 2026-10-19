@@ -194,11 +194,13 @@ export function DistrictHomePage() {
               {vaelOutHome ? (
                 <Link to={inHref} className={availabilityButtonClass}>
                   Vael In
+                  <span aria-hidden>→</span>
                 </Link>
               ) : (
                 // Starts the Vael Out onboarding for this person, reusing what they already filled in.
                 <button type="button" className={availabilityButtonClass} onClick={() => navigate(routeForGoVisibleEntry(handle, "out"))}>
                   Vael Out
+                  <span aria-hidden>→</span>
                 </button>
               )}
             </div>
