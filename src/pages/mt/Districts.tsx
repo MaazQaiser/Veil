@@ -403,7 +403,8 @@ export function DistrictOverviewPage() {
   const currentDistrictName = cards.find((row) => row.isActive && row.district.id !== district.id)?.district.name;
 
   return (
-    <CityPage width="narrow" className="-mt-4 sm:-mt-6">
+    <DashboardShell>
+      <div className="w-full max-w-3xl space-y-6">
       <BackToDistricts />
       <div className="mt-4">
         <PageHeader title={district.name} description={district.blurb} />
@@ -442,7 +443,8 @@ export function DistrictOverviewPage() {
           </>
         )}
       </div>
-    </CityPage>
+    </div>
+    </DashboardShell>
   );
 }
 
@@ -530,7 +532,7 @@ export function EditDistrictProfilePage() {
 
 
   return (
-    <CityPage className="-mt-4 sm:-mt-6">
+    <DashboardShell>
       <BackToDistricts />
       <div className="mt-4 min-w-0">
         <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
@@ -714,7 +716,7 @@ export function EditDistrictProfilePage() {
           </div>
         </div>
       </form>
-    </CityPage>
+    </DashboardShell>
   );
 }
 

@@ -1,3 +1,4 @@
+import { DashboardLayout } from "@/components/mt/DashboardShell";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { CityLayout } from "@/components/city/CityLayout";
 import { CitySessionProvider } from "@/lib/citySession";
@@ -17,7 +18,9 @@ import {
   JoinIntentPage,
   JoinLayout,
   JoinNeedPage,
+  JoinConfirmPhonePage,
   JoinPreviewPage,
+  JoinProfileTypePage,
   JoinSetupPage,
   JoinSignUpPage,
   JoinWelcomePage,
@@ -124,6 +127,7 @@ export default function App() {
               <Route path="intent" element={<JoinIntentPage />} />
               <Route path="need" element={<JoinNeedPage />} />
               <Route path="welcome" element={<JoinWelcomePage />} />
+              <Route path="profile-type" element={<JoinProfileTypePage />} />
               <Route path="setup" element={<JoinSetupPage />} />
               <Route path="handle" element={<Navigate to="/join/setup" replace />} />
               <Route path="type" element={<Navigate to="/join/setup" replace />} />
@@ -135,6 +139,7 @@ export default function App() {
               <Route path="profile" element={<Navigate to="/join/identity" replace />} />
               <Route path="out/:step" element={<VaelOutStepPage />} />
               <Route path="preview" element={<JoinPreviewPage />} />
+              <Route path="confirm-phone" element={<JoinConfirmPhonePage />} />
               <Route path="vael" element={<Navigate to="/join/preview" replace />} />
               <Route path="done" element={<Navigate to={PRODUCT_HOME} replace />} />
             </Route>
@@ -148,6 +153,7 @@ export default function App() {
             <Route path="/go-visible" element={<GoVisiblePage />} />
             <Route path="/opportunities" element={<OpportunityHomePage />} />
             <Route path="/districts" element={<DistrictsPage />} />
+            <Route element={<DashboardLayout />}>
             <Route path="/districts/contractor" element={<ConstructionHomePage />} />
             <Route path="/districts/contractor/how-it-works" element={<ConstructionHowItWorksPage />} />
             <Route path="/districts/contractor/board" element={<Navigate to="/matches?district=construction" replace />} />
@@ -163,6 +169,7 @@ export default function App() {
             <Route path="/districts/contractor/vaelance" element={<VaelanceSetupPage />} />
             <Route path="/districts/contractor/residential" element={<ConstructionHomePage category="residential" />} />
             <Route path="/districts/contractor/commercial" element={<ConstructionHomePage category="commercial" />} />
+            </Route>
             <Route path="/districts/contractor/residential/start" element={<Navigate to="/need/project" replace />} />
             <Route path="/need" element={<NeedLayout />}>
               <Route index element={<NeedPlacePage />} />
@@ -192,6 +199,7 @@ export default function App() {
             <Route path="/vaelance/compare" element={<VaelanceComparePage />} />
             <Route path="/vaelance/:handle" element={<VaelancePage />} />
             <Route path="/construction" element={<Navigate to="/districts/contractor" replace />} />
+            <Route element={<DashboardLayout />}>
             <Route path="/districts/trucking" element={<TruckingHomePage />} />
             <Route path="/districts/trucking/how-it-works" element={<TruckingHowItWorksPage />} />
             <Route path="/districts/trucking/board" element={<Navigate to="/matches?district=trucking" replace />} />
@@ -222,6 +230,7 @@ export default function App() {
             <Route path="/districts/commercial/connections" element={<CommercialConnectionsPage />} />
             <Route path="/districts/commercial/connections/:id" element={<CommercialConnectionDetailPage />} />
             <Route path="/districts/commercial/community" element={<DistrictCommunityPage />} />
+            </Route>
             <Route path="/districts/:slug/community" element={<UnavailableCommunityPage />} />
             <Route path="/districts/:slug" element={<DistrictPlaceholderPage />} />
             <Route path="/today" element={<TodayPage />} />

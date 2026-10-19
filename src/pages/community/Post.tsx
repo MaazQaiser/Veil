@@ -1,3 +1,4 @@
+import { DashboardShell } from "@/components/mt/DashboardShell";
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
@@ -81,7 +82,8 @@ export function CreatePostPage() {
   }
 
   return (
-    <CityPage width="narrow">
+    <DashboardShell>
+      <div className="w-full max-w-3xl space-y-6">
       <PageHeader
         kicker="Community"
         title="Share"
@@ -132,7 +134,8 @@ export function CreatePostPage() {
           </Link>
         </div>
       </form>
-    </CityPage>
+    </div>
+    </DashboardShell>
   );
 }
 
@@ -205,7 +208,7 @@ export function PostDetailPage() {
   }
 
   return (
-    <CityPage width="wide" className="-mt-4 sm:-mt-6">
+    <DashboardShell>
       <Link
         to={communityHref(post.districtId)}
         className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
@@ -375,7 +378,7 @@ export function PostDetailPage() {
 
         </aside>
       </div>
-    </CityPage>
+    </DashboardShell>
   );
 }
 

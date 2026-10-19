@@ -1,3 +1,4 @@
+import { DashboardShell } from "@/components/mt/DashboardShell";
 import { Link } from "react-router-dom";
 import { Button, buttonClassName } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/headers";
@@ -17,48 +18,44 @@ import { useEffect } from "react";
 export function AccountPage() {
   const { session, signOut } = useCitySession();
   return (
-    <CityPage width="narrow">
-      <PageHeader
-        kicker="City"
-        title="Account"
-        description="Identity and preferences for this device. This is not a new authentication architecture."
-        crumbs={[
-          { label: "City", href: "/" },
-          { label: "Account" },
-        ]}
-      />
+    <DashboardShell>
+      <div className="w-full max-w-3xl space-y-6">
+      <div>
+        <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+          Account
+        </h1>
+        <p className="mt-1 text-body-sm text-muted">
+          Identity and preferences for this device. This is not a new authentication architecture.
+        </p>
+      </div>
       {session.signedIn ? (
-        <div className="mt-6 space-y-4">
-          <p className="text-body">
-            Signed in locally as <strong>@{session.handle}</strong>.
+        <div className="space-y-6">
+          <p className="text-body-sm text-muted">
+            Signed in locally as <span className="font-medium text-foreground">@{session.handle}</span>
           </p>
-          <div className="flex flex-col gap-2">
-            <Link to={`/media-technology/profile/${session.handle}`} className={buttonClassName({ variant: "outline" })}>
-              Media & Technology profile
-            </Link>
-            <Link to={`/districts/contractor/profile/${session.handle}`} className={buttonClassName({ variant: "outline" })}>
-              Construction profile
-            </Link>
-            <Link to={`/districts/trucking/profile/${session.handle}`} className={buttonClassName({ variant: "outline" })}>
-              Trucking profile
-            </Link>
-            <Link to={`/districts/residential/profile/${session.handle}`} className={buttonClassName({ variant: "outline" })}>
-              Residential profile
-            </Link>
-            <Link to={`/districts/commercial/profile/${session.handle}`} className={buttonClassName({ variant: "outline" })}>
-              Commercial profile
-            </Link>
-            <Link to="/account/visibility" className={buttonClassName({ variant: "outline" })}>
-              Visibility
-            </Link>
-            <Link to="/account/notifications" className={buttonClassName({ variant: "outline" })}>
-              Notification preferences
-            </Link>
-            <Link to="/extended-vael" className={buttonClassName({ variant: "ghost" })}>
-              Extended VAEL (demo)
-            </Link>
-          </div>
-          <Button variant="ghost" onClick={signOut}>
+          <ul className="divide-y divide-border-subtle rounded-lg border border-border bg-surface">
+            {[
+              ["Media & Technology profile", `/media-technology/profile/${session.handle}`],
+              ["Construction profile", `/districts/contractor/profile/${session.handle}`],
+              ["Trucking profile", `/districts/trucking/profile/${session.handle}`],
+              ["Residential profile", `/districts/residential/profile/${session.handle}`],
+              ["Commercial profile", `/districts/commercial/profile/${session.handle}`],
+              ["Visibility", "/account/visibility"],
+              ["Notification preferences", "/account/notifications"],
+              ["Extended VAEL (demo)", "/extended-vael"],
+            ].map(([label, to]) => (
+              <li key={to}>
+                <Link
+                  to={to}
+                  className="flex items-center justify-between gap-4 px-5 py-4 text-body-sm font-medium text-foreground motion-safe:transition-colors hover:bg-white/[0.03]"
+                >
+                  {label}
+                  <span aria-hidden className="text-muted">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Button variant="outline" className="rounded-full px-6" onClick={signOut}>
             Sign out of this device
           </Button>
         </div>
@@ -78,7 +75,8 @@ export function AccountPage() {
           </div>
         </div>
       )}
-    </CityPage>
+    </div>
+    </DashboardShell>
   );
 }
 
@@ -129,16 +127,10 @@ export function VisibilityPage() {
   ];
 
   return (
-    <CityPage>
+    <DashboardShell>
       <PageHeader
-        kicker="Account"
         title="Visibility"
         description="Free Daily VAEL is 24 hours. Extended plans remain a labeled demo — not purchasable."
-        crumbs={[
-          { label: "City", href: "/" },
-          { label: "Account", href: "/account" },
-          { label: "Visibility" },
-        ]}
       />
       {!session.signedIn ? (
         <div className="mt-6">
@@ -188,22 +180,17 @@ export function VisibilityPage() {
           </section>
         </div>
       )}
-    </CityPage>
+    </DashboardShell>
   );
 }
 
 export function NotificationPrefsPage() {
   return (
-    <CityPage width="narrow">
+    <DashboardShell>
+      <div className="w-full max-w-3xl space-y-6">
       <PageHeader
-        kicker="Account"
         title="Notification preferences"
         description="Only in-app is marked connected. SMS, email, and push stay NOT YET CONNECTED."
-        crumbs={[
-          { label: "City", href: "/" },
-          { label: "Account", href: "/account" },
-          { label: "Notifications" },
-        ]}
       />
       <p className="mt-6 text-body-sm">In-app: available on this device.</p>
       <p className="mt-2 text-caption text-muted">SMS / email / push — NOT YET CONNECTED.</p>
@@ -212,7 +199,8 @@ export function NotificationPrefsPage() {
           Open notifications
         </Link>
       </p>
-    </CityPage>
+    </div>
+    </DashboardShell>
   );
 }
 
@@ -222,15 +210,10 @@ export function NotificationsPage() {
     if (signedIn) readNotices();
   }, [signedIn]);
   return (
-    <CityPage>
+    <DashboardShell>
       <PageHeader
-        kicker="City"
         title="Notifications"
         description="In-app notices for this device, including Handshake and comments on your posts. SMS, email, and push are NOT YET CONNECTED."
-        crumbs={[
-          { label: "City", href: "/" },
-          { label: "Notifications" },
-        ]}
       />
       {notices.length === 0 ? (
         <EmptyState
@@ -251,7 +234,7 @@ export function NotificationsPage() {
           ))}
         </ul>
       )}
-    </CityPage>
+    </DashboardShell>
   );
 }
 

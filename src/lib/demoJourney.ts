@@ -96,6 +96,13 @@ export type DemoDraft = {
   requirements: string;
   contact: string;
   timeline: string;
+  /** Vael Out request extras. */
+  preferredSkills?: string[];
+  neededToday?: boolean;
+  startDate?: string;
+  teamSize?: string;
+  deliverables?: string[];
+  samplesWanted?: string;
 };
 
 const DEMO_FEED: CommunityPost[] = [

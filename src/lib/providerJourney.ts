@@ -27,6 +27,9 @@ export function isDarkModeFlowPath(pathname: string) {
   if (pathname === "/districts/contractor" || pathname.startsWith("/districts/contractor/")) {
     return true;
   }
+  for (const room of ["trucking", "residential", "commercial"]) {
+    if (pathname === `/districts/${room}` || pathname.startsWith(`/districts/${room}/`)) return true;
+  }
   if (pathname === "/opportunities" || pathname.startsWith("/opportunities/")) return true;
   return false;
 }

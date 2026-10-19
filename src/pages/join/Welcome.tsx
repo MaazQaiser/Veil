@@ -31,7 +31,7 @@ export function JoinWelcomePage() {
 
   function onContinue() {
     completeOnboardingStep(session.handle, "Welcome");
-    navigate("/join/setup");
+    navigate("/join/profile-type");
   }
 
   return (
@@ -51,9 +51,7 @@ export function JoinWelcomePage() {
         <ul className="divide-y divide-border-subtle border-t border-border">
           {NEXT_STEPS.map((item) => (
             <li key={item.title} className="flex items-center gap-4 px-6 py-5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#DE7C40]/15 text-[#DE7C40]">
-                <item.icon className="h-[1.1rem] w-[1.1rem]" />
-              </span>
+              <item.icon className="h-5 w-5 shrink-0 text-[#DE7C40]" />
               <div className="min-w-0 flex-1">
                 <p className="text-body font-medium text-foreground">{item.title}</p>
                 <p className="mt-0.5 text-body-sm text-muted">{item.detail}</p>

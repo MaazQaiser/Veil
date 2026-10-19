@@ -86,6 +86,9 @@ describe("onboarding resume", () => {
     expect(onboardingStep("maaz")).toBe("Welcome");
     expect(onboardingRoute("maaz")).toBe("/join/welcome");
     completeOnboardingStep("maaz", "Welcome");
+    expect(onboardingStep("maaz")).toBe("Profile Type");
+    expect(onboardingRoute("maaz")).toBe("/join/profile-type");
+    completeOnboardingStep("maaz", "Profile Type");
     expect(onboardingStep("maaz")).toBe("Profile Setup");
     completeOnboardingStep("maaz", "Profile Setup");
     expect(onboardingStep("maaz")).toBe("Identity");

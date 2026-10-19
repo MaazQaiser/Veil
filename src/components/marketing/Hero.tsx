@@ -2,7 +2,6 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Reveal } from "@/components/marketing/Reveal";
 import { LiveTicker } from "@/components/marketing/LiveTicker";
-import { FindYourWay } from "@/components/marketing/FindYourWay";
 import { IconChevronDown, IconSearch } from "@/components/ui/icons";
 import { JOIN_ROUTE } from "@/components/city/CityShell";
 import { useCitySession } from "@/lib/citySession";
@@ -158,7 +157,6 @@ export function Hero() {
         </div>
       </div>
 
-      <FindYourWay />
     </section>
   );
 }

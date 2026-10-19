@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 import { CityPage } from "@/components/city/CityShell";
 import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { cn } from "@/lib/cn";
@@ -14,6 +15,17 @@ export function dashboardSideFromListing(latestListing: { side: VaelSide; expire
   return vaeledOut ? "out" : "in";
 }
 
+const InShellContext = createContext(false);
+
+/** Route-level wrapper: gives a whole group of pages the dashboard sidebar. Pages that already use the shell are not wrapped twice. */
+export function DashboardLayout() {
+  return (
+    <DashboardShell>
+      <Outlet />
+    </DashboardShell>
+  );
+}
+
 /** Same signed-in chrome as Home / Matches so In and Out dashboards stay one product. */
 export function DashboardShell({
   children,
@@ -22,8 +34,11 @@ export function DashboardShell({
   children: ReactNode;
   contentClassName?: string;
 }) {
+  const inShell = useContext(InShellContext);
   const vael = useVael();
   const { latestListing, myConnections, handle, signedIn, profile, documents } = vael;
+
+  if (inShell) return <>{children}</>;
 
   if (!signedIn) {
     return <CityPage>{children}</CityPage>;
@@ -40,6 +55,7 @@ export function DashboardShell({
 
   return (
     <CityPage width="full">
+      <InShellContext.Provider value>
       <div className="flex w-full items-start">
         <DashboardSidebar handle={handle} profile={mine} documents={docs} incomingCount={incoming.length} side={side} />
         <div
@@ -51,6 +67,7 @@ export function DashboardShell({
           {children}
         </div>
       </div>
+      </InShellContext.Provider>
     </CityPage>
   );
 }

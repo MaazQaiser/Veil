@@ -125,8 +125,8 @@ export function SavedPostsPage() {
   }
 
   return (
-    <CityPage width="full" className="-mt-4 sm:-mt-6">
-      <div className="mx-auto w-full max-w-[92rem] px-5 py-12 md:px-6 lg:px-8">
+    <DashboardShell>
+      <div className="w-full">
         <Link to={PRODUCT_HOME} className="text-body-sm font-medium text-muted hover:text-foreground">
           ← Back to Dashboard
         </Link>
@@ -219,7 +219,7 @@ export function SavedPostsPage() {
           <p className="mt-8 text-caption text-muted">Continue locally from Account to save matches or posts.</p>
         ) : null}
       </div>
-    </CityPage>
+    </DashboardShell>
   );
 }
 

@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { CityFooter, CityShell, isSitePath } from "./CityShell";
+import { FindYourWay } from "@/components/marketing/FindYourWay";
 import { useCitySession } from "@/lib/citySession";
 import { isDarkModeFlowPath } from "@/lib/providerJourney";
 import { isHomeownerPath } from "@/lib/cxRoutes";
@@ -8,7 +9,7 @@ import { cn } from "@/lib/cn";
 export function CityLayout() {
   const { session } = useCitySession();
   const location = useLocation();
-  const inProduct = session.signedIn && !isSitePath(location.pathname);
+  const inProduct = session.signedIn && !isSitePath(location.pathname, session.signedIn);
   const inJoinFlow =
     location.pathname.startsWith("/join") ||
     location.pathname === "/sign-in" ||
@@ -52,6 +53,7 @@ export function CityLayout() {
       >
         <Outlet />
       </main>
+      {isSitePath(location.pathname, session.signedIn) && !inJoinFlow ? <FindYourWay /> : null}
       {hideFooter ? null : <CityFooter />}
     </div>
   );

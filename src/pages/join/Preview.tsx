@@ -2,11 +2,13 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
-import { IconEdit } from "@/components/ui/icons";
+import { IconClock, IconEdit, IconLock, IconMapPin } from "@/components/ui/icons";
 import { useState } from "react";
 import { useCitySession } from "@/lib/citySession";
-import { clearDemoDraft, loadDemoDraft } from "@/lib/demoJourney";
-import { finishOnboarding, getOnboardingDraft } from "@/lib/onboarding";
+import { findAccountByHandle } from "@/lib/accounts";
+import { clearDemoDraft, loadDemoDraft, type DemoDraft } from "@/lib/demoJourney";
+import { JOIN_CONFIRM_PHONE_PATH, finishOnboarding, getOnboardingDraft } from "@/lib/onboarding";
+import type { ProfileRecord } from "@/lib/vaelStore";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { useVael } from "@/lib/vaelCore";
 import { CardChips, JoinFooterBar, JoinHead } from "./JoinLayout";
@@ -41,7 +43,7 @@ function SectionCard({
         <p className="text-body font-medium text-foreground">{title}</p>
         <EditLink to={editTo} label={editLabel} />
       </div>
-      <div className="mt-3">{children}</div>
+      <div className="mt-4 border-t border-border-subtle pt-4">{children}</div>
     </div>
   );
 }
@@ -205,18 +207,73 @@ function workLabel(value: string | undefined) {
   return "Not added yet.";
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
+function ReviewRow({ label, value, to }: { label: string; value: string; to?: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-t border-border-subtle py-3 first:border-t-0 first:pt-0">
+    <div className="flex items-start justify-between gap-4 border-t border-border-subtle py-3 first:border-t-0 first:pt-0 last:pb-0">
       <p className="text-body-sm text-muted">{label}</p>
-      <p className="max-w-[60%] text-right text-body-sm text-foreground">{value || "Not added yet."}</p>
+      {value ? (
+        <p className="max-w-[60%] text-right text-body-sm text-foreground">{value}</p>
+      ) : to ? (
+        <Link to={to} className="text-body-sm text-[#F2BA8B] underline underline-offset-4 hover:text-foreground">
+          Add
+        </Link>
+      ) : (
+        <p className="text-body-sm text-quiet">Not added yet.</p>
+      )}
     </div>
   );
 }
 
+/** Why this profile cannot go visible yet, or "" when it can. */
+export function vaelInMissing(profile: ProfileRecord | undefined, draft: DemoDraft | null | undefined): string {
+  if (!profile) return "Your profile is not ready yet.";
+  if (!profile.disciplines[0]) return "Choose a discipline so VAEL knows where you fit.";
+  if (profile.skills.length === 0) return "Add at least one skill to become visible to relevant matches.";
+  if (!(draft?.location || profile.location)) return "Add the location you work from.";
+  return "";
+}
+
+/** Posts the VAEL IN listing and finishes onboarding. Called once the phone is confirmed. */
+export function publishVaelIn(
+  handle: string,
+  vael: ReturnType<typeof useVael>,
+  setVael: (side: "in" | "out") => void,
+): boolean {
+  const profile = vael.profile(handle);
+  const draft = loadDemoDraft(handle);
+  if (!profile || vaelInMissing(profile, draft)) return false;
+  const discipline = profile.disciplines[0] || "";
+  vael.saveListing({
+    handle,
+    side: "in",
+    category: draft?.category || profile.offers?.[0] || discipline,
+    discipline,
+    skills: profile.skills,
+    tools: profile.tools,
+    certifications: profile.credentials
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    location: draft?.location || profile.location || "",
+    remoteOnsite: profile.workPreference || draft?.remoteOnsite || "remote",
+    timing: draft?.timing || "This cycle",
+    experienceYears: profile.experienceYears ?? 0,
+    engagement: draft?.engagement || "Project",
+    budgetProxy: "To discuss",
+    description: profile.bio.trim() || profile.experience.trim() || profile.headline.trim() || "Available this cycle.",
+    requirements: draft?.requirements || "",
+    contact: "",
+    timeline: draft?.timeline || "This cycle",
+  });
+  setVael("in");
+  clearDemoDraft(handle);
+  finishOnboarding(handle);
+  return true;
+}
+
 /** Review the saved VAEL IN profile, then publish availability. The full profile stays private until a Handshake. */
 function VaelInReview() {
-  const { session, setVael } = useCitySession();
+  const { session } = useCitySession();
   const vael = useVael();
   const navigate = useNavigate();
   const [error, setError] = useState("");
@@ -229,52 +286,13 @@ function VaelInReview() {
   const availableToday = timeline.includes("today");
   const availableNow = timeline.includes("now");
 
-  function goVisible() {
-    const discipline = profile?.disciplines[0] || "";
-    const skills = profile?.skills ?? [];
-    const location = draft?.location || profile?.location || "";
-    const description =
-      profile?.bio.trim() ||
-      profile?.experience.trim() ||
-      profile?.headline.trim() ||
-      "Available this cycle.";
-    const missing = !discipline
-      ? "Choose a discipline so VAEL knows where you fit."
-      : skills.length === 0
-        ? "Add at least one skill to become visible to relevant matches."
-        : !location
-          ? "Add the location you work from."
-          : "";
+  function onReview() {
+    const missing = vaelInMissing(profile, draft);
     if (missing || !profile) {
       setError(missing);
       return;
     }
-    vael.saveListing({
-      handle: session.handle,
-      side: "in",
-      category: draft?.category || profile.offers?.[0] || discipline,
-      discipline,
-      skills,
-      tools: profile.tools,
-      certifications: profile.credentials
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      location,
-      remoteOnsite: profile.workPreference || draft?.remoteOnsite || "remote",
-      timing: draft?.timing || "This cycle",
-      experienceYears: profile.experienceYears ?? 0,
-      engagement: draft?.engagement || "Project",
-      budgetProxy: "To discuss",
-      description,
-      requirements: draft?.requirements || "",
-      contact: "",
-      timeline: draft?.timeline || "This cycle",
-    });
-    setVael("in");
-    clearDemoDraft(session.handle);
-    finishOnboarding(session.handle);
-    navigate(PRODUCT_HOME, { replace: true });
+    navigate(JOIN_CONFIRM_PHONE_PATH);
   }
 
   const firstName = profile.displayName.split(" ")[0] || profile.displayName;
@@ -283,37 +301,91 @@ function VaelInReview() {
     .map((item) => item.trim())
     .filter(Boolean);
   const offers = profile.offers ?? [];
+  const account = findAccountByHandle(session.handle);
+  const boardLocation = draft?.location || profile.location;
+  const boardDiscipline = profile.disciplines[0] || "";
+  const missingToGoVisible = [
+    !profile.disciplines[0] ? "a discipline" : "",
+    profile.skills.length === 0 ? "your skills" : "",
+    !(draft?.location || profile.location) ? "a location" : "",
+  ].filter(Boolean);
 
   return (
     <>
-      <JoinHead title="Review" lede="Edit any section below, then go visible when you're ready." center />
-      <div className="mt-8 rounded-lg border border-[#DE7C40]/25 bg-[#141414] p-6 sm:p-7">
-        <h2 className="text-h4 font-medium text-white">Ready to go visible, {firstName}!</h2>
-        <p className="mt-2 max-w-md text-body-sm text-white/70">
-          Other people will see that you are available. The full profile, including contact, opens after a Handshake.
+      <JoinHead
+        title={`Ready to go visible, ${firstName}!`}
+        lede="Other people will see that you are available. The full profile, including contact, opens after a Handshake."
+        center
+      />
+      {missingToGoVisible.length > 0 ? (
+        <p className="mt-6 rounded-lg border border-[#DE7C40]/30 bg-[#DE7C40]/10 px-4 py-2.5 text-center text-body-sm text-[#F2BA8B]">
+          Add {missingToGoVisible.join(", ")} to go visible.
         </p>
+      ) : null}
+
+      <div className="mt-6 rounded-lg border border-border bg-surface p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-body font-medium text-foreground">How it shows on the board</p>
+          <span className="rounded-full bg-white/[0.06] px-3 py-1 text-caption text-muted">Draft, not posted yet</span>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-border-subtle pt-4">
+          <Avatar name={profile.displayName} src={profile.avatarUrl} size="lg" className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-body font-medium text-foreground">{profile.displayName}</p>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-muted">
+              {boardDiscipline ? <span>{boardDiscipline}</span> : null}
+              {boardLocation ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <IconMapPin className="h-3.5 w-3.5 shrink-0" />
+                  {boardLocation}
+                </span>
+              ) : null}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="rounded-full bg-[#DE7C40]/15 px-3 py-1 text-caption font-medium text-[#DE7C40]">Vael In</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1 text-caption text-muted">
+              <IconClock className="h-3.5 w-3.5" />
+              24h left
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="mt-6 space-y-4">
         <SectionCard title={business ? "About my business" : "About me"} editTo="/join/setup" editLabel="Edit about me">
           <ReviewRow label="Profile type" value={business ? "Business" : "Individual"} />
-          <ReviewRow label={business ? "Company discipline" : "Discipline"} value={profile.disciplines.join(", ")} />
-          <ReviewRow label="Location" value={profile.location} />
+          <ReviewRow label={business ? "Company discipline" : "Discipline"} value={profile.disciplines.join(", ")} to="/join/identity" />
+          <ReviewRow label="Location" value={profile.location} to="/join/identity" />
           <ReviewRow
             label="Experience level"
             value={profile.experienceYears ? `${profile.experienceYears} years` : ""}
+            to="/join/identity"
           />
           <ReviewRow label="Employment type" value={draft?.engagement ?? ""} />
           <div className="border-t border-border-subtle pt-3">
-            <p className="text-body-sm text-muted">{business ? "Company description" : "Short description"}</p>
-            <p className="mt-1.5 text-body-sm leading-relaxed text-foreground">
-              {profile.bio || profile.experience || "Not added yet."}
-            </p>
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-body-sm text-muted">{business ? "Company description" : "Short description"}</p>
+              {profile.bio || profile.experience ? null : (
+                <Link to="/join/identity" className="text-body-sm text-[#F2BA8B] underline underline-offset-4 hover:text-foreground">
+                  Add
+                </Link>
+              )}
+            </div>
+            {profile.bio || profile.experience ? (
+              <p className="mt-1.5 text-body-sm leading-relaxed text-foreground">{profile.bio || profile.experience}</p>
+            ) : null}
           </div>
         </SectionCard>
 
         <SectionCard title={business ? "Team skills & tools" : "Skills & tools"} editTo="/join/credentials" editLabel="Edit skills and tools">
-          {profile.skills.length > 0 ? <CardChips items={profile.skills} /> : <p className="text-body-sm text-quiet">Not added yet.</p>}
+          {profile.skills.length > 0 ? (
+            <CardChips items={profile.skills} />
+          ) : (
+            <Link to="/join/identity" className="text-body-sm text-[#F2BA8B] underline underline-offset-4 hover:text-foreground">
+              Add your skills
+            </Link>
+          )}
           {profile.tools.length > 0 ? (
             <div className="mt-3">
               <p className="mb-2 text-body-sm text-muted">Tools and tech stack</p>
@@ -329,8 +401,8 @@ function VaelInReview() {
               <CardChips items={offers} />
             </div>
           ) : null}
-          <ReviewRow label="Participation" value={profile.specialization ?? ""} />
-          <ReviewRow label={business ? "Workstation" : "Own gear"} value={draft?.requirements ?? ""} />
+          <ReviewRow label="Participation" value={profile.specialization ?? ""} to="/join/credentials" />
+          <ReviewRow label={business ? "Workstation" : "Own gear"} value={draft?.requirements ?? ""} to="/join/credentials" />
           {certifications.length > 0 ? (
             <div className="mt-3">
               <p className="mb-2 text-body-sm text-muted">Certifications</p>
@@ -341,7 +413,7 @@ function VaelInReview() {
 
         <SectionCard title="Working preference" editTo="/join/credentials" editLabel="Edit working preference">
           <ReviewRow label="Remote, on-site, or hybrid" value={workLabel(profile.workPreference || draft?.remoteOnsite)} />
-          <ReviewRow label="Service area" value={draft?.location || profile.location} />
+          <ReviewRow label="Service area" value={draft?.location || profile.location} to="/join/credentials" />
           <ReviewRow label="Availability needed" value={draft?.timing ?? ""} />
         </SectionCard>
 
@@ -349,6 +421,36 @@ function VaelInReview() {
           <ReviewRow label="Available today" value={availableToday ? "Yes" : "No"} />
           <ReviewRow label="Available right now" value={availableNow ? "Yes" : "No"} />
         </SectionCard>
+
+        <div className="rounded-lg border border-border-subtle bg-white/[0.03] p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <IconLock className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
+            <div className="min-w-0 flex-1">
+              <p className="text-body-sm font-medium text-foreground">Shared after a handshake</p>
+              <p className="mt-1 text-body-sm text-muted">
+                Your contact is revealed only after both sides accept and acknowledge the terms, never on the board.
+              </p>
+              <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-3">
+                {[
+                  ["Name", profile.displayName || account?.displayName || ""],
+                  ["Email", account?.email ?? ""],
+                  ["Phone", account?.phone ?? ""],
+                ].map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <dt className="text-caption text-quiet">{label}</dt>
+                    <dd className="mt-0.5 truncate text-body-sm text-foreground">{value || "Not provided"}</dd>
+                  </div>
+                ))}
+              </dl>
+              <Link
+                to="/account"
+                className="mt-4 inline-block text-body-sm text-[#F2BA8B] underline underline-offset-4 hover:text-foreground"
+              >
+                Edit on your account
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       {error ? (
@@ -358,8 +460,8 @@ function VaelInReview() {
       ) : null}
 
       <JoinFooterBar>
-        <Button type="button" size="lg" className="rounded-lg px-10" onClick={goVisible}>
-          Vael In
+        <Button type="button" size="lg" className="rounded-lg px-10" onClick={onReview}>
+          Review
         </Button>
       </JoinFooterBar>
     </>

@@ -1,5 +1,6 @@
+import { DashboardShell } from "@/components/mt/DashboardShell";
 import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { buttonClassName, Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/overlays";
@@ -18,7 +19,26 @@ import { profileFieldsFor } from "@/lib/profileFields";
 import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
 import { hoursLeft, type VaelSide } from "@/lib/vaelStore";
 import { getOnboardingDraft } from "@/lib/onboarding";
+import { routeForGoVisibleEntry } from "@/lib/goVisible";
 import { handshakeIncomingLede, homeNetworkLede, vaelSideLabel, vaelSideStatusLabel } from "@/lib/vaelCopy";
+
+/** One headline number: label, big value and a small pill, like the product reference. */
+function StatCard({ label, value, pill, to }: { label: string; value: string; pill: string; to: string }) {
+  return (
+    <Link
+      to={to}
+      className="group rounded-2xl border border-border bg-white p-5 motion-safe:transition-colors motion-safe:duration-200 hover:border-accent/50 dark:border-white/10 dark:bg-surface"
+    >
+      <p className="text-body-sm text-muted">{label}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <span className="font-sans text-[1.875rem] font-medium leading-none tracking-tight text-foreground tabular-nums">
+          {value}
+        </span>
+        <span className="rounded-full bg-accent/15 px-2.5 py-1 text-caption font-medium text-accent">{pill}</span>
+      </div>
+    </Link>
+  );
+}
 
 /** One card in the "Action items" grid — icon, title, description, and a plain text link. No images, no button. */
 function ActionItemRow({
@@ -87,6 +107,7 @@ function WelcomeCityModal() {
 
 export function DistrictHomePage() {
   const vael = useVael();
+  const navigate = useNavigate();
   const community = useCommunity();
   const { listing, latestListing, matches, myConnections, handle, signedIn, profile, documents } = vael;
   const mine = signedIn ? profile(handle) : undefined;
@@ -188,11 +209,47 @@ export function DistrictHomePage() {
                   <span className="normal-case tracking-normal">Go visible</span>
                 </Link>
               )}
-              <Link to={vaelOutHome ? inHref : outHref} className={availabilityButtonClass}>
-                {vaelOutHome ? "Vael In" : "Vael Out"}
-              </Link>
+              {vaelOutHome ? (
+                <Link to={inHref} className={availabilityButtonClass}>
+                  Vael In
+                </Link>
+              ) : (
+                // Starts the Vael Out onboarding for this person, reusing what they already filled in.
+                <button type="button" className={availabilityButtonClass} onClick={() => navigate(routeForGoVisibleEntry(handle, "out"))}>
+                  Vael Out
+                </button>
+              )}
             </div>
           </div>
+
+          {vaelOutHome ? (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatCard
+              label="Matches"
+              value={String(matches.length)}
+              pill={`${matches.filter((match) => match.percent >= 80).length} strong`}
+              to={`${PRODUCT_HOME}/matches`}
+            />
+            <StatCard
+              label="Handshakes"
+              value={String(myConnections.filter((connection) => connection.status === "connected").length)}
+              pill={`${incoming.length} pending`}
+              to={`${PRODUCT_HOME}/connections`}
+            />
+            <StatCard
+              label="Profile"
+              value={`${completion.percent}%`}
+              pill={completion.percent >= 100 ? "Complete" : "In progress"}
+              to={`${editHref}#${editHash}`}
+            />
+            <StatCard
+              label="Visibility"
+              value={visibleHours !== null ? `${visibleHours}h` : "Off"}
+              pill={visibleHours !== null ? "Visible" : "Hidden"}
+              to={vaelOutHome ? outHref : inHref}
+            />
+          </div>
+          ) : null}
 
           {vaelOutHome ? (
           <div>
@@ -329,16 +386,11 @@ function SignedOutHome() {
 
 export function HowItWorksPage() {
   return (
-    <CityPage width="narrow">
+    <DashboardShell>
+      <div className="w-full max-w-3xl space-y-6">
       <PageHeader
-        kicker="Media & Technology"
         title="How it works"
         description="The same spine every live district should copy. Fields here are Media & Technology’s."
-        crumbs={[
-          { label: "City", href: "/" },
-          { label: "Media & Technology", href: "/media-technology" },
-          { label: "How it works" },
-        ]}
       />
       <ol className="mt-8 space-y-6 text-body-sm">
         <li>
@@ -361,6 +413,7 @@ export function HowItWorksPage() {
       <Link to="/media-technology/vael?create=1" className={buttonClassName({ className: "mt-8" })}>
         Set availability
       </Link>
-    </CityPage>
+    </div>
+    </DashboardShell>
   );
 }

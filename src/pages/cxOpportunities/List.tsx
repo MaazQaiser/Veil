@@ -37,28 +37,42 @@ export function OpportunitiesListPage() {
           Available Opportunities
         </h1>
         <p className="mt-1 text-body-sm text-muted">Projects posted from Vael Out, ready for you to review.</p>
-        <p className="mt-1 text-caption text-quiet">
-          Residential Opportunity Access — {CX_ACCESS_PRICE_LABEL} · {CX_ACCESS_NOTICE}
+        <p className="mt-4 inline-flex max-w-full items-start gap-2 rounded-full bg-white/[0.05] px-4 py-2 text-caption text-muted">
+          <span className="font-medium text-foreground">Residential Opportunity Access</span>
+          <span aria-hidden>·</span>
+          <span>
+            {CX_ACCESS_PRICE_LABEL} · {CX_ACCESS_NOTICE}
+          </span>
         </p>
       </div>
-      {error ? <p className="mt-4 text-label text-destructive">{error}</p> : null}
+      {error ? <p className="text-label text-destructive">{error}</p> : null}
+
       {items.length === 0 ? (
-        <p className="mt-8 text-body text-muted">No open projects match what you do right now.</p>
+        <p className="rounded-xl border border-dashed border-accent/25 bg-accent/[0.05] px-5 py-10 text-center text-body-sm text-muted">
+          No open projects match what you do right now. New ones posted from Vael Out will show up here.
+        </p>
       ) : (
-        <ul className="mt-8 space-y-4">
+        <ul className="grid gap-4 lg:grid-cols-2">
           {items.map((item) => {
             const interest = interestBetween(item.id, session.handle);
             const sent = Boolean(interest?.contractorInterested);
             return (
-              <li key={item.id} className="rounded-lg border border-border p-5">
-                <Link to={opportunityHref(item.id)} className="block">
-                  <p className="text-caption font-bold uppercase tracking-[0.08em] text-[#DE7C40]">{item.category}</p>
-                  <p className="mt-2 text-body text-foreground">
+              <li key={item.id} className="flex flex-col rounded-lg border border-border bg-surface p-5 sm:p-6">
+                <Link to={opportunityHref(item.id)} className="block flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="rounded-full bg-accent/15 px-3 py-1 text-caption font-medium text-accent">
+                      {item.category}
+                    </span>
+                    <span className="text-caption text-quiet">
+                      {item.publishedAt ? formatDate(item.publishedAt) : ""}
+                    </span>
+                  </div>
+                  <p className="mt-4 text-body font-medium text-foreground">
                     {item.city} / {item.postalCode}
                   </p>
-                  <p className="mt-3 whitespace-pre-wrap text-body text-foreground">{item.description}</p>
+                  <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-body-sm text-muted">{item.description}</p>
                   {item.photos.length > 0 ? (
-                    <ul className="mt-3 grid grid-cols-4 gap-2">
+                    <ul className="mt-4 grid grid-cols-4 gap-2">
                       {item.photos.map((src, index) => (
                         <li key={index}>
                           <img src={src} alt="" className="h-16 w-full rounded-md object-cover" />
@@ -66,56 +80,75 @@ export function OpportunitiesListPage() {
                       ))}
                     </ul>
                   ) : null}
-                  {item.video ? <p className="mt-3 text-body-sm text-muted">1 short video</p> : null}
-                  <p className="mt-3 text-body-sm text-muted">Start: {item.timing}</p>
-                  {item.budgetBand ? <p className="mt-1 text-body-sm text-muted">Budget: {item.budgetBand}</p> : null}
-                  <p className="mt-1 text-body-sm text-muted">
-                    Posted: {item.publishedAt ? formatDate(item.publishedAt) : ""}
-                  </p>
-                </Link>
-                {sent ? (
-                  <div className="mt-4">
-                    <p className="text-body font-medium text-foreground">You're interested.</p>
-                    <p className="mt-1 text-body-sm text-muted">
-                      The homeowner can now review your VAELance and decide if they're interested too.
-                    </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-white/[0.06] px-3 py-1 text-caption text-muted">
+                      Start: {item.timing}
+                    </span>
+                    {item.budgetBand ? (
+                      <span className="rounded-full bg-white/[0.06] px-3 py-1 text-caption text-muted">
+                        Budget: {item.budgetBand}
+                      </span>
+                    ) : null}
+                    {item.video ? (
+                      <span className="rounded-full bg-white/[0.06] px-3 py-1 text-caption text-muted">1 short video</span>
+                    ) : null}
                   </div>
-                ) : (
-                  <Button
-                    type="button"
-                    className="mt-4"
-                    onClick={() => {
-                      try {
-                        contractorInterested(item.id, session.handle);
-                        setError("");
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : "Could not respond.");
-                      }
-                    }}
-                  >
-                    I'M INTERESTED
-                  </Button>
-                )}
+                </Link>
+                <div className="mt-5 border-t border-border-subtle pt-4">
+                  {sent ? (
+                    <div>
+                      <p className="text-body-sm font-medium text-accent">You're interested.</p>
+                      <p className="mt-1 text-body-sm text-muted">
+                        The homeowner can now review your VAELance and decide if they're interested too.
+                      </p>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      className="rounded-full px-6"
+                      onClick={() => {
+                        try {
+                          contractorInterested(item.id, session.handle);
+                          setError("");
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Could not respond.");
+                        }
+                      }}
+                    >
+                      I'm interested
+                    </Button>
+                  )}
+                </div>
               </li>
             );
           })}
         </ul>
       )}
-      <section className="mt-10">
+
+      <section>
         <h2 className="text-h4 font-medium text-foreground">Your responses</h2>
         <p className="mt-1 text-body-sm text-muted">Projects you have already said you are interested in.</p>
         {responses.length === 0 ? (
-          <p className="mt-3 text-body-sm text-muted">No responses yet.</p>
+          <p className="mt-4 rounded-xl border border-dashed border-accent/25 bg-accent/[0.05] px-5 py-8 text-center text-body-sm text-muted">
+            No responses yet.
+          </p>
         ) : (
-          <ul className="mt-3 divide-y divide-border">
+          <ul className="mt-4 divide-y divide-border-subtle rounded-lg border border-border bg-surface">
             {responses.map((item) => (
               <li key={item.id}>
-                <Link to={opportunityHref(item.id)} className="block py-4">
-                  <p className="text-body font-medium text-foreground">{item.category || "Project"}</p>
-                  <p className="mt-1 text-body-sm text-muted">
-                    {item.city} / {item.postalCode}
-                    {item.status === "live" ? " · Live" : ` · ${item.status}`}
-                  </p>
+                <Link
+                  to={opportunityHref(item.id)}
+                  className="flex items-center justify-between gap-4 px-5 py-4 motion-safe:transition-colors hover:bg-white/[0.03]"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-body font-medium text-foreground">{item.category || "Project"}</p>
+                    <p className="mt-0.5 text-body-sm text-muted">
+                      {item.city} / {item.postalCode}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-accent/15 px-3 py-1 text-caption font-medium capitalize text-accent">
+                    {item.status}
+                  </span>
                 </Link>
               </li>
             ))}

@@ -118,7 +118,7 @@ export function DashboardSidebar({
   return (
     <aside
       className={cn(
-        "sticky top-[4.5rem] hidden h-[calc(100vh-4.5rem)] shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-border-subtle bg-[#F7F7F8] py-4 motion-safe:transition-[width] motion-safe:duration-200 lg:flex dark:border-white/5 dark:bg-white/[0.025] dark:backdrop-blur-3xl",
+        "sticky top-[4.5rem] hidden h-[calc(100vh-4.5rem)] shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-border-subtle bg-[#F7F7F8] py-4 motion-safe:transition-[width] motion-safe:duration-200 lg:flex dark:border-white/5 dark:bg-black/50 dark:backdrop-blur-3xl",
         collapsed ? "w-[4.5rem] px-2" : "w-72 px-4",
       )}
     >
@@ -150,7 +150,7 @@ export function DashboardSidebar({
                 "group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-150",
                 collapsed && "justify-center px-0",
                 active
-                  ? "bg-white text-[#C99A28] shadow-sm dark:bg-accent dark:text-[#0B0C0C]"
+                  ? "bg-white text-[#C99A28] shadow-sm vael-nav-active"
                   : "text-muted hover:bg-white/70 hover:text-foreground dark:hover:bg-white/5 dark:hover:text-[#F5F3EE]",
               );
             }}
@@ -179,7 +179,7 @@ export function DashboardSidebar({
 
       <div className="mt-auto flex flex-col gap-4 pt-6">
         {percent < 100 && !collapsed ? (
-          <div className="rounded-2xl bg-[#0B0C0C] p-5 text-white dark:border dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
+          <div className="vael-glow-card rounded-2xl bg-[#0B0C0C] p-5 text-white dark:border dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
             <p className="text-body-sm font-medium">
               Your profile is <span className="tabular-nums">{percent}%</span> complete
             </p>

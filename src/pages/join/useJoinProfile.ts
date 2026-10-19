@@ -1,3 +1,4 @@
+import { readGoVisibleInfo } from "@/lib/disciplines";
 import { useState } from "react";
 import { useCitySession } from "@/lib/citySession";
 import { getOnboardingDraft } from "@/lib/onboarding";
@@ -10,7 +11,7 @@ export function useJoinProfile() {
   const vael = useVael();
   const intent = getOnboardingDraft(session.handle)?.intent ?? "";
   const existing = vael.ensureMine();
-  const [form, setForm] = useState<ProfileRecord>(
+  const [form, setForm] = useState<ProfileRecord>(() => withGoVisibleInfo(
     existing ?? {
       handle: session.handle,
       displayName: "",
@@ -26,7 +27,7 @@ export function useJoinProfile() {
       rates: "",
       portfolio: [],
     },
-  );
+  ));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function set<K extends keyof ProfileRecord>(key: K, value: ProfileRecord[K]) {
@@ -49,4 +50,15 @@ export function useJoinProfile() {
   }
 
   return { session, vael, intent, form, set, persist, errors, setErrors };
+}
+
+/** Fills discipline and location from the Go Visible step when the profile has none yet. */
+function withGoVisibleInfo(profile: ProfileRecord): ProfileRecord {
+  const info = readGoVisibleInfo();
+  if (!info) return profile;
+  return {
+    ...profile,
+    disciplines: profile.disciplines?.length || !info.discipline ? profile.disciplines : [info.discipline],
+    location: profile.location || info.location || "",
+  };
 }

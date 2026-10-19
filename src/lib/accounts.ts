@@ -60,6 +60,11 @@ export function findAccountByEmail(email: string): CityAccount | undefined {
   return read().find((account) => account.email === wanted);
 }
 
+/** Saves a confirmed phone number on the account. */
+export function updateAccountPhone(handle: string, phone: string) {
+  write(read().map((account) => (account.handle === handle ? { ...account, phone } : account)));
+}
+
 export function findAccountByHandle(handle: string): CityAccount | undefined {
   return read().find((account) => account.handle === handle);
 }

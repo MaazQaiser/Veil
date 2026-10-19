@@ -47,10 +47,12 @@ function enterProductHref(signedIn: boolean, handle: string) {
 }
 
 /** Public website surfaces keep marketing chrome even when a member is signed in. */
-export function isSitePath(pathname: string) {
+/** Public website pages. Post pages inside the community feed belong to the product once someone is signed in. */
+export function isSitePath(pathname: string, signedIn = false) {
   if (pathname === "/" || pathname === "/explore") return true;
   if (pathname === "/districts" || pathname === "/projects") return true;
-  if (pathname === "/feed" || pathname.startsWith("/feed/")) return true;
+  if (pathname === "/feed") return true;
+  if (pathname.startsWith("/feed/")) return !signedIn;
   if (pathname === "/sign-in" || pathname === "/sign-up" || pathname === "/go-visible") return true;
   if (pathname === "/join" || pathname.startsWith("/join/")) return true;
   return isHomeownerPath(pathname);
@@ -680,7 +682,7 @@ export function CityShell() {
   const unreadMessages = vael.unreadMessages || session.unreadMessages;
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
-  const onSite = isSitePath(location.pathname);
+  const onSite = isSitePath(location.pathname, session.signedIn);
   const onHero = location.pathname === "/";
   const inProduct = session.signedIn && !onSite;
   const inJoinFlow =

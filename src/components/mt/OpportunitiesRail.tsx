@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { buttonClassName } from "@/components/ui/button";
 import { useCxProjects } from "@/lib/useCxProjects";
 import {
   opportunitiesForVaelIn,
   projectsForHandle,
   type CxProject,
 } from "@/lib/cxProjectStore";
-import { opportunitiesHomeFor, opportunityHref, opportunityStart, projectHref } from "@/lib/cxRoutes";
+import { opportunitiesHomeFor, opportunityHref, projectHref } from "@/lib/cxRoutes";
 import { formatDate } from "@/lib/time";
 import type { VaelSide } from "@/lib/vaelStore";
 
@@ -52,7 +51,6 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
   const items = out
     ? [...mine].sort((a, b) => Date.parse(b.publishedAt || b.createdAt) - Date.parse(a.publishedAt || a.createdAt))
     : open;
-  const start = opportunityStart("avail");
 
   return (
     <section>
@@ -79,11 +77,6 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
           >
             View all →
           </Link>
-          {out ? null : (
-            <Link to={start.to} state={start.state} className={buttonClassName({ size: "sm" })}>
-              Find opportunities
-            </Link>
-          )}
         </div>
       </div>
 

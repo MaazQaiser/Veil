@@ -34,7 +34,14 @@ export function JoinLayout() {
     return <Navigate to={signedInLanding(session.handle)} replace />;
   }
 
-  if (session.signedIn && outOpen && !outStep) {
+  // Vael Out asks for a profile type before its first step, like Vael In does after Welcome.
+  const outNeedsProfileType =
+    draft?.intent === "out" && !draft.profileKind && (!draft.outStep || draft.outStep === "need");
+  if (session.signedIn && outOpen && outNeedsProfileType && visiting !== "Profile Type") {
+    return <Navigate to={ONBOARDING_PATH["Profile Type"]} replace />;
+  }
+
+  if (session.signedIn && outOpen && !outStep && visiting !== "Profile Type") {
     return <Navigate to={vaelOutResume(draft)} replace />;
   }
 
@@ -79,7 +86,7 @@ export function JoinLayout() {
     ? vaelOutPrevious(outStep)
     : visiting === "Need"
       ? ONBOARDING_PATH.Intent
-      : visiting === "Intent"
+      : visiting === "Intent" || (visiting === "Profile Type" && draft?.intent === "out")
         ? null
         : (() => {
             const stepIndex = onboardingStepIndex(visiting);
@@ -91,7 +98,7 @@ export function JoinLayout() {
   return (
     <div
       data-surface="site-dark"
-      className="join-flow wizard-flow relative isolate flex flex-col bg-background text-foreground"
+      className="join-flow wizard-flow relative isolate flex min-h-full flex-1 flex-col bg-background text-foreground"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]" />

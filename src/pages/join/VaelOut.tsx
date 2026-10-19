@@ -5,19 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/controls";
 import { TagField, splitTags } from "@/components/ui/tags";
-import {
-  IconBriefcase,
-  IconClock,
-  IconDocument,
-  IconEdit,
-  IconGrid,
-  IconImage,
-  IconLock,
-  IconMapPin,
-  IconUser,
-} from "@/components/ui/icons";
-import { DocumentCard } from "@/components/vael";
-import { PortfolioEditor, ProfilePhotoField } from "@/components/vael/profileForm";
+import { IconEdit } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
 import { clearDemoDraft, loadDemoDraft, saveDemoDraft, type DemoDraft } from "@/lib/demoJourney";
 import {
@@ -30,24 +19,73 @@ import {
   vaelOutPath,
   type VaelOutStep,
 } from "@/lib/onboarding";
-import { DOC_TYPE_LABELS } from "@/lib/profileFields";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import {
-  DOC_TYPES,
-  M_T_BUDGET,
   M_T_CATEGORIES,
   M_T_DISCIPLINES,
   M_T_ENGAGEMENTS,
   M_T_TIMING,
   capabilityOptions,
   certificationOptions,
-  type ProfileDocument,
   type ProfileRecord,
 } from "@/lib/vaelStore";
-import { CardChips, JoinFieldCard, JoinFooterBar, JoinHead } from "./JoinLayout";
+import { CardChips, JoinFooterBar, JoinHead } from "./JoinLayout";
 import { useJoinProfile } from "./useJoinProfile";
 
-type DocType = ProfileDocument["type"];
+const TIMELINES = ["Under a week", "1–4 weeks", "1–3 months", "3+ months", "Ongoing"];
+const TEAM_SIZES = ["Just me", "2–5 people", "6–15 people", "16+ people"];
+const EXPERIENCE_LEVELS = [
+  { label: "Less than 1 year", years: 0 },
+  { label: "1–3 Years", years: 2 },
+  { label: "3–5 Years", years: 4 },
+  { label: "5–10 Years", years: 7 },
+  { label: "10+ Years", years: 10 },
+];
+
+function experienceBucket(years: number | undefined) {
+  if (years === undefined) return "";
+  if (years < 1) return "Less than 1 year";
+  if (years <= 3) return "1–3 Years";
+  if (years <= 5) return "3–5 Years";
+  if (years <= 10) return "5–10 Years";
+  return "10+ Years";
+}
+
+function startDateFor(label: "Today" | "Tomorrow" | "Next Monday") {
+  const date = new Date();
+  if (label === "Tomorrow") date.setDate(date.getDate() + 1);
+  if (label === "Next Monday") date.setDate(date.getDate() + (((8 - date.getDay()) % 7) || 7));
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** Why "The work" is not complete yet, or "" when it is. */
+function needProblem(form: ProfileRecord, category: string) {
+  if (!form.headline.trim()) return "Add a title for the work.";
+  if (!form.disciplines[0]) return "Choose the discipline you need.";
+  if (!category) return "Choose the type of work.";
+  if (form.bio.trim().length < 20) return "Describe the work in at least 20 characters.";
+  return "";
+}
+
+/** Why "When & where" is not complete yet, or "" when it is. */
+function whenWhereProblem(form: ProfileRecord, engagement: string, timeline: string, budget: string) {
+  if (!engagement) return "Choose the engagement type.";
+  if (!form.workPreference) return "Choose remote, onsite or hybrid.";
+  if (!form.location.trim()) return "Add the location of the work.";
+  if (!timeline) return "Choose a timeline.";
+  if (!budget.trim()) return "Add a budget, rate or pay.";
+  return "";
+}
+
+function FormCard({ children }: { children: ReactNode }) {
+  return <div className="space-y-5 rounded-lg border border-border bg-surface p-6 sm:p-7">{children}</div>;
+}
+
+function NextHint({ children }: { children: ReactNode }) {
+  return <p className="text-body-sm italic text-quiet">{children}</p>;
+}
 
 export function VaelOutStepPage() {
   const { step: raw } = useParams();
@@ -68,12 +106,19 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
   const saved = loadDemoDraft(session.handle);
   const [category, setCategory] = useState(saved?.category ?? "");
   const [certifications, setCertifications] = useState(saved?.certifications ?? "");
-  const [timing, setTiming] = useState(saved?.timing || M_T_TIMING[0]);
-  const [engagement, setEngagement] = useState(saved?.engagement || M_T_ENGAGEMENTS[0]);
-  const [budgetProxy, setBudgetProxy] = useState(saved?.budgetProxy || M_T_BUDGET[0]);
+  const [timing, setTiming] = useState(saved?.timing ?? "");
+  const [timeline, setTimeline] = useState(saved?.timeline && TIMELINES.includes(saved.timeline) ? saved.timeline : "");
+  const [engagement, setEngagement] = useState(saved?.engagement ?? "");
+  const [budgetText, setBudgetText] = useState(saved?.budgetProxy ?? "");
+  const [preferredSkills, setPreferredSkills] = useState<string[]>(saved?.preferredSkills ?? []);
+  const [neededToday, setNeededToday] = useState<boolean | null>(saved?.neededToday ?? null);
+  const [startDate, setStartDate] = useState(saved?.startDate ?? "");
+  const [teamSize, setTeamSize] = useState(saved?.teamSize ?? "");
+  const [deliverables, setDeliverables] = useState<string[]>(saved?.deliverables ?? []);
+  const [deliverableInput, setDeliverableInput] = useState("");
+  const [samplesWanted, setSamplesWanted] = useState(saved?.samplesWanted ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [docType, setDocType] = useState<DocType>("license");
 
   function apply(patch: Partial<ProfileRecord>) {
     const next = { ...form, ...patch };
@@ -86,7 +131,6 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
   function remember(next: ProfileRecord, extras: Partial<DemoDraft> = {}) {
     persist(next);
     const remote = next.workPreference ?? saved?.remoteOnsite ?? "remote";
-    const when = extras.timing ?? timing;
     saveDemoDraft(
       {
         side: "out",
@@ -97,14 +141,20 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
         certifications: extras.certifications ?? certifications,
         location: next.location,
         remoteOnsite: remote,
-        timing: when,
+        timing: extras.timing ?? timing,
         experienceYears: next.experienceYears != null ? String(next.experienceYears) : "",
         engagement: extras.engagement ?? engagement,
-        budgetProxy: extras.budgetProxy ?? budgetProxy,
+        budgetProxy: extras.budgetProxy ?? budgetText,
         description: next.bio,
         requirements: next.credentials,
         contact: "",
-        timeline: when,
+        timeline: extras.timeline ?? timeline,
+        preferredSkills: extras.preferredSkills ?? preferredSkills,
+        neededToday: extras.neededToday ?? neededToday ?? undefined,
+        startDate: extras.startDate ?? startDate,
+        teamSize: extras.teamSize ?? teamSize,
+        deliverables: extras.deliverables ?? deliverables,
+        samplesWanted: extras.samplesWanted ?? samplesWanted,
       },
       session.handle,
     );
@@ -126,16 +176,9 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
 
   function onNeed(event: FormEvent) {
     event.preventDefault();
-    if (!form.headline.trim()) {
-      setError("Say what you're hiring for.");
-      return;
-    }
-    if (!form.bio.trim()) {
-      setError("Add one line about what you need.");
-      return;
-    }
-    if (form.profileType === "business" && !form.displayName.trim()) {
-      setError("Add your organization's name.");
+    const problem = needProblem(form, category);
+    if (problem) {
+      setError(problem);
       return;
     }
     setError("");
@@ -144,59 +187,40 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
       apply({
         headline: form.headline.trim(),
         bio: form.bio.trim(),
-        profileType: form.profileType,
-        displayName: form.displayName.trim(),
+        disciplines: [form.disciplines[0]],
       }),
     );
   }
 
   function onWho(event: FormEvent) {
     event.preventDefault();
-    const discipline = form.disciplines[0] ?? "";
-    if (!discipline) {
-      setError("Choose a discipline so VAEL knows where you fit.");
-      return;
-    }
-    if (form.skills.length === 0) {
-      setError("Add at least one capability to become visible to relevant matches.");
-      return;
-    }
     setError("");
-    go("who", apply({ disciplines: [discipline], skills: form.skills }));
+    // Credentials and certifications are one list here, kept in both places for matching.
+    go("who", apply({ skills: form.skills, tools: form.tools ?? [], credentials: form.credentials, experienceYears: form.experienceYears }));
   }
 
   function onLocation(event: FormEvent) {
     event.preventDefault();
-    if (!form.location.trim()) {
-      setError("Add the location you work from.");
+    const problem = whenWhereProblem(form, engagement, timeline, budgetText);
+    if (problem) {
+      setError(problem);
       return;
     }
     setError("");
-    go(
-      "location",
-      apply({
-        location: form.location.trim(),
-        workPreference: form.workPreference ?? "remote",
-      }),
-    );
+    go("location", apply({ location: form.location.trim(), workPreference: form.workPreference }));
   }
 
-  function onRequirements(event: FormEvent) {
+  function onExtras(event: FormEvent) {
     event.preventDefault();
     setError("");
-    go("requirements", apply({ credentials: form.credentials }));
+    go("extras");
   }
 
-  function onTiming(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    go("timing", apply({ experienceYears: form.experienceYears }));
-  }
-
-  function onDetails(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    go("details", apply({ tools: form.tools ?? [], portfolio: form.portfolio }));
+  function addDeliverable() {
+    const value = deliverableInput.trim().slice(0, 80);
+    if (!value || deliverables.length >= 10 || deliverables.includes(value)) return;
+    setDeliverables([...deliverables, value]);
+    setDeliverableInput("");
   }
 
   function onSubmit() {
@@ -204,20 +228,14 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
       headline: form.headline.trim(),
       bio: form.bio.trim(),
       location: form.location.trim(),
-      workPreference: form.workPreference ?? "remote",
       disciplines: form.disciplines[0] ? [form.disciplines[0]] : [],
     });
-    if (!profile.headline || !profile.bio) {
+    if (needProblem(profile, category)) {
       patchOnboarding(session.handle, { intent: "out", outStep: "need" });
       navigate(vaelOutPath("need"));
       return;
     }
-    if (!profile.disciplines[0] || profile.skills.length === 0) {
-      patchOnboarding(session.handle, { intent: "out", outStep: "who" });
-      navigate(vaelOutPath("who"));
-      return;
-    }
-    if (!profile.location.trim()) {
+    if (whenWhereProblem(profile, engagement, timeline, budgetText)) {
       patchOnboarding(session.handle, { intent: "out", outStep: "location" });
       navigate(vaelOutPath("location"));
       return;
@@ -225,25 +243,30 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
     setSaving(true);
     try {
       remember(profile);
-      const draft = loadDemoDraft(session.handle);
       vael.saveListing({
         handle: session.handle,
         side: "out",
-        category: draft?.category || profile.disciplines[0],
+        category,
         discipline: profile.disciplines[0],
         skills: profile.skills,
         tools: profile.tools ?? [],
-        certifications: splitTags(draft?.certifications ?? ""),
+        certifications: splitTags(certifications),
         location: profile.location,
         remoteOnsite: profile.workPreference || "remote",
-        timing: draft?.timing || M_T_TIMING[0],
+        timing: timing || M_T_TIMING[0],
         experienceYears: profile.experienceYears ?? 0,
-        engagement: draft?.engagement || M_T_ENGAGEMENTS[0],
-        budgetProxy: draft?.budgetProxy || M_T_BUDGET[0],
+        engagement,
+        budgetProxy: budgetText.trim(),
         description: profile.bio,
         requirements: profile.credentials,
         contact: "",
-        timeline: draft?.timing || M_T_TIMING[0],
+        timeline,
+        preferredSkills,
+        neededToday: neededToday ?? false,
+        startDate,
+        teamSize,
+        deliverables,
+        samplesWanted: samplesWanted.trim(),
       });
       setVael("out");
       clearDemoDraft(session.handle);
@@ -261,69 +284,22 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
     }
   }
 
+  const descriptionLeft = Math.max(0, 20 - form.bio.trim().length);
+
   return (
     <div className="mx-auto w-full max-w-2xl">
       {step === "need" ? (
-        <StepForm
-          title="What I need"
-          lede="Say what you're hiring for, then describe the work."
-          error={error}
-          onSubmit={onNeed}
-        >
-          <JoinFieldCard icon={<IconUser />} title="Who's hiring?" hint="Individual or on behalf of an organization.">
-            <Field label="Who's hiring?" htmlFor="profileType">
-              <Select
-                id="profileType"
-                value={form.profileType === "studio" ? "business" : form.profileType}
-                onChange={(event) => set("profileType", event.target.value as ProfileRecord["profileType"])}
-              >
-                <option value="individual">Individual</option>
-                <option value="business">Organization</option>
-              </Select>
-            </Field>
-            {form.profileType === "business" ? (
-              <Field label="Organization name" htmlFor="orgName" required className="mt-4">
-                <Input
-                  id="orgName"
-                  placeholder="Acme Studios"
-                  value={form.displayName}
-                  onChange={(event) => set("displayName", event.target.value)}
-                />
-              </Field>
-            ) : null}
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconBriefcase />} title="What are you hiring for?" badge="Required" hint="The role or need, in a few words.">
-            <Field label="What are you hiring for?" htmlFor="headline" required>
+        <StepForm title="The work" lede="Name what you need and describe the work." error={error} onSubmit={onNeed}>
+          <FormCard>
+            <Field label="Title" htmlFor="headline" required>
               <Input
                 id="headline"
-                placeholder="Creative Director"
+                placeholder="e.g. Lead video editor for a docuseries"
                 value={form.headline}
                 onChange={(event) => set("headline", event.target.value)}
               />
             </Field>
-          </JoinFieldCard>
-          <JoinFieldCard
-            icon={<IconDocument />}
-            title="Describe what you need"
-            badge="Required"
-            hint="One line. Matches see this."
-          >
-            <Field label="Describe what you need" htmlFor="about" required>
-              <Textarea id="about" rows={3} value={form.bio} onChange={(event) => set("bio", event.target.value)} />
-            </Field>
-          </JoinFieldCard>
-        </StepForm>
-      ) : null}
-
-      {step === "who" ? (
-        <StepForm
-          title="Who I’m looking for"
-          lede="Describe the capability you are looking for."
-          error={error}
-          onSubmit={onWho}
-        >
-          <JoinFieldCard icon={<IconUser />} title="Discipline" badge="Required">
-            <Field label="Discipline" htmlFor="discipline" required>
+            <Field label="Discipline needed" htmlFor="discipline" required>
               <Select
                 id="discipline"
                 value={form.disciplines[0] ?? ""}
@@ -335,204 +311,245 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
                 ))}
               </Select>
             </Field>
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconBriefcase />} title="Category" hint="Optional. The kind of person or studio.">
-            <Field label="Category" htmlFor="category">
+            <Field label="Type of work" htmlFor="category" required hint="The kind of person or studio you need.">
               <Select id="category" value={category} onChange={(event) => setCategory(event.target.value)}>
-                <option value="">Not specified</option>
+                <option value="">Select…</option>
                 {M_T_CATEGORIES.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </Select>
             </Field>
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconGrid />} title="Skills" badge="Required">
+            <Field
+              label="Description"
+              htmlFor="about"
+              required
+              hint={descriptionLeft > 0 ? `At least 20 characters — ${descriptionLeft} to go.` : `${form.bio.trim().length} characters`}
+            >
+              <Textarea
+                id="about"
+                rows={6}
+                placeholder="Scope, goals, and what a good outcome looks like…"
+                value={form.bio}
+                onChange={(event) => set("bio", event.target.value)}
+              />
+            </Field>
+            <NextHint>Next: the skills, tools and credentials you need</NextHint>
+          </FormCard>
+        </StepForm>
+      ) : null}
+
+      {step === "who" ? (
+        <StepForm
+          title="Skills, tools & credentials"
+          lede="Used to score matches on the board — leave anything blank if you have no preference."
+          error={error}
+          onSubmit={onWho}
+        >
+          <FormCard>
             <TagField
               id="skills"
-              label="Skills"
+              label="Required skills"
               values={form.skills}
               options={capabilityOptions("skills")}
               placeholder="Search or add a skill"
               onChange={(next) => set("skills", next)}
             />
-          </JoinFieldCard>
-        </StepForm>
-      ) : null}
-
-      {step === "location" ? (
-        <StepForm title="Location" lede="Where the work is based, or where you need someone." error={error} onSubmit={onLocation}>
-          <JoinFieldCard icon={<IconMapPin />} title="Work preference">
-            <Field label="Work preference" htmlFor="remote">
-              <Select
-                id="remote"
-                value={form.workPreference ?? "remote"}
-                onChange={(event) => set("workPreference", event.target.value as ProfileRecord["workPreference"])}
-              >
-                <option value="remote">Remote</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="onsite">On-site</option>
-              </Select>
-            </Field>
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconMapPin />} title="Location" badge="Required">
-            <Field label="Location" htmlFor="location" required>
-              <Input id="location" value={form.location} onChange={(event) => set("location", event.target.value)} />
-            </Field>
-          </JoinFieldCard>
-        </StepForm>
-      ) : null}
-
-      {step === "requirements" ? (
-        <StepForm
-          title="Requirements"
-          lede="Skills or certifications the person you hire should have. Optional."
-          error={error}
-          onSubmit={onRequirements}
-        >
-          <JoinFieldCard icon={<IconLock />} title="Requirements" hint="Optional.">
             <TagField
-              id="requirements"
-              label="Add requirements"
-              values={splitTags(form.credentials)}
+              id="preferred-skills"
+              label="Preferred skills (nice to have)"
+              values={preferredSkills}
               options={capabilityOptions("skills")}
-              placeholder="Search or add a requirement"
-              onChange={(next) => set("credentials", next.join(", "))}
+              placeholder="Search or add a skill"
+              onChange={setPreferredSkills}
             />
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconLock />} title="Certifications" hint="Optional.">
-            <TagField
-              id="certs"
-              label="Certifications"
-              values={splitTags(certifications)}
-              options={certificationOptions()}
-              placeholder="Search or add a certification"
-              onChange={(next) => setCertifications(next.join(", "))}
-            />
-          </JoinFieldCard>
-        </StepForm>
-      ) : null}
-
-      {step === "timing" ? (
-        <StepForm title="Timing / availability" lede="When do you need someone?" error={error} onSubmit={onTiming}>
-          <JoinFieldCard icon={<IconClock />} title="Timing">
-            <Field label="Timing" htmlFor="timing">
-              <Select id="timing" value={timing} onChange={(event) => setTiming(event.target.value)}>
-                {M_T_TIMING.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </Select>
-            </Field>
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconClock />} title="Experience (years)" hint="Carried over from your profile.">
-            <Field label="Experience (years)" htmlFor="exp">
-              <Input
-                id="exp"
-                inputMode="numeric"
-                value={form.experienceYears ?? ""}
-                onChange={(event) =>
-                  set("experienceYears", event.target.value === "" ? undefined : Number(event.target.value))
-                }
-              />
-            </Field>
-          </JoinFieldCard>
-        </StepForm>
-      ) : null}
-
-      {step === "details" ? (
-        <StepForm
-          title="Additional details"
-          lede="Optional. Helps VAEL place you more precisely."
-          error={error}
-          onSubmit={onDetails}
-        >
-          <JoinFieldCard icon={<IconGrid />} title="Tools">
             <TagField
               id="tools"
-              label="Tools"
+              label="Tools, platforms & software"
               values={form.tools ?? []}
               options={capabilityOptions("tools")}
               placeholder="Search or add a tool"
               onChange={(next) => set("tools", next)}
             />
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconBriefcase />} title="Engagement">
-            <Field label="Engagement" htmlFor="eng">
+            <TagField
+              id="credentials"
+              label="Credentials"
+              values={splitTags(form.credentials)}
+              options={certificationOptions()}
+              placeholder="Search or add a credential"
+              onChange={(next) => {
+                set("credentials", next.join(", "));
+                setCertifications(next.join(", "));
+              }}
+            />
+            <Field label="Experience level (optional)" htmlFor="exp-level">
+              <Select
+                id="exp-level"
+                value={experienceBucket(form.experienceYears)}
+                onChange={(event) => set("experienceYears", EXPERIENCE_LEVELS.find((item) => item.label === event.target.value)?.years)}
+              >
+                <option value="">Any</option>
+                {EXPERIENCE_LEVELS.map((item) => (
+                  <option key={item.label}>{item.label}</option>
+                ))}
+              </Select>
+            </Field>
+            <NextHint>Next: when and where, and what it pays</NextHint>
+          </FormCard>
+        </StepForm>
+      ) : null}
+
+      {step === "location" ? (
+        <StepForm title="When & where" lede="Where and when the work happens, and what it pays." error={error} onSubmit={onLocation}>
+          <FormCard>
+            <Field label="Engagement type" htmlFor="eng" required>
               <Select id="eng" value={engagement} onChange={(event) => setEngagement(event.target.value)}>
+                <option value="">Select…</option>
                 {M_T_ENGAGEMENTS.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </Select>
             </Field>
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconBriefcase />} title="Budget proxy">
-            <Field label="Budget proxy" htmlFor="budget">
-              <Select id="budget" value={budgetProxy} onChange={(event) => setBudgetProxy(event.target.value)}>
-                {M_T_BUDGET.map((item) => (
+            <Field label="Remote / onsite / hybrid" htmlFor="remote" required>
+              <Select
+                id="remote"
+                value={form.workPreference ?? ""}
+                onChange={(event) => set("workPreference", (event.target.value || undefined) as ProfileRecord["workPreference"])}
+              >
+                <option value="">Select…</option>
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="onsite">On-site</option>
+              </Select>
+            </Field>
+            <Field label="Location" htmlFor="location" required>
+              <Input
+                id="location"
+                placeholder="City or area"
+                value={form.location}
+                onChange={(event) => set("location", event.target.value)}
+              />
+            </Field>
+            <div>
+              <p className="text-label font-medium text-foreground">Needed today?</p>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                {([true, false] as const).map((value) => (
+                  <button
+                    key={String(value)}
+                    type="button"
+                    aria-pressed={neededToday === value}
+                    onClick={() => setNeededToday(value)}
+                    className={cn(
+                      "h-12 border bg-transparent text-body-sm font-medium motion-safe:transition-colors",
+                      neededToday === value ? "border-[#DE7C40] bg-[#DE7C40]/[0.1] text-foreground" : "border-border text-muted hover:border-[#DE7C40]/50",
+                    )}
+                  >
+                    {value ? "Yes" : "No"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Field label="Start date" htmlFor="start" hint="Optional when it's needed today.">
+              <Input id="start" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(["Today", "Tomorrow", "Next Monday"] as const).map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setStartDate(startDateFor(label))}
+                    className="h-9 rounded-full border border-border px-4 text-caption text-muted motion-safe:transition-colors hover:border-[#DE7C40]/50 hover:text-foreground"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Availability needed" htmlFor="timing" hint="Optional. Used to score matches.">
+              <Select id="timing" value={timing} onChange={(event) => setTiming(event.target.value)}>
+                <option value="">Select…</option>
+                {M_T_TIMING.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </Select>
             </Field>
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconDocument />} title="Links" hint="Company website, job post, or a brief. Optional.">
-            <PortfolioEditor items={form.portfolio} onChange={(next) => set("portfolio", next)} />
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconDocument />} title="Documents" hint="Job brief, scope of work, or a spec — held on this device.">
-            <div className="flex flex-col gap-3">
-              <Field label="Document type" htmlFor="doc-type">
-                <Select id="doc-type" value={docType} onChange={(event) => setDocType(event.target.value as DocType)}>
-                  {DOC_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {DOC_TYPE_LABELS[type]}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <input
-                aria-label="Add document"
-                type="file"
-                className="block text-body-sm"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    vael.uploadDocument({
-                      handle: session.handle,
-                      type: docType,
-                      title: file.name,
-                      publicFlag: false,
-                      dataUrl: String(reader.result),
-                    });
-                  };
-                  reader.readAsDataURL(file);
-                }}
+            <Field label="Timeline" htmlFor="timeline" required hint="How long the work runs, or how soon it has to move.">
+              <Select id="timeline" value={timeline} onChange={(event) => setTimeline(event.target.value)}>
+                <option value="">Select…</option>
+                {TIMELINES.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Budget, rate or pay" htmlFor="budget" required>
+              <Input
+                id="budget"
+                placeholder="e.g. $5,000 project, or $75–100/hr"
+                value={budgetText}
+                onChange={(event) => setBudgetText(event.target.value)}
               />
-              {vael.documents(session.handle).length > 0 ? (
-                <ul className="mt-2 space-y-3">
-                  {vael.documents(session.handle).map((doc) => (
-                    <li key={doc.id}>
-                      <DocumentCard title={doc.title} type={doc.type} status={doc.publicFlag ? "public" : "uploaded"} />
+            </Field>
+            <NextHint>Next: a few optional extras</NextHint>
+          </FormCard>
+        </StepForm>
+      ) : null}
+
+      {step === "extras" ? (
+        <StepForm title="Extras" lede="All optional — add what helps the right people say yes." error={error} onSubmit={onExtras}>
+          <FormCard>
+            <Field label="Team size" htmlFor="team">
+              <Select id="team" value={teamSize} onChange={(event) => setTeamSize(event.target.value)}>
+                <option value="">Select…</option>
+                {TEAM_SIZES.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Deliverables" htmlFor="deliverable" hint={`${deliverables.length} of 10 · up to 80 characters each`}>
+              <div className="flex gap-3">
+                <Input
+                  id="deliverable"
+                  placeholder="Type one and press Enter"
+                  maxLength={80}
+                  value={deliverableInput}
+                  onChange={(event) => setDeliverableInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addDeliverable();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" className="shrink-0 rounded-full px-5" onClick={addDeliverable}>
+                  Add
+                </Button>
+              </div>
+              {deliverables.length > 0 ? (
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {deliverables.map((item) => (
+                    <li key={item} className="inline-flex items-center gap-2 rounded-full bg-[#DE7C40]/15 px-3 py-1 text-caption text-[#F2BA8B]">
+                      {item}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${item}`}
+                        onClick={() => setDeliverables(deliverables.filter((entry) => entry !== item))}
+                      >
+                        ×
+                      </button>
                     </li>
                   ))}
                 </ul>
               ) : null}
-            </div>
-          </JoinFieldCard>
-          <JoinFieldCard icon={<IconImage />} title="Photo" hint="The same picture on your profile.">
-            <ProfilePhotoField
-              name={form.displayName}
-              src={form.avatarUrl}
-              coverSrc={form.coverUrl}
-              onChange={(dataUrl) => {
-                const next = apply({ avatarUrl: dataUrl });
-                persist(next);
-              }}
-              onCoverChange={(dataUrl) => {
-                const next = apply({ coverUrl: dataUrl });
-                persist(next);
-              }}
-            />
-          </JoinFieldCard>
+            </Field>
+            <Field label="Work samples or references wanted" htmlFor="samples">
+              <Textarea
+                id="samples"
+                rows={4}
+                placeholder="What should people show you before you talk?"
+                value={samplesWanted}
+                onChange={(event) => setSamplesWanted(event.target.value)}
+              />
+            </Field>
+            <NextHint>Next: review and post</NextHint>
+          </FormCard>
         </StepForm>
       ) : null}
 
@@ -540,11 +557,16 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
         <Review
           form={form}
           category={category}
-          certifications={certifications}
           timing={timing}
+          timeline={timeline}
           engagement={engagement}
-          budgetProxy={budgetProxy}
-          documents={vael.documents(session.handle)}
+          budget={budgetText}
+          preferredSkills={preferredSkills}
+          neededToday={neededToday}
+          startDate={startDate}
+          teamSize={teamSize}
+          deliverables={deliverables}
+          samplesWanted={samplesWanted}
           error={error}
           saving={saving}
           onSubmit={onSubmit}
@@ -597,111 +619,74 @@ function workLabel(value: string | undefined) {
 function Review({
   form,
   category,
-  certifications,
   timing,
+  timeline,
   engagement,
-  budgetProxy,
-  documents,
+  budget,
+  preferredSkills,
+  neededToday,
+  startDate,
+  teamSize,
+  deliverables,
+  samplesWanted,
   error,
   saving,
   onSubmit,
 }: {
   form: ProfileRecord;
   category: string;
-  certifications: string;
   timing: string;
+  timeline: string;
   engagement: string;
-  budgetProxy: string;
-  documents: ProfileDocument[];
+  budget: string;
+  preferredSkills: string[];
+  neededToday: boolean | null;
+  startDate: string;
+  teamSize: string;
+  deliverables: string[];
+  samplesWanted: string;
   error: string;
   saving: boolean;
   onSubmit: () => void;
 }) {
-  const certs = splitTags(certifications);
-  const requirements = splitTags(form.credentials);
-  const links = (form.portfolio ?? []).filter((item) => item.url);
+  const credentials = splitTags(form.credentials);
   const firstName = form.displayName.split(" ")[0] || form.displayName;
 
   return (
     <>
-      <JoinHead title="Review" lede="Edit any section below, then post when you're ready." center />
-      <div className="mt-8 rounded-lg border border-[#DE7C40]/25 bg-[#141414] p-6 sm:p-7">
-        <h2 className="text-h4 font-medium text-white">Ready to post, {firstName}!</h2>
-        <p className="mt-2 max-w-md text-body-sm text-white/70">
-          This is the request matches will see. You can change any section before you Vael Out.
-        </p>
-      </div>
+      <JoinHead title={`Ready to post, ${firstName}!`} lede="This is the request matches will see. You can change any section before you Vael Out." center />
 
-      <div className="mt-6 space-y-4">
-        <SectionCard title="What I need" editTo={vaelOutPath("need")} editLabel="Edit what I need">
-          <ReviewRow label="Hiring as" value={form.profileType === "business" ? "Organization" : "Individual"} />
-          {form.profileType === "business" ? (
-            <ReviewRow label="Organization name" value={form.displayName} />
-          ) : null}
-          <ReviewRow label="Hiring for" value={form.headline} />
+      <div className="mt-8 space-y-4">
+        <SectionCard title="The work" editTo={vaelOutPath("need")} editLabel="Edit the work">
+          <ReviewRow label="Title" value={form.headline} />
+          <ReviewRow label="Discipline needed" value={form.disciplines[0] ?? ""} />
+          <ReviewRow label="Type of work" value={category} />
           <div className="border-t border-border-subtle pt-3">
             <p className="text-body-sm text-muted">Description</p>
             <p className="mt-1.5 text-body-sm leading-relaxed text-foreground">{form.bio || "Not added yet."}</p>
           </div>
         </SectionCard>
-        <SectionCard title="Who I’m looking for" editTo={vaelOutPath("who")} editLabel="Edit who I’m looking for">
-          <ReviewRow label="Discipline" value={form.disciplines[0] ?? ""} />
-          <ReviewRow label="Category" value={category} />
-          {form.skills.length > 0 ? (
-            <div className="mt-3">
-              <CardChips items={form.skills} />
-            </div>
-          ) : (
-            <ReviewRow label="Skills" value="" />
-          )}
+        <SectionCard title="Skills, tools & credentials" editTo={vaelOutPath("who")} editLabel="Edit skills, tools and credentials">
+          <ChipRow label="Required skills" items={form.skills} />
+          <ChipRow label="Preferred skills" items={preferredSkills} />
+          <ChipRow label="Tools, platforms & software" items={form.tools ?? []} />
+          <ChipRow label="Credentials" items={credentials} />
+          <ReviewRow label="Experience level" value={experienceBucket(form.experienceYears)} />
         </SectionCard>
-        <SectionCard title="Location" editTo={vaelOutPath("location")} editLabel="Edit location">
-          <ReviewRow label="Work preference" value={workLabel(form.workPreference)} />
+        <SectionCard title="When & where" editTo={vaelOutPath("location")} editLabel="Edit when and where">
+          <ReviewRow label="Engagement type" value={engagement} />
+          <ReviewRow label="Remote / onsite / hybrid" value={workLabel(form.workPreference)} />
           <ReviewRow label="Location" value={form.location} />
+          <ReviewRow label="Needed today" value={neededToday === null ? "" : neededToday ? "Yes" : "No"} />
+          <ReviewRow label="Start date" value={startDate} />
+          <ReviewRow label="Availability needed" value={timing} />
+          <ReviewRow label="Timeline" value={timeline} />
+          <ReviewRow label="Budget, rate or pay" value={budget} />
         </SectionCard>
-        <SectionCard title="Requirements" editTo={vaelOutPath("requirements")} editLabel="Edit requirements">
-          {requirements.length > 0 ? <CardChips items={requirements} /> : <p className="text-body-sm text-quiet">Not added yet.</p>}
-          {certs.length > 0 ? (
-            <div className="mt-3">
-              <p className="mb-2 text-body-sm text-muted">Certifications</p>
-              <CardChips items={certs} />
-            </div>
-          ) : null}
-        </SectionCard>
-        <SectionCard title="Timing / availability" editTo={vaelOutPath("timing")} editLabel="Edit timing">
-          <ReviewRow label="Timing" value={timing} />
-          <ReviewRow
-            label="Experience (years)"
-            value={form.experienceYears != null && form.experienceYears !== 0 ? String(form.experienceYears) : ""}
-          />
-        </SectionCard>
-        <SectionCard title="Additional details" editTo={vaelOutPath("details")} editLabel="Edit additional details">
-          {(form.tools ?? []).length > 0 ? (
-            <div className="mb-3">
-              <p className="mb-2 text-body-sm text-muted">Tools</p>
-              <CardChips items={form.tools} />
-            </div>
-          ) : null}
-          <ReviewRow label="Engagement" value={engagement} />
-          <ReviewRow label="Budget proxy" value={budgetProxy} />
-          {links.length > 0 ? (
-            <ul className="mt-3 space-y-1.5 text-body-sm">
-              {links.map((item) => (
-                <li key={item.url}>
-                  <span className="text-foreground">{item.label || item.url}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {documents.length > 0 ? (
-            <ul className="mt-3 space-y-3">
-              {documents.map((doc) => (
-                <li key={doc.id}>
-                  <DocumentCard title={doc.title} type={doc.type} status={doc.publicFlag ? "public" : "uploaded"} />
-                </li>
-              ))}
-            </ul>
-          ) : null}
+        <SectionCard title="Extras" editTo={vaelOutPath("extras")} editLabel="Edit extras">
+          <ReviewRow label="Team size" value={teamSize} />
+          <ChipRow label="Deliverables" items={deliverables} />
+          <ReviewRow label="Work samples wanted" value={samplesWanted} />
         </SectionCard>
       </div>
 
@@ -717,6 +702,16 @@ function Review({
         </Button>
       </JoinFooterBar>
     </>
+  );
+}
+
+function ChipRow({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return <ReviewRow label={label} value="" />;
+  return (
+    <div className="border-t border-border-subtle py-3 first:border-t-0 first:pt-0">
+      <p className="mb-2 text-body-sm text-muted">{label}</p>
+      <CardChips items={items} />
+    </div>
   );
 }
 

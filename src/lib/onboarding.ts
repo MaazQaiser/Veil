@@ -17,6 +17,7 @@ export const ONBOARDING_STEPS = [
   "Sign Up",
   "Intent",
   "Welcome",
+  "Profile Type",
   "Profile Setup",
   "Identity",
   "Credentials",
@@ -32,7 +33,7 @@ export type OnboardingIntent = "in" | "out" | "need" | "";
 export type OnboardingNeedPlace = "home" | "business" | "";
 
 /** VAEL OUT request steps. Separate from the VAEL IN wizard indexes. */
-export const VAEL_OUT_STEPS = ["need", "who", "location", "requirements", "timing", "details", "review"] as const;
+export const VAEL_OUT_STEPS = ["need", "who", "location", "extras", "review"] as const;
 
 export type VaelOutStep = (typeof VAEL_OUT_STEPS)[number];
 
@@ -40,6 +41,8 @@ export type OnboardingDraft = {
   handle: string;
   intent: OnboardingIntent;
   profileType: "individual" | "business" | "";
+  /** Choice made on the Select your profile type step. */
+  profileKind?: string;
   districtId: string;
   handleClaimed: boolean;
   completedStep: OnboardingStep;
@@ -90,12 +93,15 @@ export const ONBOARDING_PATH: Record<OnboardingStep | "Need", string> = {
   Intent: "/join/intent",
   Need: "/join/need",
   Welcome: "/join/welcome",
+  "Profile Type": "/join/profile-type",
   "Profile Setup": "/join/setup",
   Identity: "/join/identity",
   Credentials: "/join/credentials",
   Preview: "/join/preview",
   Done: "/join/done",
 };
+
+export const JOIN_CONFIRM_PHONE_PATH = "/join/confirm-phone";
 
 export const CONTRACTOR_HOME_PATH = "/need/home";
 export const CONTRACTOR_BUSINESS_PATH = "/districts/contractor/vael?side=out";
@@ -263,6 +269,8 @@ export function pathToOnboardingStep(pathname: string): OnboardingStep | "Need" 
   const normalized = pathname.replace(/\/$/, "") || "/";
   if (normalized === "/join") return "Sign Up";
   if (normalized === "/join/profile") return "Identity";
+  // The phone confirmation sits inside the Preview step.
+  if (normalized === JOIN_CONFIRM_PHONE_PATH) return "Preview";
   const found = (Object.entries(ONBOARDING_PATH) as Array<[OnboardingStep | "Need", string]>).find(
     ([, path]) => path === normalized,
   );

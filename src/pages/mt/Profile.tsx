@@ -1,3 +1,4 @@
+import { DashboardShell } from "@/components/mt/DashboardShell";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
@@ -245,7 +246,7 @@ export function ProfilePage() {
     .join(" · ");
 
   return (
-    <CityPage className="-mt-4 sm:-mt-6">
+    <DashboardShell>
       <BackToDashboard />
       <div className="mt-4 overflow-hidden rounded-xl border border-border shadow-[0_1px_2px_rgba(11,12,12,0.04),0_18px_36px_-10px_rgba(11,12,12,0.12)] md:rounded-2xl">
         <div className="relative isolate h-28 overflow-hidden bg-surface-muted md:h-36">
@@ -545,7 +546,7 @@ export function ProfilePage() {
         </TabsContent>
       </Tabs>
       )}
-    </CityPage>
+    </DashboardShell>
   );
 }
 
@@ -713,7 +714,7 @@ export function ProfileEditPage() {
   }
 
   return (
-    <CityPage className="-mt-4 sm:-mt-6">
+    <DashboardShell>
       <BackToDashboard />
       <div className="mt-4 min-w-0">
         <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
@@ -1056,7 +1057,7 @@ export function ProfileEditPage() {
         </TabsContent>
       </Tabs>
       </form>
-    </CityPage>
+    </DashboardShell>
   );
 }
 

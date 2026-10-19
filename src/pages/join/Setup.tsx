@@ -77,7 +77,8 @@ export function JoinSetupPage() {
   const [handleValue, setHandleValue] = useState(session.handle);
   const [handleError, setHandleError] = useState("");
   const [available, setAvailable] = useState<boolean | null>(null);
-  const [profileType, setProfileType] = useState<"individual" | "business" | "">("");
+  const [profileType, setProfileType] = useState<"individual" | "business" | "">(draft?.profileType ?? "");
+  const chosenInProfileTypeStep = Boolean(draft?.profileKind);
   const [query, setQuery] = useState("");
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
 
@@ -136,7 +137,7 @@ export function JoinSetupPage() {
     if (handle !== session.handle) signIn(handle);
 
     const profile = vael.ensureMine();
-    if (profile) vael.writeProfile({ ...profile, profileType });
+    if (profile) vael.writeProfile({ ...profile, profileType: draft?.profileKind === "studio" ? "studio" : profileType });
 
     // Only one district drives the immediate profile/board flow today, so the
     // first pick leads — the rest stay selected for when multi-district
@@ -189,6 +190,7 @@ export function JoinSetupPage() {
           ) : null}
         </JoinFieldCard>
 
+        {chosenInProfileTypeStep ? null : (
         <JoinFieldCard icon={<IconUser />} title="How will you use VAEL?" badge="Required">
           <div className="grid gap-3 sm:grid-cols-2">
             {TYPES.map((item) => (
@@ -208,6 +210,7 @@ export function JoinSetupPage() {
             ))}
           </div>
         </JoinFieldCard>
+        )}
 
         <JoinFieldCard
           icon={<IconHome />}

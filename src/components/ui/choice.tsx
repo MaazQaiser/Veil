@@ -1,5 +1,6 @@
 import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { IconCheck } from "./icons";
 
 type BoxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   label: ReactNode;
@@ -11,19 +12,19 @@ export const Checkbox = forwardRef<HTMLInputElement, BoxProps>(function Checkbox
 ) {
   const inputId = id ?? (typeof label === "string" ? label.replace(/\s+/g, "-").toLowerCase() : undefined);
   return (
-    <label htmlFor={inputId} className="inline-flex items-start gap-2 text-body-sm text-foreground">
-      <input
-        ref={ref}
-        id={inputId}
-        type="checkbox"
+    <label htmlFor={inputId} className="inline-flex cursor-pointer items-start gap-3 text-body-sm text-foreground">
+      <input ref={ref} id={inputId} type="checkbox" className={cn("peer sr-only", className)} {...props} />
+      <span
+        aria-hidden
         className={cn(
-          "mt-0.5 h-4 w-4 rounded-sm border-border text-primary accent-primary",
-          "focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(17,17,17,0.06)]",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          className,
+          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border border-foreground/40 bg-transparent text-transparent",
+          "motion-safe:transition-colors motion-safe:duration-150",
+          "peer-checked:border-accent peer-checked:bg-accent peer-checked:text-[#1A1410]",
+          "peer-focus-visible:shadow-[0_0_0_3px_rgba(222,124,64,0.35)] peer-disabled:opacity-50",
         )}
-        {...props}
-      />
+      >
+        <IconCheck className="h-3.5 w-3.5" />
+      </span>
       <span>{label}</span>
     </label>
   );
