@@ -32,7 +32,7 @@ function CompanyCard({ company }: { company: CompanyAd }) {
     <Link
       to={`/explore?district=${encodeURIComponent(company.district)}`}
       className={cn(
-        "group flex w-64 shrink-0 flex-col overflow-hidden rounded-md motion-safe:transition-transform motion-safe:duration-300 hover:-translate-y-1 md:w-72",
+        "group flex w-64 shrink-0 flex-col overflow-hidden rounded-[32px] motion-safe:transition-transform motion-safe:duration-300 hover:-translate-y-1 md:w-72",
         isFeatured
           ? "bg-[#DE7C40] text-[#0B0C0C]"
           : "border border-[#DE7C40]/50 bg-[#141414]/90 text-white",
@@ -46,7 +46,7 @@ function CompanyCard({ company }: { company: CompanyAd }) {
         />
         <span
           className={cn(
-            "absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-md text-caption font-semibold",
+            "absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-full text-caption font-semibold",
             isFeatured ? "bg-[#0B0C0C] text-[#DE7C40]" : "bg-[#1A1A1C] text-white ring-1 ring-[#DE7C40]/40",
           )}
         >
