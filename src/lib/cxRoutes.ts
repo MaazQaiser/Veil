@@ -73,5 +73,5 @@ export function opportunityStart(intent: "create" | "avail") {
 
 /** Where each dashboard keeps its opportunities. Out posts them, In responds to them. */
 export function opportunitiesHomeFor(side: "in" | "out") {
-  return side === "out" ? PROJECTS_PATH : CONTRACTOR_OPPS_PATH;
+  return side === "out" ? `${OPPORTUNITY_PATH}?tab=mine` : `${OPPORTUNITY_PATH}?tab=browse`;
 }

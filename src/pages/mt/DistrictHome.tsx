@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { buttonClassName, Button } from "@/components/ui/button";
+import { opportunitiesHomeFor } from "@/lib/cxRoutes";
 import { Dialog } from "@/components/ui/overlays";
 import { IconCheck, IconHandshake, IconMapPin, IconUser } from "@/components/ui/icons";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
@@ -191,6 +192,10 @@ export function DistrictHomePage() {
                   <span className="normal-case tracking-normal">Go visible</span>
                 </Link>
               )}
+              <Link to={opportunitiesHomeFor(side)} className={buttonClassName({ variant: "outline" })}>
+                Opportunity
+                <span aria-hidden>→</span>
+              </Link>
               {vaelOutHome ? (
                 <Link to={inHref} className={availabilityButtonClass}>
                   Vael In

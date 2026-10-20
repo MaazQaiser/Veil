@@ -41,7 +41,7 @@ function daysLeft(item: CxProject) {
   return Math.max(0, Math.ceil((Date.parse(item.liveUntil) - Date.now()) / 86400000));
 }
 
-function opportunityStatus(item: CxProject): OpportunityStatus {
+export function opportunityStatus(item: CxProject): OpportunityStatus {
   if (item.status === "draft") return "draft";
   if (item.status === "live") return item.day5Reminded ? "closing" : "published";
   return "closed";
@@ -139,7 +139,7 @@ export function ProjectsListPage() {
   );
 }
 
-function OpportunityCard({ item }: { item: CxProject }) {
+export function OpportunityCard({ item }: { item: CxProject }) {
   const status = opportunityStatus(item);
   const left = daysLeft(item);
   const location = [item.city, item.postalCode].filter(Boolean).join(", ");

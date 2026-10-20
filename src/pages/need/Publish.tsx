@@ -19,12 +19,12 @@ import {
 } from "@/lib/cxProjectStore";
 import {
   NEED_BUDGET_PATH,
+  OPPORTUNITY_PATH,
   NEED_HOME_PATH,
   NEED_LOCATION_PATH,
   NEED_REVIEW_PATH,
   NEED_TIMING_PATH,
   NEED_VERIFY_PATH,
-  publishedProjectHref,
 } from "@/lib/cxRoutes";
 import { readNeedWork } from "@/lib/needWork";
 import { patchOnboarding } from "@/lib/onboarding";
@@ -120,7 +120,7 @@ export function NeedPublishPage() {
   function publish() {
     try {
       const projectId = publishResidentialOpportunity(session.handle);
-      navigate(publishedProjectHref(projectId));
+      navigate(`${OPPORTUNITY_PATH}?tab=mine&published=${projectId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not publish this opportunity.");
     }
