@@ -4,13 +4,26 @@ import { IconClose } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { primaryDistricts, districts } from "@/lib/districts";
 import { communityHref } from "@/lib/communityStore";
+import { useCitySession } from "@/lib/citySession";
+import { routeForGoVisibleEntry, type GoVisibleEntry } from "@/lib/goVisible";
+import { JOIN_ROUTE } from "@/components/city/CityShell";
 import { marketplaceHref, vaelRouteForDistrict, type MarketplaceDistrictId } from "@/lib/marketplace";
 
 type Chip = { id: string; label: string };
 
 type Step =
   | { kind: "question"; question: string; chips: Chip[] }
-  | { kind: "result"; title: string; description: string; ctaLabel: string; href: string };
+  | { kind: "result"; title: string; description: string; ctaLabel: string; href: string; entry?: GoVisibleEntry };
+
+/** Intents from the home page "Go Visible" list. Each lands in the same flow as there. */
+const INTENT_OPTIONS: Array<{ id: string; label: string; entry: GoVisibleEntry; description: string; ctaLabel: string }> = [
+  { id: "networking", label: "I am open to networking", entry: "in", description: "Show you're open to connecting and let people reach you.", ctaLabel: "Get started →" },
+  { id: "equipment-have", label: "I have equipment available", entry: "in", description: "List your equipment so people who need it can find you.", ctaLabel: "Get started →" },
+  { id: "equipment-need", label: "I need equipment", entry: "out", description: "Tell us what you need and we'll look for matches.", ctaLabel: "Get started →" },
+  { id: "freight-seek", label: "I am seeking freight or transportation", entry: "out", description: "Post what needs moving and see who can take it.", ctaLabel: "Get started →" },
+  { id: "freight-offer", label: "I am available to transport", entry: "in", description: "Show your availability to haul and get matched with loads.", ctaLabel: "Get started →" },
+  { id: "funding", label: "I am looking for funding", entry: "out", description: "Share what you're raising for and find people who can help.", ctaLabel: "Get started →" },
+];
 
 const ROOT_CHIPS: Chip[] = [
   { id: "find-people", label: "Find people" },
@@ -18,6 +31,7 @@ const ROOT_CHIPS: Chip[] = [
   { id: "show-availability", label: "Show my availability" },
   { id: "explore-district", label: "Explore a district" },
   { id: "connect-people", label: "Connect with people" },
+  ...INTENT_OPTIONS.map(({ id, label }) => ({ id: `intent-${id}`, label })),
 ];
 
 const FIND_PEOPLE_CHIPS: Chip[] = [
@@ -47,6 +61,18 @@ function getStep(path: string[]): Step {
 
   if (!root) {
     return { kind: "question", question: "What are you here to do?", chips: ROOT_CHIPS };
+  }
+
+  const intent = INTENT_OPTIONS.find((option) => `intent-${option.id}` === root);
+  if (intent) {
+    return {
+      kind: "result",
+      title: "Let's get you set up.",
+      description: intent.description,
+      ctaLabel: intent.ctaLabel,
+      href: "",
+      entry: intent.entry,
+    };
   }
 
   if (root === "find-people") {
@@ -228,7 +254,13 @@ export function FindYourWay() {
   const timer = useRef<number | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
 
+  const { session } = useCitySession();
   const step = getStep(path);
+
+  function hrefFor(result: { href: string; entry?: GoVisibleEntry }) {
+    if (!result.entry) return result.href;
+    return session.signedIn ? routeForGoVisibleEntry(session.handle, result.entry) : `${JOIN_ROUTE}?entry=${result.entry}`;
+  }
 
   function pause(ms = 650) {
     setTyping(true);
@@ -418,7 +450,7 @@ export function FindYourWay() {
                           <span className="block font-medium text-white">{here.title}</span>
                           <span className="mt-1 block text-white/70">{here.description}</span>
                           <Link
-                            to={here.href}
+                            to={hrefFor(here)}
                             onClick={closePanel}
                             className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#DE7C40] px-4 py-2.5 font-sans text-caption font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#E89E6E]"
                           >
