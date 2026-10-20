@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { IconClose } from "@/components/ui/icons";
-import { cn } from "@/lib/cn";
 import { primaryDistricts, districts } from "@/lib/districts";
 import { communityHref } from "@/lib/communityStore";
 import { useCitySession } from "@/lib/citySession";
@@ -13,7 +12,7 @@ type Chip = { id: string; label: string };
 
 type Step =
   | { kind: "question"; question: string; chips: Chip[] }
-  | { kind: "result"; title: string; description: string; ctaLabel: string; href: string; entry?: GoVisibleEntry };
+  | { kind: "result"; title: string; description: string; ctaLabel: string; href: string; entry?: GoVisibleEntry; secondary?: { label: string; href: string } };
 
 /** Intents from the home page "Go Visible" list. Each lands in the same flow as there. */
 const INTENT_OPTIONS: Array<{ id: string; label: string; entry: GoVisibleEntry; description: string; ctaLabel: string }> = [
@@ -26,7 +25,7 @@ const INTENT_OPTIONS: Array<{ id: string; label: string; entry: GoVisibleEntry; 
 ];
 
 const ROOT_CHIPS: Chip[] = [
-  { id: "find-people", label: "Find people" },
+  { id: "find-people", label: "Find talent" },
   { id: "find-opportunities", label: "Find opportunities" },
   { id: "show-availability", label: "Show my availability" },
   { id: "explore-district", label: "Explore a district" },
@@ -50,6 +49,10 @@ const FIND_OPPORTUNITIES_CHIPS: Chip[] = [
 
 const DISTRICT_CHIPS: Chip[] = primaryDistricts.map((district) => ({ id: district.id, label: district.name }));
 const DISTRICT_CHIPS_WITH_ANY: Chip[] = [{ id: "any", label: "Any district" }, ...DISTRICT_CHIPS];
+
+function districtRoute(id: string) {
+  return districts.find((district) => district.id === id)?.route ?? "/districts";
+}
 
 function districtName(id: string) {
   return primaryDistricts.find((district) => district.id === id)?.name ?? id;
@@ -81,9 +84,10 @@ function getStep(path: string[]): Step {
     return {
       kind: "result",
       title: "You're ready to explore.",
-      description: `Start with Matches in ${districtName(third)}.`,
-      ctaLabel: "View Matches →",
+      description: `Search talent in ${districtName(third)}, or head straight to the district.`,
+      ctaLabel: "Continue to search →",
       href: marketplaceHref(third as MarketplaceDistrictId),
+      secondary: { label: `Go to ${districtName(third)}`, href: districtRoute(third) },
     };
   }
 
@@ -123,7 +127,7 @@ function getStep(path: string[]): Step {
 
   if (root === "explore-district") {
     if (!second) return { kind: "question", question: "Which district?", chips: DISTRICT_CHIPS };
-    const route = districts.find((district) => district.id === second)?.route ?? "/districts";
+    const route = districtRoute(second);
     return {
       kind: "result",
       title: "Take a look around.",
@@ -142,30 +146,6 @@ function getStep(path: string[]): Step {
     ctaLabel: "View Matches →",
     href: marketplaceHref(second as MarketplaceDistrictId),
   };
-}
-
-const ROOT_KEYWORDS: Array<[string, string[]]> = [
-  ["find-people", ["people", "person", "hire", "hiring", "talent", "team", "freelanc", "someone"]],
-  ["find-opportunities", ["opportunit", "job", "work", "project", "gig"]],
-  ["show-availability", ["availab", "visible", "show", "offer"]],
-  ["explore-district", ["district", "explore", "browse"]],
-  ["connect-people", ["connect", "handshake", "network", "meet"]],
-];
-
-/** Matches typed text to one of the current choices. No model: just labels and a few keywords. */
-function matchChip(text: string, chips: Chip[], atRoot: boolean): string | null {
-  const value = text.trim().toLowerCase();
-  if (!value) return null;
-  const byLabel = chips.find((chip) => {
-    const label = chip.label.toLowerCase();
-    return label.includes(value) || value.includes(label);
-  });
-  if (byLabel) return byLabel.id;
-  if (atRoot) {
-    const hit = ROOT_KEYWORDS.find(([, words]) => words.some((word) => value.includes(word)));
-    if (hit) return hit[0];
-  }
-  return null;
 }
 
 function chipLabel(path: string[], index: number): string {
@@ -209,51 +189,27 @@ function ChatIcon({ className }: { className?: string }) {
   );
 }
 
-function Bubble({ from, children }: { from: "bot" | "user"; children: React.ReactNode }) {
+
+function ChoiceRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <div className={cn("flex motion-safe:animate-[fyw-in_0.25s_ease-out]", from === "user" ? "justify-end" : "justify-start")}>
-      <div
-        className={cn(
-          "max-w-[85%] px-3.5 py-2.5 font-sans text-body-sm leading-snug",
-          from === "user"
-            ? "rounded-2xl rounded-br-md bg-[#EE8A4A] text-[#1A1410]"
-            : "rounded-2xl rounded-bl-md bg-white/[0.07] text-white/90",
-        )}
-      >
-        {children}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left font-sans text-body-sm font-medium text-white/90 motion-safe:transition-colors hover:border-[#EE8A4A]/60 hover:bg-[#EE8A4A]/10 hover:text-white"
+    >
+      {label}
+      <span aria-hidden className="text-white/35 motion-safe:transition-transform group-hover:translate-x-0.5 group-hover:text-[#EE8A4A]">
+        →
+      </span>
+    </button>
   );
 }
 
-function TypingBubble() {
-  return (
-    <div className="flex justify-start" aria-label="Typing">
-      <div className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white/[0.07] px-4 py-3.5">
-        {[0, 1, 2].map((index) => (
-          <span
-            key={index}
-            className="h-1.5 w-1.5 rounded-full bg-white/60 motion-safe:animate-bounce"
-            style={{ animationDelay: `${index * 140}ms` }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
+/** A guided picker, not a chat: one question at a time, tap an option to move on. */
 export function FindYourWay() {
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState<string[]>([]);
-  const [typing, setTyping] = useState(false);
-  const [notes, setNotes] = useState<Array<{ user: string; bot: string }>>([]);
-  const [draft, setDraft] = useState("");
-  const [greeted, setGreeted] = useState(false);
   const [teaser, setTeaser] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const timer = useRef<number | null>(null);
-  const endRef = useRef<HTMLDivElement | null>(null);
-
   const { session } = useCitySession();
   const step = getStep(path);
 
@@ -262,28 +218,14 @@ export function FindYourWay() {
     return session.signedIn ? routeForGoVisibleEntry(session.handle, result.entry) : `${JOIN_ROUTE}?entry=${result.entry}`;
   }
 
-  function pause(ms = 650) {
-    setTyping(true);
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setTyping(false), ms);
-  }
-
-  useEffect(() => () => {
-    if (timer.current) window.clearTimeout(timer.current);
-  }, []);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [path, typing, notes, greeted, open]);
-
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") closePanel();
+      if (event.key === "Escape") setOpen(false);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, [open]);
 
   // A small hello appears once per visit, a few seconds after the page loads.
   useEffect(() => {
@@ -307,60 +249,9 @@ export function FindYourWay() {
     }
   }
 
-  useEffect(() => {
-    if (open && greeted && !typing) inputRef.current?.focus();
-  }, [open, greeted, typing]);
-
   function openPanel() {
     dismissTeaser();
     setOpen(true);
-    if (!greeted) {
-      setGreeted(true);
-      pause(800);
-    }
-  }
-
-  function choose(chipId: string) {
-    if (typing) return;
-    setNotes([]);
-    setPath((current) => [...current, chipId]);
-    pause();
-  }
-
-  function goBack() {
-    if (timer.current) window.clearTimeout(timer.current);
-    setTyping(false);
-    setNotes([]);
-    setPath((current) => current.slice(0, -1));
-  }
-
-  function reset() {
-    if (timer.current) window.clearTimeout(timer.current);
-    setTyping(false);
-    setNotes([]);
-    setPath([]);
-    pause(450);
-  }
-
-  function closePanel() {
-    setOpen(false);
-  }
-
-  function onSend(event: FormEvent) {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text || typing) return;
-    setDraft("");
-    if (step.kind !== "question") {
-      setNotes((current) => [...current, { user: text, bot: "Tap the button above to continue, or start over." }]);
-      return;
-    }
-    const hit = matchChip(text, step.chips, path.length === 0);
-    if (hit) {
-      choose(hit);
-      return;
-    }
-    setNotes((current) => [...current, { user: text, bot: "I can only help with the choices below. Tap one to go on." }]);
   }
 
   return (
@@ -390,7 +281,7 @@ export function FindYourWay() {
             className="group relative block h-[4.5rem] w-[4.25rem] motion-safe:animate-[fyw-float_3.2s_ease-in-out_infinite] focus-visible:outline-none"
           >
             <span aria-hidden className="absolute inset-x-2 top-1 h-10 rounded-full bg-[#EE8A4A]/30 motion-safe:animate-ping" />
-            <ChatIcon className="relative h-full w-full drop-shadow-[0_10px_16px_rgba(222,124,64,0.35)] motion-safe:transition-transform motion-safe:duration-200 group-hover:-translate-y-1 group-hover:scale-105 group-active:scale-95" />
+            <ChatIcon className="relative h-full w-full drop-shadow-[0_10px_16px_rgba(238,138,74,0.35)] motion-safe:transition-transform motion-safe:duration-200 group-hover:-translate-y-1 group-hover:scale-105 group-active:scale-95" />
             {teaser ? (
               <span aria-hidden className="absolute -right-0.5 top-0 h-3.5 w-3.5 rounded-full border-2 border-[#0B0C0C] bg-[#4ADE80]" />
             ) : null}
@@ -400,125 +291,74 @@ export function FindYourWay() {
         <div
           role="dialog"
           aria-label="Find your way"
-          className="flex h-[34rem] max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-[27rem] origin-bottom-right flex-col overflow-hidden rounded-2xl motion-safe:animate-[fyw-pop_0.2s_ease-out] border border-white/10 bg-[#121212] shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
+          className="flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-[27rem] origin-bottom-right flex-col overflow-hidden rounded-2xl motion-safe:animate-[fyw-pop_0.2s_ease-out] border border-white/10 bg-[#121212] shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
         >
-          <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
+          <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
             <ChatIcon className="h-9 w-8 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="font-sans text-body-sm font-medium text-white">Find your way</p>
-              <p className="flex items-center gap-1.5 font-sans text-caption text-white/50">
-                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[#4ADE80]" />
-                Here to help
-              </p>
-            </div>
-            {path.length > 0 ? (
-              <>
-                <button type="button" onClick={goBack} className="text-caption font-medium text-white/55 hover:text-white">
-                  ← Back
-                </button>
-                <button type="button" onClick={reset} className="text-caption font-medium text-white/55 hover:text-white">
-                  Restart
-                </button>
-              </>
-            ) : null}
-            <button type="button" onClick={closePanel} aria-label="Close chat" className="text-white/45 hover:text-white">
+            <p className="min-w-0 flex-1 font-sans text-body font-medium text-white">Find your way</p>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="text-white/45 hover:text-white">
               <IconClose className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-            <Bubble from="bot">
-              Hey! Find your way. Answer a few quick questions and we'll point you to the right place in VAEL.
-            </Bubble>
-            {!greeted || (typing && path.length === 0) ? <TypingBubble /> : null}
-
-            {(!typing || path.length > 0) && greeted
-              ? Array.from({ length: path.length + 1 }).map((_, index) => {
-                  const here = getStep(path.slice(0, index));
-                  const answered = index < path.length;
-                  const isLast = index === path.length;
-                  if (isLast && typing) return null;
-                  return (
-                    <div key={index} className="space-y-3">
-                      {here.kind === "question" ? (
-                        <Bubble from="bot">
-                          {index > 0 ? "Got it. " : ""}
-                          {here.question}
-                        </Bubble>
-                      ) : (
-                        <Bubble from="bot">
-                          <span className="block font-medium text-white">{here.title}</span>
-                          <span className="mt-1 block text-white/70">{here.description}</span>
-                          <Link
-                            to={hrefFor(here)}
-                            onClick={closePanel}
-                            className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#EE8A4A] px-4 py-2.5 font-sans text-caption font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#F4A56C]"
-                          >
-                            {here.ctaLabel.replace(/\s*→\s*$/, "")}
-                            <span aria-hidden>→</span>
-                          </Link>
-                        </Bubble>
-                      )}
-                      {answered ? <Bubble from="user">{chipLabel(path, index)}</Bubble> : null}
-                    </div>
-                  );
-                })
-              : null}
-
-            {typing && path.length > 0 ? <TypingBubble /> : null}
-
-            {notes.map((note, index) => (
-              <div key={index} className="space-y-3">
-                <Bubble from="user">{note.user}</Bubble>
-                <Bubble from="bot">{note.bot}</Bubble>
+          <div className="flex-1 overflow-y-auto px-5 py-5">
+            {path.length > 0 ? (
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPath((current) => current.slice(0, -1))}
+                  className="text-caption font-medium text-white/55 hover:text-white"
+                >
+                  ← Back
+                </button>
+                <button type="button" onClick={() => setPath([])} className="text-caption font-medium text-white/55 hover:text-white">
+                  Start over
+                </button>
               </div>
-            ))}
+            ) : null}
 
-            {!typing && greeted ? (
-              step.kind === "question" ? (
-                <div className="flex flex-wrap gap-1.5 pt-1">
+            {path.length > 0 ? (
+              <p className="mb-2 font-sans text-caption text-white/45">
+                {path.map((_, index) => chipLabel(path, index)).join("  ›  ")}
+              </p>
+            ) : null}
+
+            {step.kind === "question" ? (
+              <>
+                <h2 className="font-sans text-h4 font-medium text-white">{step.question}</h2>
+                <div className="mt-4 space-y-2">
                   {step.chips.map((chip) => (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      onClick={() => choose(chip.id)}
-                      className="rounded-full border border-[#EE8A4A]/60 px-3 py-1.5 font-sans text-caption font-medium text-[#F2BA8B] motion-safe:transition-colors hover:bg-[#EE8A4A]/15 hover:text-white"
-                    >
-                      {chip.label}
-                    </button>
+                    <ChoiceRow key={chip.id} label={chip.label} onClick={() => setPath((current) => [...current, chip.id])} />
                   ))}
                 </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <button type="button" onClick={reset} className="rounded-full border border-white/15 px-3.5 py-1.5 font-sans text-caption font-medium text-white/70 hover:border-[#EE8A4A]/60 hover:text-white">
-                    Start over
-                  </button>
+              </>
+            ) : (
+              <>
+                <h2 className="font-sans text-h4 font-medium text-white">{step.title}</h2>
+                <p className="mt-1.5 text-body-sm text-white/65">{step.description}</p>
+                <div className="mt-5 space-y-2">
+                  <Link
+                    to={hrefFor(step)}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center justify-between gap-3 rounded-full bg-[#EE8A4A] px-5 py-3 font-sans text-body-sm font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#F4A56C]"
+                  >
+                    {step.ctaLabel.replace(/\s*→\s*$/, "")}
+                    <span aria-hidden>→</span>
+                  </Link>
+                  {step.secondary ? (
+                    <Link
+                      to={step.secondary.href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center justify-between gap-3 rounded-full border border-white/15 px-5 py-3 font-sans text-body-sm font-medium text-white/85 motion-safe:transition-colors hover:border-[#EE8A4A]/60 hover:text-white"
+                    >
+                      {step.secondary.label}
+                      <span aria-hidden>→</span>
+                    </Link>
+                  ) : null}
                 </div>
-              )
-            ) : null}
-            <div ref={endRef} />
+              </>
+            )}
           </div>
-
-          <form onSubmit={onSend} className="flex items-center gap-2 border-t border-white/10 p-3">
-            <input
-              ref={inputRef}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Type a message…"
-              aria-label="Type a message"
-              className="h-10 min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.05] px-4 font-sans text-body-sm text-white placeholder:text-white/40 focus:border-[#EE8A4A]/60 focus:outline-none"
-            />
-            <button
-              type="submit"
-              aria-label="Send"
-              disabled={!draft.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EE8A4A] text-[#1A1410] motion-safe:transition-opacity disabled:opacity-40"
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </button>
-          </form>
         </div>
       )}
     </div>
