@@ -400,7 +400,7 @@ export function FindYourWay() {
         <div
           role="dialog"
           aria-label="Find your way"
-          className="flex h-[34rem] max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-[22rem] origin-bottom-right flex-col overflow-hidden rounded-2xl motion-safe:animate-[fyw-pop_0.2s_ease-out] border border-white/10 bg-[#121212] shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
+          className="flex h-[34rem] max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-[27rem] origin-bottom-right flex-col overflow-hidden rounded-2xl motion-safe:animate-[fyw-pop_0.2s_ease-out] border border-white/10 bg-[#121212] shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
         >
           <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
             <ChatIcon className="h-9 w-8 shrink-0" />
@@ -476,13 +476,13 @@ export function FindYourWay() {
 
             {!typing && greeted ? (
               step.kind === "question" ? (
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-wrap gap-1.5 pt-1">
                   {step.chips.map((chip) => (
                     <button
                       key={chip.id}
                       type="button"
                       onClick={() => choose(chip.id)}
-                      className="rounded-full border border-[#DE7C40]/60 px-3.5 py-1.5 font-sans text-caption font-medium text-[#F2BA8B] motion-safe:transition-colors hover:bg-[#DE7C40]/15 hover:text-white"
+                      className="rounded-full border border-[#DE7C40]/60 px-3 py-1.5 font-sans text-caption font-medium text-[#F2BA8B] motion-safe:transition-colors hover:bg-[#DE7C40]/15 hover:text-white"
                     >
                       {chip.label}
                     </button>
