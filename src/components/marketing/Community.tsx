@@ -65,7 +65,7 @@ export function Community() {
       <div className="site-container relative z-[2]">
         <Reveal className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
+            <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
               How VAEL Connects
             </span>
             <h2 className="mt-5 font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-white">
@@ -83,8 +83,8 @@ export function Community() {
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEED.map((item, index) => (
             <Reveal key={`${item.bold}-${item.italic}`} delay={(index % 3) * 100}>
-              <div className="group rounded-md border border-[#DE7C40]/50 bg-[#141414]/90 p-7 motion-safe:transition-colors motion-safe:duration-300 hover:bg-[#DE7C40]/[0.08]">
-                <span className="flex h-11 w-11 items-center justify-center rounded-md bg-[#DE7C40]/15 text-[#DE7C40]">
+              <div className="group rounded-md border border-[#EE8A4A]/50 bg-[#141414]/90 p-7 motion-safe:transition-colors motion-safe:duration-300 hover:bg-[#EE8A4A]/[0.08]">
+                <span className="flex h-11 w-11 items-center justify-center rounded-md bg-[#EE8A4A]/15 text-[#EE8A4A]">
                   <item.icon className="h-5 w-5" />
                 </span>
                 <h3 className="mt-6 font-sans text-[1.25rem] font-medium tracking-tight text-white">
@@ -99,7 +99,7 @@ export function Community() {
         <Reveal delay={200}>
           <Link
             to="/feed"
-            className="mt-12 inline-flex h-12 items-center justify-center rounded-md bg-[#DE7C40] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#E89E6E]"
+            className="mt-12 inline-flex h-12 items-center justify-center rounded-md bg-[#EE8A4A] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#F4A56C]"
           >
             Enter Community →
           </Link>

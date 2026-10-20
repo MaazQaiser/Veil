@@ -147,16 +147,16 @@ function EntryCard({
       className={cn(
         "group flex h-full w-full flex-col items-start rounded-lg border bg-transparent px-6 py-6 text-left",
         "motion-safe:transition-all motion-safe:duration-200",
-        "hover:-translate-y-1 hover:border-[#DE7C40] hover:bg-[#DE7C40]/[0.08] hover:shadow-[0_16px_40px_rgba(222,124,64,0.12)]",
-        selected ? "border-[#DE7C40] bg-[#DE7C40]/[0.08]" : "border-white/20",
+        "hover:-translate-y-1 hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.08] hover:shadow-[0_16px_40px_rgba(222,124,64,0.12)]",
+        selected ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08]" : "border-white/20",
       )}
     >
       <span
         className={cn(
           "flex h-11 w-11 items-center justify-center rounded-full border text-[#F2BA8B]",
           "motion-safe:transition-colors motion-safe:duration-200",
-          "group-hover:border-[#DE7C40] group-hover:bg-[#DE7C40]/15 group-hover:text-[#DE7C40]",
-          selected ? "border-[#DE7C40] bg-[#DE7C40]/15 text-[#DE7C40]" : "border-white/20",
+          "group-hover:border-[#EE8A4A] group-hover:bg-[#EE8A4A]/15 group-hover:text-[#EE8A4A]",
+          selected ? "border-[#EE8A4A] bg-[#EE8A4A]/15 text-[#EE8A4A]" : "border-white/20",
         )}
       >
         <Icon className="h-5 w-5" />
@@ -224,7 +224,7 @@ function GoVisibleChoose() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]"
+        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#EE8A4A]/20 blur-[130px]"
       />
       <div className="site-container relative pb-16 pt-12 md:pt-20">
         <header className="mx-auto flex max-w-3xl flex-col items-center text-center">
@@ -248,10 +248,10 @@ function GoVisibleChoose() {
                 className={cn(
                   "group flex h-full w-full flex-col items-start rounded-xl border border-white/15 bg-surface p-6 text-left",
                   "motion-safe:transition-all motion-safe:duration-200",
-                  "hover:-translate-y-0.5 hover:border-[#DE7C40] hover:bg-[#DE7C40]/[0.06]",
+                  "hover:-translate-y-0.5 hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.06]",
                 )}
               >
-                <choice.icon className="h-6 w-6 text-[#DE7C40]" />
+                <choice.icon className="h-6 w-6 text-[#EE8A4A]" />
                 <h2 className="mt-6 text-h4 font-medium text-foreground">{choice.name}</h2>
                 <p className="mt-1 text-body-sm font-medium text-foreground">{choice.line}</p>
                 <p className="mt-2 text-body-sm leading-relaxed text-muted">{choice.body}</p>
@@ -339,11 +339,11 @@ function GoVisibleSteps() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]"
+        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#EE8A4A]/20 blur-[130px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#DE7C40]/10 blur-[120px]"
+        className="pointer-events-none absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#EE8A4A]/10 blur-[120px]"
       />
       <div className="site-container relative pt-10 md:pt-14">
         <header className="mx-auto flex max-w-3xl flex-col items-center text-center">
@@ -371,7 +371,7 @@ function GoVisibleSteps() {
                     className={cn(
                       "rounded-full border px-4 py-1.5",
                       index === current
-                        ? "border-[#DE7C40] text-[#DE7C40]"
+                        ? "border-[#EE8A4A] text-[#EE8A4A]"
                         : index < current
                           ? "border-white/15 text-foreground"
                           : "border-white/10 text-muted",
@@ -436,8 +436,8 @@ function GoVisibleSteps() {
                   <label
                     className={cn(
                       "flex h-full cursor-pointer items-center gap-4 rounded-xl border bg-surface px-5 py-5",
-                      "motion-safe:transition-colors motion-safe:duration-150 hover:border-[#DE7C40]",
-                      checked ? "border-[#DE7C40] bg-[#DE7C40]/[0.08]" : "border-white/20",
+                      "motion-safe:transition-colors motion-safe:duration-150 hover:border-[#EE8A4A]",
+                      checked ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08]" : "border-white/20",
                     )}
                   >
                     <input
@@ -455,7 +455,7 @@ function GoVisibleSteps() {
                       className={cn(
                         "flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] border",
                         "peer-focus-visible:shadow-[0_0_0_3px_rgba(222,124,64,0.35)]",
-                        checked ? "border-[#DE7C40] bg-[#DE7C40] text-[#1A1410]" : "border-white/25 text-transparent",
+                        checked ? "border-[#EE8A4A] bg-[#EE8A4A] text-[#1A1410]" : "border-white/25 text-transparent",
                       )}
                     >
                       <IconCheck className="h-3.5 w-3.5" />
@@ -503,15 +503,15 @@ function GoVisibleSteps() {
                     aria-pressed={selected}
                     className={cn(
                       "flex h-full w-full items-center gap-4 rounded-xl border bg-surface px-5 py-5 text-left text-body font-medium text-foreground",
-                      "motion-safe:transition-colors motion-safe:duration-150 hover:border-[#DE7C40] hover:bg-[#DE7C40]/[0.08]",
-                      selected ? "border-[#DE7C40] bg-[#DE7C40]/[0.08]" : "border-white/20",
+                      "motion-safe:transition-colors motion-safe:duration-150 hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.08]",
+                      selected ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08]" : "border-white/20",
                     )}
                   >
                     <span
                       aria-hidden
                       className={cn(
                         "flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] border",
-                        selected ? "border-[#DE7C40] bg-[#DE7C40] text-[#1A1410]" : "border-white/25 text-transparent",
+                        selected ? "border-[#EE8A4A] bg-[#EE8A4A] text-[#1A1410]" : "border-white/25 text-transparent",
                       )}
                     >
                       <IconCheck className="h-3.5 w-3.5" />

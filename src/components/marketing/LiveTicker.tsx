@@ -16,7 +16,7 @@ function TickerRow() {
     <>
       {ITEMS.map((item, index) => (
         <span key={`${item}-${index}`} className="flex shrink-0 items-center gap-6">
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#DE7C40]" aria-hidden />
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#EE8A4A]" aria-hidden />
           <span className="whitespace-nowrap font-sans text-caption font-medium uppercase tracking-[0.1em] text-white/60">
             {item}
           </span>

@@ -200,7 +200,7 @@ export function JoinSetupPage() {
                 onClick={() => setProfileType(item.id)}
                 className={cn(
                   "flex h-full flex-col rounded-lg border bg-surface px-4 py-4 text-left motion-safe:transition-colors motion-safe:duration-150",
-                  "hover:border-[#DE7C40] hover:bg-[#DE7C40]/[0.06]",
+                  "hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.06]",
                   profileType === item.id ? "border-foreground" : "border-border",
                 )}
               >

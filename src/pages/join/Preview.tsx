@@ -19,7 +19,7 @@ function EditLink({ to, label }: { to: string; label: string }) {
       to={to}
       aria-label={label}
       title={label}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-[#DE7C40]/40 text-[#F2BA8B] motion-safe:transition-colors motion-safe:duration-150 hover:bg-[#DE7C40]/15"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-[#EE8A4A]/40 text-[#F2BA8B] motion-safe:transition-colors motion-safe:duration-150 hover:bg-[#EE8A4A]/15"
     >
       <IconEdit className="h-3.5 w-3.5" />
     </Link>
@@ -110,7 +110,7 @@ export function JoinPreviewPage() {
     <div className="mx-auto w-full max-w-2xl">
       <h1 className="text-h3 font-medium tracking-tight text-foreground">{hiring ? "Preview your listing" : "Preview profile"}</h1>
 
-      <div className="mt-6 rounded-lg border border-[#DE7C40]/25 bg-[#141414] p-6 sm:p-7">
+      <div className="mt-6 rounded-lg border border-[#EE8A4A]/25 bg-[#141414] p-6 sm:p-7">
         <h2 className="text-h4 font-medium text-white">{hiring ? `Ready to post, ${firstName}!` : `Looking good, ${firstName}!`}</h2>
         <p className="mt-2 max-w-md text-body-sm text-white/70">
           Edit any section below, then continue when you're ready. You can always come back and change more later.
@@ -318,7 +318,7 @@ function VaelInReview() {
         center
       />
       {missingToGoVisible.length > 0 ? (
-        <p className="mt-6 rounded-lg border border-[#DE7C40]/30 bg-[#DE7C40]/10 px-4 py-2.5 text-center text-body-sm text-[#F2BA8B]">
+        <p className="mt-6 rounded-lg border border-[#EE8A4A]/30 bg-[#EE8A4A]/10 px-4 py-2.5 text-center text-body-sm text-[#F2BA8B]">
           Add {missingToGoVisible.join(", ")} to go visible.
         </p>
       ) : null}
@@ -343,7 +343,7 @@ function VaelInReview() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="rounded-full bg-[#DE7C40]/15 px-3 py-1 text-caption font-medium text-[#DE7C40]">Vael In</span>
+            <span className="rounded-full bg-[#EE8A4A]/15 px-3 py-1 text-caption font-medium text-[#EE8A4A]">Vael In</span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1 text-caption text-muted">
               <IconClock className="h-3.5 w-3.5" />
               24h left

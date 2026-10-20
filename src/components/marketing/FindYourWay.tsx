@@ -181,7 +181,7 @@ function ChatIcon({ className }: { className?: string }) {
       <defs>
         <linearGradient id="fyw-body" x1="14" y1="4" x2="50" y2="56" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#F9AE74" />
-          <stop offset="0.55" stopColor="#DE7C40" />
+          <stop offset="0.55" stopColor="#EE8A4A" />
           <stop offset="1" stopColor="#B65A24" />
         </linearGradient>
         <linearGradient id="fyw-shine" x1="0" y1="0" x2="0" y2="1">
@@ -216,7 +216,7 @@ function Bubble({ from, children }: { from: "bot" | "user"; children: React.Reac
         className={cn(
           "max-w-[85%] px-3.5 py-2.5 font-sans text-body-sm leading-snug",
           from === "user"
-            ? "rounded-2xl rounded-br-md bg-[#DE7C40] text-[#1A1410]"
+            ? "rounded-2xl rounded-br-md bg-[#EE8A4A] text-[#1A1410]"
             : "rounded-2xl rounded-bl-md bg-white/[0.07] text-white/90",
         )}
       >
@@ -389,7 +389,7 @@ export function FindYourWay() {
             title="Find your way"
             className="group relative block h-[4.5rem] w-[4.25rem] motion-safe:animate-[fyw-float_3.2s_ease-in-out_infinite] focus-visible:outline-none"
           >
-            <span aria-hidden className="absolute inset-x-2 top-1 h-10 rounded-full bg-[#DE7C40]/30 motion-safe:animate-ping" />
+            <span aria-hidden className="absolute inset-x-2 top-1 h-10 rounded-full bg-[#EE8A4A]/30 motion-safe:animate-ping" />
             <ChatIcon className="relative h-full w-full drop-shadow-[0_10px_16px_rgba(222,124,64,0.35)] motion-safe:transition-transform motion-safe:duration-200 group-hover:-translate-y-1 group-hover:scale-105 group-active:scale-95" />
             {teaser ? (
               <span aria-hidden className="absolute -right-0.5 top-0 h-3.5 w-3.5 rounded-full border-2 border-[#0B0C0C] bg-[#4ADE80]" />
@@ -452,7 +452,7 @@ export function FindYourWay() {
                           <Link
                             to={hrefFor(here)}
                             onClick={closePanel}
-                            className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#DE7C40] px-4 py-2.5 font-sans text-caption font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#E89E6E]"
+                            className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#EE8A4A] px-4 py-2.5 font-sans text-caption font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#F4A56C]"
                           >
                             {here.ctaLabel.replace(/\s*→\s*$/, "")}
                             <span aria-hidden>→</span>
@@ -482,7 +482,7 @@ export function FindYourWay() {
                       key={chip.id}
                       type="button"
                       onClick={() => choose(chip.id)}
-                      className="rounded-full border border-[#DE7C40]/60 px-3 py-1.5 font-sans text-caption font-medium text-[#F2BA8B] motion-safe:transition-colors hover:bg-[#DE7C40]/15 hover:text-white"
+                      className="rounded-full border border-[#EE8A4A]/60 px-3 py-1.5 font-sans text-caption font-medium text-[#F2BA8B] motion-safe:transition-colors hover:bg-[#EE8A4A]/15 hover:text-white"
                     >
                       {chip.label}
                     </button>
@@ -490,7 +490,7 @@ export function FindYourWay() {
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <button type="button" onClick={reset} className="rounded-full border border-white/15 px-3.5 py-1.5 font-sans text-caption font-medium text-white/70 hover:border-[#DE7C40]/60 hover:text-white">
+                  <button type="button" onClick={reset} className="rounded-full border border-white/15 px-3.5 py-1.5 font-sans text-caption font-medium text-white/70 hover:border-[#EE8A4A]/60 hover:text-white">
                     Start over
                   </button>
                 </div>
@@ -506,13 +506,13 @@ export function FindYourWay() {
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Type a message…"
               aria-label="Type a message"
-              className="h-10 min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.05] px-4 font-sans text-body-sm text-white placeholder:text-white/40 focus:border-[#DE7C40]/60 focus:outline-none"
+              className="h-10 min-w-0 flex-1 rounded-full border border-white/10 bg-white/[0.05] px-4 font-sans text-body-sm text-white placeholder:text-white/40 focus:border-[#EE8A4A]/60 focus:outline-none"
             />
             <button
               type="submit"
               aria-label="Send"
               disabled={!draft.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DE7C40] text-[#1A1410] motion-safe:transition-opacity disabled:opacity-40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EE8A4A] text-[#1A1410] motion-safe:transition-opacity disabled:opacity-40"
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M5 12h14M13 6l6 6-6 6" />

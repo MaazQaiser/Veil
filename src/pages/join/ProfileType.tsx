@@ -52,8 +52,8 @@ export function JoinProfileTypePage() {
                 onClick={() => setKind(item.id)}
                 className={cn(
                   "flex h-full w-full flex-col items-start justify-start rounded-lg border bg-surface px-5 py-4 text-left motion-safe:transition-colors motion-safe:duration-150",
-                  "hover:border-[#DE7C40] hover:bg-[#DE7C40]/[0.06]",
-                  selected ? "border-[#DE7C40] bg-[#DE7C40]/[0.08]" : "border-border",
+                  "hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.06]",
+                  selected ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08]" : "border-border",
                 )}
               >
                 <p className="text-body-sm font-semibold text-foreground">{item.title}</p>

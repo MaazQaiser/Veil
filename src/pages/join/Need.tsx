@@ -66,7 +66,7 @@ export function JoinNeedPage() {
                 aria-pressed={selected}
                 className={cn(
                   "site-card flex h-full w-full flex-col items-start rounded-lg border bg-surface px-6 py-6 text-left motion-safe:transition-all motion-safe:duration-200",
-                  "hover:border-[#DE7C40] hover:bg-[#DE7C40]/[0.08] hover:-translate-y-0.5",
+                  "hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.08] hover:-translate-y-0.5",
                   selected ? "border-foreground" : "border-border",
                 )}
               >

@@ -107,7 +107,7 @@ function HeroSearch() {
       />
       <button
         type="submit"
-        className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-[#DE7C40] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#E89E6E]"
+        className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-[#EE8A4A] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#F4A56C]"
       >
         Find a Match
         <span aria-hidden>→</span>

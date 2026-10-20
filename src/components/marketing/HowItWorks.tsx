@@ -15,7 +15,7 @@ export function HowItWorks() {
     <section id="how-it-works" className="scroll-mt-24 border-t border-black/10 bg-white py-20 text-[#0B0C0C] md:py-28">
       <div className="site-container">
         <Reveal delay={100} className="text-center">
-          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
+          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
             How VAEL Works
           </span>
         </Reveal>
@@ -33,7 +33,7 @@ export function HowItWorks() {
             <ul className="space-y-6">
               {CHECKLIST.map((item) => (
                 <li key={item} className="flex items-start gap-4">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border border-[#DE7C40] bg-[#DE7C40] text-[#0B0C0C]">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border border-[#EE8A4A] bg-[#EE8A4A] text-[#0B0C0C]">
                     <IconCheck className="h-3.5 w-3.5" />
                   </span>
                   <span className="font-sans text-[1.125rem] leading-snug text-[#0B0C0C]">{item}</span>

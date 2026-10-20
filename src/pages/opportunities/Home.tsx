@@ -27,12 +27,12 @@ export function OpportunityHomePage() {
         <Link to={opportunityStart("create").to} state={opportunityStart("create").state} className={entryClassName}>
           <p className="text-body font-semibold text-foreground">I need a project done</p>
           <p className="mt-0.5 text-body-sm text-muted">Create and post a project.</p>
-          <p className="mt-3 text-body-sm font-medium text-[#DE7C40]">Create an Opportunity →</p>
+          <p className="mt-3 text-body-sm font-medium text-[#EE8A4A]">Create an Opportunity →</p>
         </Link>
         <Link to={opportunityStart("avail").to} state={opportunityStart("avail").state} className={entryClassName}>
           <p className="text-body font-semibold text-foreground">I&apos;m looking for a project</p>
           <p className="mt-0.5 text-body-sm text-muted">Browse projects posted by people who need work done.</p>
-          <p className="mt-3 text-body-sm font-medium text-[#DE7C40]">Avail an Opportunity →</p>
+          <p className="mt-3 text-body-sm font-medium text-[#EE8A4A]">Avail an Opportunity →</p>
         </Link>
       </div>
     </DashboardShell>

@@ -46,7 +46,7 @@ export function NeedCategoriesPage() {
                   on ? "border-white" : "border-white/15 hover:border-white/50",
                 )}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#DE7C40]/15 text-[#DE7C40]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EE8A4A]/15 text-[#EE8A4A]">
                   <CategoryMark category={category} />
                 </span>
                 <span className="mt-4">{category}</span>

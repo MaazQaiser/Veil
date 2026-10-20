@@ -10,7 +10,7 @@ export function NeedLayout() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]"
+        className="pointer-events-none absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#EE8A4A]/20 blur-[130px]"
       />
       <div className="site-container relative pb-28 pt-8 md:pt-10">
         <div className="mx-auto w-full max-w-4xl">

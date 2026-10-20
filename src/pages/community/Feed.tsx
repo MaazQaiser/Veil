@@ -455,7 +455,7 @@ function FeedComposer({
           onClick={publish}
           loading={publishing}
           disabled={!body.trim()}
-          className="h-12 shrink-0 rounded-md bg-[#DE7C40] px-6 text-[#0B0C0C] hover:bg-[#E89E6E] dark:bg-[#DE7C40] dark:text-[#0B0C0C] dark:hover:bg-[#E89E6E]"
+          className="h-12 shrink-0 rounded-md bg-[#EE8A4A] px-6 text-[#0B0C0C] hover:bg-[#F4A56C] dark:bg-[#EE8A4A] dark:text-[#0B0C0C] dark:hover:bg-[#F4A56C]"
         >
           Post
         </Button>

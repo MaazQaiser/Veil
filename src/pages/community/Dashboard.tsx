@@ -22,7 +22,7 @@ function EmptyPanel({ title, cta }: { title: string; cta: string }) {
   return (
     <div className="flex min-h-[14rem] flex-col items-center justify-center rounded-2xl border border-border bg-white px-6 py-12 text-center dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
       <p className="text-body text-foreground">{title}</p>
-      <Link to={FEED_HREF} className="mt-3 text-body-sm font-medium text-[#DE7C40] hover:underline">
+      <Link to={FEED_HREF} className="mt-3 text-body-sm font-medium text-[#EE8A4A] hover:underline">
         {cta} →
       </Link>
     </div>
@@ -47,7 +47,7 @@ function ActivityRow({ item }: { item: CommunityActivityItem }) {
 
   return (
     <li className="rounded-2xl border border-border bg-white px-5 py-4 dark:border-white/10 dark:bg-surface">
-      <p className="text-caption font-medium text-[#DE7C40]">
+      <p className="text-caption font-medium text-[#EE8A4A]">
         {verb}
         {item.createdAt ? <span className="ml-2 font-normal text-muted">{formatCommunityTime(item.createdAt)}</span> : null}
       </p>
@@ -98,7 +98,7 @@ export function CommunityDashboardPage() {
             on this page.
           </p>
         </div>
-        <Link to={FEED_HREF} className="text-body-sm font-medium text-[#DE7C40] hover:underline">
+        <Link to={FEED_HREF} className="text-body-sm font-medium text-[#EE8A4A] hover:underline">
           Community Feed →
         </Link>
       </div>

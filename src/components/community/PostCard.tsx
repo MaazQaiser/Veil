@@ -85,13 +85,13 @@ export function PostCard({
           <Avatar name={author.name} src={author.avatarUrl} size="sm" />
           <Link
             to={communityProfileHref(post.districtId, post.handle)}
-            className="truncate text-body-sm font-medium text-[#DE7C40] hover:underline"
+            className="truncate text-body-sm font-medium text-[#EE8A4A] hover:underline"
           >
             @{post.handle}
           </Link>
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
-          <span className="inline-flex items-center rounded-md bg-[#DE7C40]/15 px-2.5 py-1 text-caption font-medium text-[#DE7C40]">
+          <span className="inline-flex items-center rounded-md bg-[#EE8A4A]/15 px-2.5 py-1 text-caption font-medium text-[#EE8A4A]">
             {kindLabel}
           </span>
           <span className="text-caption text-muted">{formatCommunityTime(post.createdAt)}</span>
@@ -174,7 +174,7 @@ export function PostCard({
           {reply.trim() ? (
             <button
               type="submit"
-              className="h-12 shrink-0 rounded-md bg-[#DE7C40] px-5 text-button font-medium text-[#0B0C0C] hover:bg-[#E89E6E]"
+              className="h-12 shrink-0 rounded-md bg-[#EE8A4A] px-5 text-button font-medium text-[#0B0C0C] hover:bg-[#F4A56C]"
             >
               Reply
             </button>

@@ -36,7 +36,7 @@ export function Handshake() {
     <section id="handshake" className="border-t border-black/10 bg-white py-20 text-[#0B0C0C] md:py-28">
       <div className="site-container">
         <Reveal>
-          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
+          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
             What Happens Next
           </span>
           <h2 className="mt-5 max-w-2xl font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-[#0B0C0C] lg:max-w-none">
@@ -76,7 +76,7 @@ export function Handshake() {
                     <span
                       className={cn(
                         "text-body-sm motion-safe:transition-colors motion-safe:duration-300",
-                        index === active ? "text-[#DE7C40]" : "text-[#0B0C0C]/35",
+                        index === active ? "text-[#EE8A4A]" : "text-[#0B0C0C]/35",
                       )}
                     >
                       [{stage.n}]

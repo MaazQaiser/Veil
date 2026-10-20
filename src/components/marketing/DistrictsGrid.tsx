@@ -9,7 +9,7 @@ export function DistrictsGrid() {
       <div className="site-container">
         <Reveal className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
+            <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
               One Network, Five Districts
             </span>
             <h2 className="mt-4 max-w-2xl font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-[#0B0C0C]">
@@ -18,7 +18,7 @@ export function DistrictsGrid() {
           </div>
           <Link
             to="/districts"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#DE7C40] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#E89E6E]"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#EE8A4A] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#F4A56C]"
           >
             Explore Districts
             <span aria-hidden>→</span>
@@ -40,7 +40,7 @@ export function DistrictsGrid() {
                     strength={40}
                     className="absolute inset-x-0 -top-[12%] h-[124%] w-full object-cover will-change-transform motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-[1.03]"
                   />
-                  <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-md bg-[#DE7C40] px-3 py-1.5 font-sans text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#0B0C0C]">
+                  <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-md bg-[#EE8A4A] px-3 py-1.5 font-sans text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#0B0C0C]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#0B0C0C]" aria-hidden />
                     Live
                   </span>

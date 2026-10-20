@@ -42,8 +42,8 @@ export function AvailabilityBand() {
         <div className="grid gap-5 md:grid-cols-3">
           {CARDS.map((card, index) => (
             <Reveal key={card.id} delay={index * 80}>
-              <div className="flex h-full flex-col rounded-md border border-[#DE7C40]/50 bg-[#141414]/90 px-7 py-8 text-white">
-                <p className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
+              <div className="flex h-full flex-col rounded-md border border-[#EE8A4A]/50 bg-[#141414]/90 px-7 py-8 text-white">
+                <p className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
                   {card.eyebrow}
                 </p>
                 <h3 className="mt-3 font-sans text-[1.375rem] font-medium tracking-tight text-white">{card.title}</h3>
@@ -53,7 +53,7 @@ export function AvailabilityBand() {
                   className={cn(
                     "mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-md font-sans text-body-sm font-medium motion-safe:transition-colors",
                     card.accent
-                      ? "bg-[#DE7C40] text-[#0B0C0C] hover:bg-[#E89E6E]"
+                      ? "bg-[#EE8A4A] text-[#0B0C0C] hover:bg-[#F4A56C]"
                       : "bg-white text-[#0B0C0C] hover:bg-white/90",
                   )}
                 >

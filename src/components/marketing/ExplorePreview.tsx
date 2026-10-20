@@ -31,7 +31,7 @@ export function ExplorePreview() {
 
       <div className="site-container relative z-[2]">
         <Reveal className="flex flex-col items-center text-center">
-          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
+          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
             Available Now
           </span>
           <h2 className="mt-5 max-w-2xl font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-white">
@@ -55,8 +55,8 @@ export function ExplorePreview() {
               className={cn(
                 "rounded-md px-5 py-2.5 font-sans text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-200",
                 activeTab === tab
-                  ? "bg-[#DE7C40] text-[#0B0C0C]"
-                  : "border border-white/10 bg-white/[0.05] text-white/70 hover:border-[#DE7C40]/50 hover:text-white",
+                  ? "bg-[#EE8A4A] text-[#0B0C0C]"
+                  : "border border-white/10 bg-white/[0.05] text-white/70 hover:border-[#EE8A4A]/50 hover:text-white",
               )}
             >
               {tab}
@@ -64,7 +64,7 @@ export function ExplorePreview() {
           ))}
         </Reveal>
 
-        <Reveal delay={150} className="mt-10 overflow-hidden rounded-md border border-[#DE7C40]/50 bg-[#141414]/90">
+        <Reveal delay={150} className="mt-10 overflow-hidden rounded-md border border-[#EE8A4A]/50 bg-[#141414]/90">
           {rows.length === 0 ? (
             <p className="px-8 py-10 text-center font-sans text-body-sm text-white/60">
               No one in {activeTab} is listed right now.
@@ -107,7 +107,7 @@ export function ExplorePreview() {
         <Reveal delay={200} className="mt-10 flex justify-center">
           <Link
             to="/explore"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#DE7C40] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#E89E6E]"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#EE8A4A] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#F4A56C]"
           >
             Open Explore
             <span aria-hidden>→</span>

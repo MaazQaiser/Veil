@@ -837,7 +837,7 @@ export function CityShell() {
                   className={cn(
                     "hidden h-12 items-center justify-center gap-2 rounded-md px-5 font-sans text-body-sm font-medium leading-none transition-colors sm:inline-flex",
                     darkNav
-                      ? "bg-[#DE7C40] text-[#0B0C0C] hover:bg-[#E89E6E]"
+                      ? "bg-[#EE8A4A] text-[#0B0C0C] hover:bg-[#F4A56C]"
                       : "bg-[#FFC555] text-[#0B0C0C] hover:bg-[#FFC555]/90",
                   )}
                 >
@@ -861,7 +861,7 @@ export function CityShell() {
                   className={cn(
                     "hidden h-12 items-center justify-center rounded-md px-5 font-sans text-body-sm font-medium leading-none transition-colors sm:inline-flex",
                     darkNav
-                      ? "bg-[#DE7C40] text-[#0B0C0C] hover:bg-[#E89E6E]"
+                      ? "bg-[#EE8A4A] text-[#0B0C0C] hover:bg-[#F4A56C]"
                       : "bg-[#FFC555] text-[#0B0C0C] hover:bg-[#FFC555]/90",
                   )}
                 >

@@ -69,7 +69,7 @@ function HandshakeEmpty({
       <p className="mt-3 text-body text-foreground">{title}</p>
       <p className="mt-1 text-body-sm text-muted">{description}</p>
       {cta && to ? (
-        <Link to={to} className="mt-3 text-body-sm font-medium text-[#DE7C40] hover:underline">
+        <Link to={to} className="mt-3 text-body-sm font-medium text-[#EE8A4A] hover:underline">
           {cta} →
         </Link>
       ) : null}

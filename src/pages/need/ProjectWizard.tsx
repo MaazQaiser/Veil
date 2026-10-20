@@ -125,7 +125,7 @@ function DescribeStep({ draft, onNext }: { draft: CxProject; onNext: () => void 
         title={`What do you want done?`}
         lede={`Write it in your own words. Example: Replace cabinets and countertops, keeping the existing layout. Cabinets are 1990s oak.`}
       />
-      <p className="mt-2 text-caption uppercase tracking-[0.08em] text-[#DE7C40]">{category}</p>
+      <p className="mt-2 text-caption uppercase tracking-[0.08em] text-[#EE8A4A]">{category}</p>
       <Textarea
         className="mt-6"
         value={value}

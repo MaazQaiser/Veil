@@ -76,7 +76,7 @@ function OtpInput({ value, onChange, error }: { value: string; onChange: (next: 
             }}
             className={cn(
               "h-14 w-full min-w-0 border bg-surface text-center font-sans text-[1.5rem] font-medium text-foreground",
-              error ? "border-destructive" : digit ? "border-[#DE7C40]" : "border-border",
+              error ? "border-destructive" : digit ? "border-[#EE8A4A]" : "border-border",
             )}
           />
         ))}
@@ -147,8 +147,8 @@ export function JoinConfirmPhonePage() {
         center
       />
 
-      <div className="mt-8 flex items-start gap-3 rounded-lg border border-[#DE7C40]/25 bg-surface p-5">
-        <IconLock className="mt-0.5 h-5 w-5 shrink-0 text-[#DE7C40]" />
+      <div className="mt-8 flex items-start gap-3 rounded-lg border border-[#EE8A4A]/25 bg-surface p-5">
+        <IconLock className="mt-0.5 h-5 w-5 shrink-0 text-[#EE8A4A]" />
         <p className="text-body-sm text-muted">
           <span className="font-medium text-foreground">Every VAEL comes from a confirmed number.</span> It is what a
           match receives after the handshake, so it has to be real. You only do this once.

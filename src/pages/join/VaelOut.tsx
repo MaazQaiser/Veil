@@ -440,7 +440,7 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
                     onClick={() => setNeededToday(value)}
                     className={cn(
                       "h-12 border bg-transparent text-body-sm font-medium motion-safe:transition-colors",
-                      neededToday === value ? "border-[#DE7C40] bg-[#DE7C40]/[0.1] text-foreground" : "border-border text-muted hover:border-[#DE7C40]/50",
+                      neededToday === value ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.1] text-foreground" : "border-border text-muted hover:border-[#EE8A4A]/50",
                     )}
                   >
                     {value ? "Yes" : "No"}
@@ -456,7 +456,7 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
                     key={label}
                     type="button"
                     onClick={() => setStartDate(startDateFor(label))}
-                    className="h-9 rounded-full border border-border px-4 text-caption text-muted motion-safe:transition-colors hover:border-[#DE7C40]/50 hover:text-foreground"
+                    className="h-9 rounded-full border border-border px-4 text-caption text-muted motion-safe:transition-colors hover:border-[#EE8A4A]/50 hover:text-foreground"
                   >
                     {label}
                   </button>
@@ -525,7 +525,7 @@ function VaelOutForm({ step }: { step: VaelOutStep }) {
               {deliverables.length > 0 ? (
                 <ul className="mt-3 flex flex-wrap gap-2">
                   {deliverables.map((item) => (
-                    <li key={item} className="inline-flex items-center gap-2 rounded-full bg-[#DE7C40]/15 px-3 py-1 text-caption text-[#F2BA8B]">
+                    <li key={item} className="inline-flex items-center gap-2 rounded-full bg-[#EE8A4A]/15 px-3 py-1 text-caption text-[#F2BA8B]">
                       {item}
                       <button
                         type="button"
@@ -734,7 +734,7 @@ function SectionCard({
           to={editTo}
           aria-label={editLabel}
           title={editLabel}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-[#DE7C40]/40 text-[#F2BA8B] motion-safe:transition-colors motion-safe:duration-150 hover:bg-[#DE7C40]/15"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-[#EE8A4A]/40 text-[#F2BA8B] motion-safe:transition-colors motion-safe:duration-150 hover:bg-[#EE8A4A]/15"
         >
           <IconEdit className="h-3.5 w-3.5" />
         </Link>

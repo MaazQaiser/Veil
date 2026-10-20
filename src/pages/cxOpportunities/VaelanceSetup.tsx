@@ -57,7 +57,7 @@ export function VaelanceSetupPage() {
                 aria-pressed={selected}
                 className={cn(
                   "w-full rounded-lg border px-4 py-3 text-left text-body",
-                  selected ? "border-foreground bg-[#DE7C40]/10" : "border-border",
+                  selected ? "border-foreground bg-[#EE8A4A]/10" : "border-border",
                 )}
               >
                 {category}

@@ -51,7 +51,7 @@ export function NeedPlacePage() {
               onClick={chooseHome}
               className="flex h-full w-full flex-col items-start rounded-lg border border-white/15 bg-surface px-5 py-5 text-left motion-safe:transition-colors hover:border-white/50"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#DE7C40]/15 text-[#DE7C40]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EE8A4A]/15 text-[#EE8A4A]">
                 <IconHome className="h-5 w-5" />
               </span>
               <span className="mt-4 text-body font-medium text-foreground">For my home</span>

@@ -165,12 +165,12 @@ html {
  */
 [data-surface="site"] .join-flow,
 [data-surface="site-dark"] .join-flow {
-  --color-primary: 222 124 64;
-  --color-primary-hover: 232 158 110;
-  --color-primary-pressed: 198 108 52;
+  --color-primary: 238 138 74;
+  --color-primary-hover: 244 165 108;
+  --color-primary-pressed: 224 120 60;
   --color-primary-foreground: 11 12 12;
-  --color-accent: 222 124 64;
-  --color-accent-hover: 232 158 110;
+  --color-accent: 238 138 74;
+  --color-accent-hover: 244 165 108;
 }
 
 /*
@@ -310,7 +310,7 @@ html {
   height: 30rem;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(closest-side, rgb(222 124 64 / 0.2), rgb(222 124 64 / 0.06) 60%, transparent);
+  background: radial-gradient(closest-side, rgb(238 138 74 / 0.2), rgb(238 138 74 / 0.06) 60%, transparent);
   filter: blur(20px);
 }
 
@@ -365,7 +365,7 @@ html {
  * Vael In product dashboard: always runs in the site's dark, orange design
  * language (see CityLayout.tsx — no longer a user-toggleable preference).
  * Matches the join/sign-up/sign-in flow's near-black palette (#0B0C0C bg,
- * #141414 surface) and #DE7C40 accent, not a separate warm-brown theme.
+ * #141414 surface) and #EE8A4A accent, not a separate warm-brown theme.
  * Palette and contrast checked against WCAG AA (4.5:1 body text, 3:1
  * large/UI text) against the #0B0C0C page background.
  */
@@ -379,14 +379,14 @@ html {
   --color-border: 47 48 48;
   --color-border-strong: 245 243 238;
   --color-border-subtle: 34 35 35;
-  --color-primary: 222 124 64;
-  --color-primary-hover: 232 158 110;
-  --color-primary-pressed: 198 108 52;
+  --color-primary: 238 138 74;
+  --color-primary-hover: 244 165 108;
+  --color-primary-pressed: 224 120 60;
   --color-primary-foreground: 11 12 12;
   --color-secondary: 26 26 26;
   --color-secondary-foreground: 245 243 238;
-  --color-accent: 222 124 64;
-  --color-accent-hover: 232 158 110;
+  --color-accent: 238 138 74;
+  --color-accent-hover: 244 165 108;
   --color-accent-muted: 45 32 23;
   --color-success: 74 222 128;
   --color-success-foreground: 74 222 128;
@@ -417,14 +417,14 @@ html {
   --color-border: 228 225 218;
   --color-border-strong: 17 17 17;
   --color-border-subtle: 238 235 229;
-  --color-primary: 222 124 64;
-  --color-primary-hover: 205 108 48;
-  --color-primary-pressed: 186 94 40;
+  --color-primary: 238 138 74;
+  --color-primary-hover: 244 165 108;
+  --color-primary-pressed: 224 120 60;
   --color-primary-foreground: 11 12 12;
   --color-secondary: 255 255 255;
   --color-secondary-foreground: 17 17 17;
-  --color-accent: 190 90 30;
-  --color-accent-hover: 165 74 22;
+  --color-accent: 234 132 66;
+  --color-accent-hover: 244 158 98;
   --color-accent-muted: 252 238 226;
   --color-success: 30 120 70;
   --color-success-foreground: 30 120 70;
@@ -449,7 +449,7 @@ html {
 }
 
 [data-theme="light"] .vael-nav-active.vael-nav-active {
-  background: linear-gradient(90deg, rgb(222 124 64 / 0.2), rgb(222 124 64 / 0.05) 60%, transparent) !important;
+  background: linear-gradient(90deg, rgb(238 138 74 / 0.2), rgb(238 138 74 / 0.05) 60%, transparent) !important;
 }
 
 /*
@@ -481,7 +481,7 @@ html {
 
 /* Active sidebar item: orange fade from the left instead of a solid block. */
 :is([data-theme="dark"], [data-theme="light"]) .vael-nav-active {
-  background: linear-gradient(90deg, rgb(222 124 64 / 0.32), rgb(222 124 64 / 0.08) 60%, transparent) !important;
+  background: linear-gradient(90deg, rgb(238 138 74 / 0.32), rgb(238 138 74 / 0.08) 60%, transparent) !important;
   color: rgb(var(--color-foreground)) !important;
   box-shadow: none !important;
 }
@@ -505,9 +505,9 @@ html {
   height: 8rem;
   transform: translateX(-50%);
   pointer-events: none;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 120' fill='none'%3E%3Cpath d='M20 0 L100 96 L180 0' stroke='%23DE7C40' stroke-width='6' stroke-linejoin='miter' stroke-opacity='0.4'/%3E%3C/svg%3E") no-repeat center bottom / contain,
-    radial-gradient(ellipse 55% 60% at 50% 75%, rgb(222 124 64 / 0.22), transparent 70%);
-  filter: drop-shadow(0 0 10px rgb(222 124 64 / 0.6)) drop-shadow(0 0 26px rgb(222 124 64 / 0.35));
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 120' fill='none'%3E%3Cpath d='M20 0 L100 96 L180 0' stroke='%23EE8A4A' stroke-width='6' stroke-linejoin='miter' stroke-opacity='0.4'/%3E%3C/svg%3E") no-repeat center bottom / contain,
+    radial-gradient(ellipse 55% 60% at 50% 75%, rgb(238 138 74 / 0.22), transparent 70%);
+  filter: drop-shadow(0 0 10px rgb(238 138 74 / 0.6)) drop-shadow(0 0 26px rgb(238 138 74 / 0.35));
   -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 90%);
   mask-image: linear-gradient(0deg, #000 10%, transparent 90%);
 }

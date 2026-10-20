@@ -101,8 +101,8 @@ export function JoinLayout() {
       className="join-flow wizard-flow relative isolate flex min-h-full flex-1 flex-col bg-background text-foreground"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]" />
-        <div className="absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#DE7C40]/10 blur-[120px]" />
+        <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#EE8A4A]/20 blur-[130px]" />
+        <div className="absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#EE8A4A]/10 blur-[120px]" />
       </div>
       <div className="site-container relative pb-28 pt-10 md:pb-32 md:pt-14">
         <div className={cn("mx-auto w-full", visiting === "Intent" || visiting === "Need" ? "max-w-4xl" : "max-w-2xl")}>
@@ -124,8 +124,8 @@ export function AuthSplitScreen({ children }: { children: ReactNode }) {
       className="join-flow auth-flow relative isolate flex flex-1 flex-col bg-background text-foreground"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#DE7C40]/20 blur-[130px]" />
-        <div className="absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#DE7C40]/10 blur-[120px]" />
+        <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#EE8A4A]/20 blur-[130px]" />
+        <div className="absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#EE8A4A]/10 blur-[120px]" />
       </div>
       <div className="site-container relative flex flex-1 items-center py-10 md:py-16">
         <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
@@ -148,12 +148,12 @@ const SIGN_UP_STATS = [
 function SignUpIntro() {
   return (
     <div className="max-w-xl">
-      <span className="inline-flex items-center gap-2 rounded-lg border border-[#DE7C40]/60 bg-[#141414] px-4 py-1.5 text-[0.75rem] font-medium uppercase tracking-[0.14em] text-[#DE7C40]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#DE7C40]" aria-hidden />
+      <span className="inline-flex items-center gap-2 rounded-lg border border-[#EE8A4A]/60 bg-[#141414] px-4 py-1.5 text-[0.75rem] font-medium uppercase tracking-[0.14em] text-[#EE8A4A]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#EE8A4A]" aria-hidden />
         Welcome to VAEL
       </span>
       <h1 className="hero-display mt-6 font-normal text-foreground">
-        Find work with the <span className="text-[#DE7C40]">right fit.</span>
+        Find work with the <span className="text-[#EE8A4A]">right fit.</span>
       </h1>
       <p className="hero-lede mt-4 max-w-md leading-normal text-muted">
         Your definition of fit is the only one that matters. VAEL matches people and businesses on
@@ -195,7 +195,7 @@ export function CardChips({ items }: { items: string[] }) {
       {items.map((item) => (
         <li
           key={item}
-          className="rounded-lg border border-[#DE7C40]/40 bg-[#DE7C40]/15 px-3 py-1 text-body-sm text-[#F2BA8B]"
+          className="rounded-lg border border-[#EE8A4A]/40 bg-[#EE8A4A]/15 px-3 py-1 text-body-sm text-[#F2BA8B]"
         >
           {item}
         </li>
@@ -227,7 +227,7 @@ export function JoinFieldCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-body font-medium text-foreground">{title}</h3>
             {badge ? (
-              <span className="inline-flex items-center rounded-lg bg-[#DE7C40]/20 px-2.5 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-[#F2BA8B]">
+              <span className="inline-flex items-center rounded-lg bg-[#EE8A4A]/20 px-2.5 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-[#F2BA8B]">
                 {badge}
               </span>
             ) : null}

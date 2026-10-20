@@ -34,8 +34,8 @@ function CompanyCard({ company }: { company: CompanyAd }) {
       className={cn(
         "group flex w-64 shrink-0 flex-col overflow-hidden rounded-[32px] motion-safe:transition-transform motion-safe:duration-300 hover:-translate-y-1 md:w-72",
         isFeatured
-          ? "bg-[#DE7C40] text-[#0B0C0C]"
-          : "border border-[#DE7C40]/50 bg-[#141414]/90 text-white",
+          ? "bg-[#EE8A4A] text-[#0B0C0C]"
+          : "border border-[#EE8A4A]/50 bg-[#141414]/90 text-white",
       )}
     >
       <div className="relative h-40 w-full shrink-0 overflow-hidden">
@@ -47,7 +47,7 @@ function CompanyCard({ company }: { company: CompanyAd }) {
         <span
           className={cn(
             "absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-full text-caption font-semibold",
-            isFeatured ? "bg-[#0B0C0C] text-[#DE7C40]" : "bg-[#1A1A1C] text-white ring-1 ring-[#DE7C40]/40",
+            isFeatured ? "bg-[#0B0C0C] text-[#EE8A4A]" : "bg-[#1A1A1C] text-white ring-1 ring-[#EE8A4A]/40",
           )}
         >
           {company.initials}
@@ -81,8 +81,8 @@ export function Matching() {
       data-surface="site-dark"
       className="relative overflow-hidden border-t border-white/10 bg-[#0B0C0C] py-20 text-white md:py-28"
     >
-      <div className="pointer-events-none absolute -top-40 right-0 h-[36rem] w-[36rem] rounded-full bg-[#DE7C40]/15 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[28rem] w-[28rem] rounded-full bg-[#DE7C40]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute -top-40 right-0 h-[36rem] w-[36rem] rounded-full bg-[#EE8A4A]/15 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[28rem] w-[28rem] rounded-full bg-[#EE8A4A]/10 blur-[120px]" />
       <span
         aria-hidden
         className="hero-display pointer-events-none absolute -top-[0.3em] left-1/2 -translate-x-1/2 select-none text-[36rem] leading-none text-white/[0.03]"
@@ -92,7 +92,7 @@ export function Matching() {
 
       <div className="site-container relative z-[2]">
         <Reveal className="mx-auto max-w-xl text-center">
-          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#DE7C40]">
+          <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
             Now Hiring
           </span>
           <h2 className="mt-4 font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-white">
@@ -105,7 +105,7 @@ export function Matching() {
           </p>
           <Link
             to="/explore"
-            className="mt-8 inline-flex h-12 items-center justify-center rounded-md bg-[#DE7C40] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#E89E6E]"
+            className="mt-8 inline-flex h-12 items-center justify-center rounded-md bg-[#EE8A4A] px-5 font-sans text-body-sm font-medium text-[#0B0C0C] hover:bg-[#F4A56C]"
           >
             See who&apos;s hiring →
           </Link>

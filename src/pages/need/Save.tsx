@@ -78,7 +78,7 @@ export function NeedSavePage() {
         A US mobile number, or + and your country code. We’ll text a code to it before your project goes live.
       </p>
       <p className="mt-3 inline-flex items-center gap-2 text-body-sm text-muted">
-        <span aria-hidden className="text-[#DE7C40]">
+        <span aria-hidden className="text-[#EE8A4A]">
           ✓
         </span>
         Never shown to contractors.

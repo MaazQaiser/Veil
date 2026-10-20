@@ -36,7 +36,7 @@ function CheckRow({
 }) {
   return (
     <div className="flex items-center gap-3 border-t border-border px-4 py-4 first:border-t-0">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#DE7C40]/15 text-[#DE7C40]">{icon}</span>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EE8A4A]/15 text-[#EE8A4A]">{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-muted">{label}</p>
         <p className="mt-0.5 whitespace-pre-wrap text-body text-foreground">{value}</p>
