@@ -133,7 +133,7 @@ export function OpportunityHomePage() {
         </div>
       ) : null}
 
-      <div role="tablist" aria-label="Opportunities" className="flex flex-wrap gap-2">
+      <div role="tablist" aria-label="Opportunities" className="flex gap-6 border-b border-border-subtle">
         {tabs.map((item) => (
           <button
             key={item.id}
@@ -142,10 +142,10 @@ export function OpportunityHomePage() {
             aria-selected={tab === item.id}
             onClick={() => selectTab(item.id)}
             className={cn(
-              "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-body-sm font-medium motion-safe:transition-colors",
+              "-mb-px inline-flex h-11 items-center gap-2 border-b-2 text-body-sm font-medium motion-safe:transition-colors",
               tab === item.id
-                ? "border-transparent bg-primary text-primary-foreground"
-                : "border-border bg-surface text-muted hover:text-foreground",
+                ? "border-accent text-accent"
+                : "border-transparent text-muted hover:text-foreground",
             )}
           >
             {item.label}
