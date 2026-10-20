@@ -94,7 +94,7 @@ export function DistrictsRow({
       className={`flex items-center justify-between gap-3 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] motion-safe:transition-shadow motion-safe:duration-200 hover:shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-8px_rgba(17,17,17,0.14)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_16px_36px_-12px_rgba(0,0,0,0.4)]${className ? ` ${className}` : ""}`}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFC555]/15 text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent dark:bg-accent/15 dark:text-accent">
           <IconHome className="h-5 w-5" />
         </span>
         <div className="min-w-0">
@@ -112,7 +112,7 @@ export function DistrictsRow({
       </div>
       <Link
         to="/media-technology/districts"
-        className="shrink-0 text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground dark:text-accent"
+        className="shrink-0 text-body-sm font-medium text-accent underline underline-offset-4 hover:text-foreground dark:text-accent"
       >
         Change district →
       </Link>

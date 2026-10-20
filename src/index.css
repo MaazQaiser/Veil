@@ -218,7 +218,7 @@ html {
 }
 
 /* Vael In dashboard picks up the same heading font as the join flow. */
-[data-theme="dark"] h1 {
+:is([data-theme="dark"], [data-theme="light"]) h1 {
   font-family: "Inter", var(--font-sans);
 }
 
@@ -406,51 +406,97 @@ html {
   --color-ring: 245 243 238;
 }
 
+/* Product light theme: warm white, white cards, same orange accent. */
+[data-theme="light"] {
+  --color-background: 250 249 246;
+  --color-foreground: 17 17 17;
+  --color-surface: 255 255 255;
+  --color-surface-elevated: 255 255 255;
+  --color-surface-muted: 245 243 238;
+  --color-surface-tertiary: 238 235 229;
+  --color-border: 228 225 218;
+  --color-border-strong: 17 17 17;
+  --color-border-subtle: 238 235 229;
+  --color-primary: 222 124 64;
+  --color-primary-hover: 205 108 48;
+  --color-primary-pressed: 186 94 40;
+  --color-primary-foreground: 11 12 12;
+  --color-secondary: 255 255 255;
+  --color-secondary-foreground: 17 17 17;
+  --color-accent: 190 90 30;
+  --color-accent-hover: 165 74 22;
+  --color-accent-muted: 252 238 226;
+  --color-success: 30 120 70;
+  --color-success-foreground: 30 120 70;
+  --color-success-muted: 226 244 233;
+  --color-warning: 150 100 10;
+  --color-warning-foreground: 150 100 10;
+  --color-warning-muted: 252 243 220;
+  --color-destructive: 190 50 50;
+  --color-destructive-foreground: 190 50 50;
+  --color-destructive-muted: 252 232 232;
+  --color-info: 50 90 170;
+  --color-info-foreground: 50 90 170;
+  --color-info-muted: 230 238 252;
+  --color-muted: 95 100 110;
+  --color-quiet: 125 128 136;
+  --color-disabled: 170 172 178;
+  --color-ring: 17 17 17;
+}
+
+[data-theme="light"] .bg-surface {
+  box-shadow: 0 1px 2px rgb(17 17 17 / 0.04), 0 8px 24px -12px rgb(17 17 17 / 0.1);
+}
+
+[data-theme="light"] .vael-nav-active.vael-nav-active {
+  background: linear-gradient(90deg, rgb(222 124 64 / 0.2), rgb(222 124 64 / 0.05) 60%, transparent) !important;
+}
+
 /*
  * Vael In dashboard uses the same softened radius as the join flow's
  * auth/wizard cards (8px), not the marketing site's hard 0. Deliberately
  * excludes rounded-full so avatars, icon circles, and status dots stay
  * circular.
  */
-[data-theme="dark"] button,
-[data-theme="dark"] input,
-[data-theme="dark"] select,
-[data-theme="dark"] textarea {
+:is([data-theme="dark"], [data-theme="light"]) button,
+:is([data-theme="dark"], [data-theme="light"]) input,
+:is([data-theme="dark"], [data-theme="light"]) select,
+:is([data-theme="dark"], [data-theme="light"]) textarea {
   border-radius: 14px !important;
 }
 
 /* Cards: large soft corners with a faint top sheen, like the product reference. */
-[data-theme="dark"] .rounded-md,
-[data-theme="dark"] .rounded-lg,
-[data-theme="dark"] .rounded-xl,
-[data-theme="dark"] .rounded-2xl,
-[data-theme="dark"] .rounded-3xl,
-[data-theme="dark"] .site-card {
+:is([data-theme="dark"], [data-theme="light"]) .rounded-md,
+:is([data-theme="dark"], [data-theme="light"]) .rounded-lg,
+:is([data-theme="dark"], [data-theme="light"]) .rounded-xl,
+:is([data-theme="dark"], [data-theme="light"]) .rounded-2xl,
+:is([data-theme="dark"], [data-theme="light"]) .rounded-3xl,
+:is([data-theme="dark"], [data-theme="light"]) .site-card {
   border-radius: 20px !important;
 }
 
-[data-theme="dark"] .bg-surface {
+:is([data-theme="dark"], [data-theme="light"]) .bg-surface {
   background-image: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0));
 }
 
 /* Active sidebar item: orange fade from the left instead of a solid block. */
-[data-theme="dark"] .vael-nav-active {
+:is([data-theme="dark"], [data-theme="light"]) .vael-nav-active {
   background: linear-gradient(90deg, rgb(222 124 64 / 0.32), rgb(222 124 64 / 0.08) 60%, transparent) !important;
   color: rgb(var(--color-foreground)) !important;
   box-shadow: none !important;
 }
 
-[data-theme="dark"] .vael-nav-active svg {
+:is([data-theme="dark"], [data-theme="light"]) .vael-nav-active svg {
   color: rgb(var(--color-accent));
 }
 
 /* Profile-completion card: one soft glowing "V", echoing the VAEL mark. */
-[data-theme="dark"] .vael-glow-card {
+:is([data-theme="dark"], [data-theme="light"]) .vael-glow-card {
   position: relative;
   overflow: hidden;
 }
 
-[data-theme="dark"] .vael-glow-card::before {
+:is([data-theme="dark"], [data-theme="light"]) .vael-glow-card::before {
   content: "";
   position: absolute;
   bottom: -0.5rem;
@@ -466,24 +512,24 @@ html {
   mask-image: linear-gradient(0deg, #000 10%, transparent 90%);
 }
 
-[data-theme="dark"] .vael-glow-card > * {
+:is([data-theme="dark"], [data-theme="light"]) .vael-glow-card > * {
   position: relative;
   z-index: 1;
 }
 
 /* Primary actions are pills. */
-[data-theme="dark"] button.bg-primary,
-[data-theme="dark"] a.bg-primary {
+:is([data-theme="dark"], [data-theme="light"]) button.bg-primary,
+:is([data-theme="dark"], [data-theme="light"]) a.bg-primary {
   border-radius: 9999px !important;
 }
 
-[data-theme="dark"] .rounded-full,
-[data-theme="dark"] button.rounded-full {
+:is([data-theme="dark"], [data-theme="light"]) .rounded-full,
+:is([data-theme="dark"], [data-theme="light"]) button.rounded-full {
   border-radius: 9999px !important;
 }
 
 /* Underline tabs must stay a straight line. Pill tabs keep rounded-full above. */
-[data-theme="dark"] button[role="tab"]:not(.rounded-full) {
+:is([data-theme="dark"], [data-theme="light"]) button[role="tab"]:not(.rounded-full) {
   border-radius: 0 !important;
 }
 
@@ -897,6 +943,6 @@ html {
 
 /* CTAs match the website: every button-sized link or button with padding is a pill. */
 .join-flow :is(a, button):is(.h-9, .h-10, .h-11, .h-12, .h-14)[class*="px-"],
-[data-theme="dark"] :is(a, button):is(.h-9, .h-10, .h-11, .h-12, .h-14)[class*="px-"] {
+:is([data-theme="dark"], [data-theme="light"]) :is(a, button):is(.h-9, .h-10, .h-11, .h-12, .h-14)[class*="px-"] {
   border-radius: 9999px !important;
 }

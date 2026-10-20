@@ -150,7 +150,7 @@ function VaelInner() {
         }}
       >
         <section className="rounded-2xl border border-border bg-white px-6 py-6 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-          <p className="text-caption font-medium uppercase tracking-[0.1em] text-[#C99A28] dark:text-accent">
+          <p className="text-caption font-medium uppercase tracking-[0.1em] text-accent dark:text-accent">
             You’ll be visible for
           </p>
           <p className="mt-2 font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">

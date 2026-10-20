@@ -728,7 +728,7 @@ export function ProfileEditPage() {
       </div>
 
       <div className="mt-8 overflow-hidden rounded-xl border border-border shadow-[0_1px_2px_rgba(11,12,12,0.04),0_18px_36px_-10px_rgba(11,12,12,0.12)] md:rounded-2xl">
-        <div className="relative isolate h-32 overflow-hidden bg-gradient-to-br from-[#FFC555] via-[#FFE9AE] to-[#FFF6DC] dark:from-[#4A3410] dark:via-[#3A2B16] dark:to-[#241B10] md:h-40">
+        <div className="relative isolate h-32 overflow-hidden bg-gradient-to-br from-accent via-[#FFE9AE] to-[#FFF6DC] dark:from-[#4A3410] dark:via-[#3A2B16] dark:to-[#241B10] md:h-40">
           {form.coverUrl ? (
             <>
               <img src={form.coverUrl} alt="" className="h-full w-full object-cover" />
@@ -774,7 +774,7 @@ export function ProfileEditPage() {
             {form.disciplines.slice(0, 2).map((discipline) => (
               <span
                 key={discipline}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#FFC555]/40 bg-[#FFC555]/10 px-3 py-1 text-caption font-semibold uppercase tracking-[0.04em] text-[#C99A28] dark:border-accent/40 dark:bg-accent/10 dark:text-accent"
+                className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-caption font-semibold uppercase tracking-[0.04em] text-accent dark:border-accent/40 dark:bg-accent/10 dark:text-accent"
               >
                 <IconBriefcase className="h-3.5 w-3.5" />
                 {discipline}
@@ -783,7 +783,7 @@ export function ProfileEditPage() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-body-sm">
-            <span className="flex items-center gap-1.5 font-medium text-[#C99A28] dark:text-accent">
+            <span className="flex items-center gap-1.5 font-medium text-accent dark:text-accent">
               @{form.handle}
             </span>
             {form.portfolio[0]?.url ? (
@@ -818,7 +818,7 @@ export function ProfileEditPage() {
               <span className="inline-flex items-center gap-1.5 text-caption font-medium uppercase tracking-[0.08em] text-muted">
                 <span
                   aria-hidden
-                  className={cn("h-1.5 w-1.5 rounded-full", vaeledIn || vaeledOut ? "bg-[#FFC555] dark:bg-accent" : "bg-quiet")}
+                  className={cn("h-1.5 w-1.5 rounded-full", vaeledIn || vaeledOut ? "bg-accent dark:bg-accent" : "bg-quiet")}
                 />
                 {ownVisibilityChip(vaeledIn ? "in" : vaeledOut ? "out" : null)}
                 {vaelVisibleHours !== null ? ` · ${vaelVisibleHours}h left` : ""}

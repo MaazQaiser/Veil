@@ -8,14 +8,18 @@ export type Accent = "orange" | "yellow";
 
 function readTheme(): Theme {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
+    return localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark";
   } catch {
-    return "light";
+    return "dark";
   }
 }
 
 function writeTheme(theme: Theme) {
-  localStorage.setItem(STORAGE_KEY, theme);
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    /* private mode */
+  }
 }
 
 function readAccent(): Accent {
@@ -40,7 +44,7 @@ type Ctx = {
 const ThemeContext = createContext<Ctx | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => (typeof window === "undefined" ? "light" : readTheme()));
+  const [theme, setTheme] = useState<Theme>(() => (typeof window === "undefined" ? "dark" : readTheme()));
   const [accent, setAccentState] = useState<Accent>(() => (typeof window === "undefined" ? "orange" : readAccent()));
 
   const value = useMemo<Ctx>(

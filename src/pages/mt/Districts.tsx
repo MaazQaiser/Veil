@@ -174,7 +174,7 @@ export function DistrictsPage() {
                     </p>
                     <Link
                       to={district.id === "construction" ? "/districts/contractor" : `${MANAGE_ROUTE}/${district.id}/edit`}
-                      className="shrink-0 text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground dark:text-accent"
+                      className="shrink-0 text-body-sm font-medium text-accent underline underline-offset-4 hover:text-foreground dark:text-accent"
                     >
                       {district.id === "construction" ? "Open exchange →" : "View district →"}
                     </Link>
@@ -556,7 +556,7 @@ export function EditDistrictProfilePage() {
           <div className="mt-3 min-w-0">
             <p className="truncate text-h4 font-medium tracking-tight text-foreground">{district.name}</p>
             <p className="mt-0.5 truncate text-body-sm text-muted">@{handle}</p>
-            <span className="mt-3 inline-flex items-center rounded-full bg-[#FFC555]/15 px-2.5 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+            <span className="mt-3 inline-flex items-center rounded-full bg-accent/15 px-2.5 py-1 text-caption font-semibold text-accent dark:bg-accent/15 dark:text-accent">
               {bundle.percent}% complete
             </span>
           </div>

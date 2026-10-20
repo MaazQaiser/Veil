@@ -102,12 +102,12 @@ function HandshakeCard({
   return (
     <Link
       to={connected ? `/messages?c=${connection.id}` : `/media-technology/connections/${connection.id}`}
-      className="group flex w-full flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-[#C99A28]/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(0,0,0,0.4)]"
+      className="group flex w-full flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(0,0,0,0.4)]"
     >
       {image ? (
         <img src={image} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
       ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-body font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]">
           {initial}
         </span>
       )}
@@ -132,7 +132,7 @@ function HandshakeCard({
           className={cn(
             "flex items-center gap-1 text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-150",
             cta.emphasis === "solid"
-              ? "text-[#C99A28] group-hover:text-foreground dark:text-accent"
+              ? "text-accent group-hover:text-foreground dark:text-accent"
               : "text-quiet group-hover:text-foreground",
           )}
         >

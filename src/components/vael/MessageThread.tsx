@@ -111,7 +111,7 @@ export function MessageThread({
             />
             <Button
               type="submit"
-              className="h-11 shrink-0 rounded-full border-transparent bg-[#FFC555] px-5 text-[#0B0C0C] hover:bg-[#FFC555]/90 dark:bg-accent dark:text-[#1A1410] dark:hover:bg-accent-hover"
+              className="h-11 shrink-0 rounded-full border-transparent bg-accent px-5 text-[#0B0C0C] hover:bg-accent/90 dark:bg-accent dark:text-[#1A1410] dark:hover:bg-accent-hover"
               loading={state === "sending"}
               disabled={!body.trim()}
             >

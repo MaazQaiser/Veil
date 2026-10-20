@@ -150,7 +150,7 @@ export function DashboardSidebar({
                 "group relative flex items-center gap-3 rounded-xl px-4 py-3 text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-150",
                 collapsed && "justify-center px-0",
                 active
-                  ? "bg-white text-[#C99A28] shadow-sm vael-nav-active"
+                  ? "bg-white text-accent shadow-sm vael-nav-active"
                   : "text-muted hover:bg-white/70 hover:text-foreground dark:hover:bg-white/5 dark:hover:text-[#F5F3EE]",
               );
             }}
@@ -164,7 +164,7 @@ export function DashboardSidebar({
             {"badge" in item && item.badge ? (
               <span
                 className={cn(
-                  "flex items-center justify-center rounded-full bg-[#FFC555] font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]",
+                  "flex items-center justify-center rounded-full bg-accent font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]",
                   collapsed
                     ? "absolute right-1 top-1 h-2 w-2 p-0"
                     : "h-5 min-w-5 px-1.5 text-caption",
@@ -185,7 +185,7 @@ export function DashboardSidebar({
             </p>
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
               <div
-                className="h-full rounded-full bg-[#FFC555] motion-safe:transition-[width] motion-safe:duration-300 dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent dark:shadow-[0_0_12px_1px_rgba(255,138,61,0.6)]"
+                className="h-full rounded-full bg-accent motion-safe:transition-[width] motion-safe:duration-300 dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent dark:shadow-[0_0_12px_1px_rgba(255,138,61,0.6)]"
                 style={{ width: `${percent}%` }}
               />
             </div>

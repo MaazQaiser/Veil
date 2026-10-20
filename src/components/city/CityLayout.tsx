@@ -5,6 +5,7 @@ import { useCitySession } from "@/lib/citySession";
 import { isDarkModeFlowPath } from "@/lib/providerJourney";
 import { isHomeownerPath } from "@/lib/cxRoutes";
 import { cn } from "@/lib/cn";
+import { useTheme } from "@/lib/theme";
 
 export function CityLayout() {
   const { session } = useCitySession();
@@ -17,18 +18,21 @@ export function CityLayout() {
     isHomeownerPath(location.pathname);
   // The Vael In (professional) dashboard flow always runs in the site's dark,
   // orange design language now — no longer a user-toggleable preference.
-  const showDark = isDarkModeFlowPath(location.pathname);
-  const hideFooter = inJoinFlow || location.pathname === "/messages" || showDark;
+  const inProductFlow = isDarkModeFlowPath(location.pathname);
+  // Dark is the default; the product can switch to light from the top bar.
+  const { theme } = useTheme();
+  const showDark = inProductFlow && theme === "dark";
+  const hideFooter = inJoinFlow || location.pathname === "/messages" || inProductFlow;
 
   return (
     <div
       data-surface={inProduct ? undefined : "site"}
-      data-theme={showDark ? "dark" : undefined}
-      data-accent={showDark ? "orange" : undefined}
+      data-theme={inProductFlow ? theme : undefined}
+      data-accent={inProductFlow ? "orange" : undefined}
       className={cn(
         "flex min-w-0 flex-col text-foreground dark:text-[#F5F3EE]",
         inJoinFlow ? "h-dvh overflow-hidden" : "min-h-screen",
-        inProduct ? "bg-white pb-[4.75rem] lg:pb-0 dark:bg-[#0B0C0C]" : inJoinFlow ? "bg-[#0B0C0C]" : "bg-background",
+        inProduct ? "bg-background pb-[4.75rem] lg:pb-0 dark:bg-[#0B0C0C]" : inJoinFlow ? "bg-[#0B0C0C]" : "bg-background",
       )}
     >
       {showDark ? (

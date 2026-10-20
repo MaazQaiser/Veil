@@ -58,11 +58,11 @@ function SavedCard({
 }) {
   const initial = avatarName.trim().charAt(0).toUpperCase() || "V";
   return (
-    <div className="group flex w-80 shrink-0 flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-[#C99A28]/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-accent/30 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(255,157,69,0.2)]">
+    <div className="group flex w-80 shrink-0 flex-col gap-4 rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-10px_rgba(17,17,17,0.1)] motion-safe:transition-all motion-safe:duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-[0_1px_2px_rgba(11,12,12,0.06),0_20px_36px_-12px_rgba(17,17,17,0.18)] dark:border-white/10 dark:bg-transparent dark:bg-gradient-to-br dark:from-white/[0.06] dark:via-white/[0.02] dark:to-transparent dark:backdrop-blur-xl dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-accent/30 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.2),0_20px_40px_-12px_rgba(255,157,69,0.2)]">
       {avatarSrc ? (
         <img src={avatarSrc} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
       ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-gradient-to-br dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-body font-semibold text-[#0B0C0C] dark:bg-gradient-to-br dark:from-accent-hover dark:to-accent dark:text-[#1A1410] dark:shadow-[0_2px_4px_-1px_rgba(255,138,61,0.4),0_10px_22px_-8px_rgba(255,138,61,0.45)] dark:ring-1 dark:ring-inset dark:ring-white/25">
           {initial}
         </span>
       )}
@@ -85,7 +85,7 @@ function SavedCard({
         </button>
         <Link
           to={primaryHref}
-          className="flex items-center gap-1 text-body-sm font-medium text-[#C99A28] hover:text-foreground dark:text-accent"
+          className="flex items-center gap-1 text-body-sm font-medium text-accent hover:text-foreground dark:text-accent"
         >
           {primaryLabel}
           <IconChevronRight className="h-3.5 w-3.5" />
@@ -169,7 +169,7 @@ export function SavedPostsPage() {
                   subtitle={otherProfile?.headline || listing.category || listing.discipline || "Media & Technology"}
                   badge={
                     match ? (
-                      <span className="inline-flex w-fit items-center rounded-full bg-[#FFC555]/15 px-3 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+                      <span className="inline-flex w-fit items-center rounded-full bg-accent/15 px-3 py-1 text-caption font-semibold text-accent dark:bg-accent/15 dark:text-accent">
                         {Math.round(match.percent)}% Match
                       </span>
                     ) : undefined

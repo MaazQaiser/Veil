@@ -411,7 +411,7 @@ function MatchDetailInner() {
 
   const availabilityDot = (
     <span className="inline-flex items-center gap-1.5 text-body-sm text-foreground">
-      <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", availableNow ? "bg-[#22C55E]" : "bg-[#C99A28] dark:bg-accent")} />
+      <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", availableNow ? "bg-[#22C55E]" : "bg-accent dark:bg-accent")} />
       {availabilityLabel}
     </span>
   );
@@ -476,7 +476,7 @@ function MatchDetailInner() {
 
               <section className={cn(DASHBOARD_CARD, "p-5 sm:p-6")}>
                 <p className="flex items-center gap-2 text-body font-medium text-foreground">
-                  <span aria-hidden className="text-[#C99A28] dark:text-accent">
+                  <span aria-hidden className="text-accent dark:text-accent">
                     ✦
                   </span>
                   Why You Match
@@ -610,7 +610,7 @@ function MatchDetailInner() {
                                   href={item.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="mt-2 inline-flex items-center gap-1 text-body-sm font-medium text-[#C99A28] dark:text-accent"
+                                  className="mt-2 inline-flex items-center gap-1 text-body-sm font-medium text-accent dark:text-accent"
                                 >
                                   View work <IconChevronRight className="h-3 w-3" />
                                 </a>
@@ -633,7 +633,7 @@ function MatchDetailInner() {
                                 href={url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-body-sm font-medium text-[#C99A28] dark:text-accent"
+                                className="text-body-sm font-medium text-accent dark:text-accent"
                               >
                                 {url.replace(/^https?:\/\//, "")}
                               </a>
@@ -707,13 +707,13 @@ function MatchDetailInner() {
                   <p className="text-[2.25rem] font-medium leading-none tracking-tight text-foreground">
                     {Math.round(match.percent)}%
                   </p>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#FFC555]/15 px-3 py-1 text-caption font-semibold text-[#C99A28] dark:bg-[#4ADE80]/15 dark:text-[#4ADE80]">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent/15 px-3 py-1 text-caption font-semibold text-accent dark:bg-[#4ADE80]/15 dark:text-[#4ADE80]">
                     {matchBandLabel[matchBand(match.percent)]} fit
                   </span>
                 </div>
                 <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-surface-tertiary">
                   <div
-                    className="h-full rounded-full bg-[#FFC555] dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent"
+                    className="h-full rounded-full bg-accent dark:bg-gradient-to-r dark:from-accent-hover dark:to-accent"
                     style={{ width: `${Math.max(0, Math.min(100, match.percent))}%` }}
                   />
                 </div>

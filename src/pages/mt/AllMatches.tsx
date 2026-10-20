@@ -65,7 +65,7 @@ function FilterDropdown({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-surface px-4 text-body-sm font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 dark:bg-white/[0.05] dark:hover:border-white/15"
+        className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-surface px-4 text-body-sm font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 hover:border-accent/30 dark:bg-white/[0.05] dark:hover:border-white/15"
       >
         {label ? <span className="text-muted">{label}:</span> : null}
         <span className="max-w-[10rem] truncate">{value}</span>
@@ -224,7 +224,7 @@ function AllMatchesInner() {
               title="Go visible to see matches"
               description="Matches appear once you are visible this cycle."
               action={
-                <Link to={`${PRODUCT_HOME}/vael?create=1&side=${side}`} className="text-body-sm font-medium text-[#C99A28] dark:text-accent">
+                <Link to={`${PRODUCT_HOME}/vael?create=1&side=${side}`} className="text-body-sm font-medium text-accent dark:text-accent">
                   {matchesGoVisibleCta(side)}
                 </Link>
               }

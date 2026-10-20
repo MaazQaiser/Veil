@@ -226,7 +226,7 @@ export function PostDetailPage() {
             >
               {districtLabel}
             </Link>
-            <span className="inline-flex items-center rounded-full bg-[#FFC555]/15 px-2.5 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+            <span className="inline-flex items-center rounded-full bg-accent/15 px-2.5 py-1 text-caption font-semibold text-accent dark:bg-accent/15 dark:text-accent">
               {kindLabel}
             </span>
           </div>
@@ -332,7 +332,7 @@ export function PostDetailPage() {
         <aside className="space-y-4 lg:sticky lg:top-24">
           <div className="rounded-2xl border border-border bg-white p-5 dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]">
             <div className="flex items-center gap-3 border-b border-border-subtle pb-4">
-              <Avatar name={author.name} src={author.avatarUrl} size="lg" className="ring-2 ring-[#FFC555]/30" />
+              <Avatar name={author.name} src={author.avatarUrl} size="lg" className="ring-2 ring-accent/30" />
               <div className="min-w-0">
                 <Link
                   to={communityProfileHref(post.districtId, post.handle)}

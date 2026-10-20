@@ -92,7 +92,7 @@ export function CreatePostDialog({
                   "rounded-full border px-3.5 py-1.5 text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-150",
                   kind === item
                     ? "border-foreground bg-foreground text-white dark:border-transparent dark:bg-accent dark:text-[#1A1410]"
-                    : "border-border text-muted hover:border-[#C99A28] hover:text-foreground dark:hover:border-accent",
+                    : "border-border text-muted hover:border-accent hover:text-foreground dark:hover:border-accent",
                 )}
               >
                 {communityPostKindLabel(item)}

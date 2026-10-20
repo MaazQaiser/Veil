@@ -59,7 +59,7 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
           <p className="flex items-center gap-2 text-h4 font-medium text-foreground">
             {out ? "Your Opportunities" : "Available Opportunities"}
             {items.length > 0 ? (
-              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#FFC555]/15 px-2 text-caption font-medium text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-accent/15 px-2 text-caption font-medium text-accent dark:bg-accent/15 dark:text-accent">
                 {items.length}
               </span>
             ) : null}
@@ -73,7 +73,7 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
         <div className="flex items-center gap-4">
           <Link
             to={opportunitiesHomeFor(side)}
-            className="text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground dark:text-accent"
+            className="text-body-sm font-medium text-accent underline underline-offset-4 hover:text-foreground dark:text-accent"
           >
             View all →
           </Link>
@@ -82,7 +82,7 @@ export function OpportunitiesRail({ side, handle }: { side: VaelSide; handle: st
 
       <div className="mt-5">
         {items.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[#C99A28]/25 bg-[#FFC555]/[0.05] px-5 py-8 text-center text-body-sm text-muted dark:border-accent/25 dark:bg-accent/[0.05]">
+          <p className="rounded-xl border border-dashed border-accent/25 bg-accent/[0.05] px-5 py-8 text-center text-body-sm text-muted dark:border-accent/25 dark:bg-accent/[0.05]">
             {out
               ? "No opportunities yet. Opportunities you post, and the responses to them, will show up here."
               : "No open opportunities right now. New ones posted from Vael Out will show up here."}

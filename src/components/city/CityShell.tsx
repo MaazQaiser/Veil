@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { IconButton, buttonClassName } from "@/components/ui/button";
+import { useTheme } from "@/lib/theme";
 import { Drawer } from "@/components/ui/overlays";
 import { Container } from "@/components/ui/layout";
 import { Avatar } from "@/components/ui/avatar";
@@ -13,6 +14,8 @@ import {
   IconGrid,
   IconHome,
   IconMenu,
+  IconMoon,
+  IconSun,
   IconMessage,
   IconSearch,
   IconUsers,
@@ -102,7 +105,7 @@ function BellIllustration({ className }: { className?: string }) {
         strokeLinejoin="round"
       />
       <path d="M40 72a8 8 0 0 0 16 0" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
-      <circle cx="68" cy="26" r="6" className="fill-[#FFC555] dark:fill-accent" />
+      <circle cx="68" cy="26" r="6" className="fill-accent dark:fill-accent" />
     </svg>
   );
 }
@@ -156,7 +159,7 @@ function NotificationsMenu({ notices, unread }: { notices: VaelApi["notices"]; u
         aria-controls={menuId}
         aria-label="Notifications"
         title="Notifications"
-        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-[#FFC555]/15 hover:text-[#C99A28] dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-accent/15 hover:text-accent dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10"
         onClick={() => setOpen((value) => !value)}
       >
         <IconBell className="h-5 w-5" />
@@ -191,7 +194,7 @@ function NotificationsMenu({ notices, unread }: { notices: VaelApi["notices"]; u
                 const row = (
                   <>
                     {!item.read ? (
-                      <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#FFC555] dark:bg-accent" />
+                      <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent dark:bg-accent" />
                     ) : (
                       <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-transparent" />
                     )}
@@ -296,7 +299,7 @@ function MessagesMenu({
         aria-controls={menuId}
         aria-label="Messages"
         title="Messages"
-        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-[#FFC555]/15 hover:text-[#C99A28] dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:bg-accent/15 hover:text-accent dark:border dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_-6px_rgba(0,0,0,0.4)] dark:backdrop-blur-lg dark:hover:bg-white/10"
         onClick={() => setOpen((value) => !value)}
       >
         <IconMessage className="h-5 w-5" />
@@ -312,14 +315,14 @@ function MessagesMenu({
           <div className="flex shrink-0 items-center justify-between border-b border-border-subtle px-5 py-4">
             <p className="text-body font-medium text-foreground">Messages</p>
             {unread > 0 ? (
-              <span className="rounded-full bg-[#FFC555]/15 px-2 py-0.5 text-caption font-medium text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-caption font-medium text-accent dark:bg-accent/15 dark:text-accent">
                 {unread} new
               </span>
             ) : null}
           </div>
           {rows.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-8 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-[#C99A28]/20 bg-gradient-to-br from-[#FFC555]/20 to-[#FFC555]/5 text-[#C99A28] dark:border-accent/25 dark:from-accent/20 dark:to-accent/5 dark:text-accent">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-accent/20 bg-gradient-to-br from-accent/20 to-accent/5 text-accent dark:border-accent/25 dark:from-accent/20 dark:to-accent/5 dark:text-accent">
                 <IconMessage className="h-6 w-6" />
               </span>
               <p className="mt-2 text-body font-medium text-foreground">No messages yet</p>
@@ -350,7 +353,7 @@ function MessagesMenu({
                           {row.last?.body || "No messages yet"}
                         </span>
                         {row.unreadCount > 0 ? (
-                          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-[#FFC555] dark:bg-accent" />
+                          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-accent dark:bg-accent" />
                         ) : null}
                       </span>
                     </div>
@@ -363,7 +366,7 @@ function MessagesMenu({
             role="menuitem"
             to="/messages"
             onClick={() => setOpen(false)}
-            className="block shrink-0 border-t border-border-subtle px-5 py-4 text-center text-body-sm font-medium text-[#C99A28] hover:bg-surface-muted dark:text-accent dark:hover:bg-white/5"
+            className="block shrink-0 border-t border-border-subtle px-5 py-4 text-center text-body-sm font-medium text-accent hover:bg-surface-muted dark:text-accent dark:hover:bg-white/5"
           >
             See all messages
           </Link>
@@ -379,6 +382,22 @@ const accountMenuItemClassName =
 // Identity is one generic profile shared across every district (see JoinIdentityPage) —
 // the account menu's "Profile" link always opens that one page, never a per-district
 // profile page, regardless of which district you're currently browsing.
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  const toLight = theme === "dark";
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={toLight ? "Switch to light theme" : "Switch to dark theme"}
+      title={toLight ? "Light theme" : "Dark theme"}
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-foreground motion-safe:transition-colors motion-safe:duration-200 hover:text-accent dark:border dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-white/10"
+    >
+      {toLight ? <IconSun className="h-5 w-5" /> : <IconMoon className="h-5 w-5" />}
+    </button>
+  );
+}
+
 function profileHrefForHandle(handle: string) {
   return `${PRODUCT_HOME}/profile/${handle}`;
 }
@@ -449,8 +468,8 @@ function AccountMenu({
           size="md"
           className={
             avatarUrl
-              ? "ring-2 ring-[#FFC555]/40 ring-offset-2 ring-offset-background dark:ring-accent/50 dark:ring-offset-[#0B0C0C]"
-              : "border-transparent bg-gradient-to-br from-[#FDBA74] to-[#C99A28] font-medium text-[#0B0C0C] dark:from-accent-hover dark:to-accent dark:text-[#0B0C0C]"
+              ? "ring-2 ring-accent/40 ring-offset-2 ring-offset-background dark:ring-accent/50 dark:ring-offset-[#0B0C0C]"
+              : "border-transparent bg-gradient-to-br from-accent-hover to-accent font-medium text-[#0B0C0C] dark:from-accent-hover dark:to-accent dark:text-[#0B0C0C]"
           }
         />
       </button>
@@ -784,6 +803,7 @@ export function CityShell() {
                     className="h-11 min-w-0 flex-1 bg-transparent text-body-sm text-foreground placeholder:text-quiet focus:outline-none"
                   />
                 </form>
+                <ThemeToggle />
                 <NotificationsMenu notices={vael.notices} unread={unreadNotifications} />
                 <MessagesMenu
                   handle={session.handle}

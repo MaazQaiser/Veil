@@ -241,7 +241,7 @@ function InboxIllustration() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="73" cy="23" r="6" className="fill-[#FFC555] dark:fill-accent" />
+      <circle cx="73" cy="23" r="6" className="fill-accent dark:fill-accent" />
     </svg>
   );
 }

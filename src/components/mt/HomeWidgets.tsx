@@ -47,8 +47,8 @@ export function WidgetIcon({ children, tone = "light" }: { children: ReactNode; 
       className={cn(
         "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border",
         tone === "dark"
-          ? "border-white/10 bg-white/5 text-[#FFC555]"
-          : "border-[#C99A28]/20 bg-gradient-to-br from-[#FFC555]/20 to-[#FFC555]/5 text-[#C99A28] shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)]",
+          ? "border-white/10 bg-white/5 text-accent"
+          : "border-accent/20 bg-gradient-to-br from-accent/20 to-accent/5 text-accent shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)]",
       )}
     >
       {children}
@@ -64,8 +64,8 @@ export function CornerLink({ to, tone = "light" }: { to: string; tone?: "light" 
       className={cn(
         "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border motion-safe:transition-colors motion-safe:duration-150",
         tone === "dark"
-          ? "border-white/15 bg-white/5 text-white/70 hover:border-[#FFC555]/50 hover:bg-[#FFC555]/10 hover:text-[#FFC555]"
-          : "border-border bg-white/60 text-muted hover:border-[#C99A28]/40 hover:bg-[#FFC555]/10 hover:text-[#C99A28]",
+          ? "border-white/15 bg-white/5 text-white/70 hover:border-accent/50 hover:bg-accent/10 hover:text-accent"
+          : "border-border bg-white/60 text-muted hover:border-accent/40 hover:bg-accent/10 hover:text-accent",
       )}
     >
       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden>
@@ -103,7 +103,7 @@ const railScrollClassName =
   "flex snap-x gap-4 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 const railEmptyClassName =
-  "rounded-xl border border-dashed border-[#C99A28]/25 bg-[#FFC555]/[0.05] px-5 py-8 text-center text-body-sm text-muted dark:border-accent/25 dark:bg-accent/[0.05]";
+  "rounded-xl border border-dashed border-accent/25 bg-accent/[0.05] px-5 py-8 text-center text-body-sm text-muted dark:border-accent/25 dark:bg-accent/[0.05]";
 
 /** Section heading shared by every horizontal card rail — eyebrow, title, description, "Show all" + scroll arrows. */
 function RailHeader({
@@ -125,7 +125,7 @@ function RailHeader({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-xl">
         <span className="inline-flex items-center gap-2 text-caption font-medium uppercase tracking-[0.1em] text-muted">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#FFC555]" aria-hidden />
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
           {eyebrow}
         </span>
         <h2 className="vael-h3 mt-2 text-foreground">{title}</h2>
@@ -134,7 +134,7 @@ function RailHeader({
       <div className="flex shrink-0 items-center gap-3">
         <Link
           to={viewAllTo}
-          className="text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground"
+          className="text-body-sm font-medium text-accent underline underline-offset-4 hover:text-foreground"
         >
           {viewAllLabel}
         </Link>
@@ -143,7 +143,7 @@ function RailHeader({
             type="button"
             aria-label="Scroll left"
             onClick={() => onScroll(-1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-foreground dark:hover:border-white/20"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-accent/30 hover:text-foreground dark:hover:border-white/20"
           >
             <IconChevronRight className="h-4 w-4 rotate-180" />
           </button>
@@ -151,7 +151,7 @@ function RailHeader({
             type="button"
             aria-label="Scroll right"
             onClick={() => onScroll(1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-[#C99A28]/30 hover:text-foreground dark:hover:border-white/20"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted motion-safe:transition-colors motion-safe:duration-150 hover:border-accent/30 hover:text-foreground dark:hover:border-white/20"
           >
             <IconChevronRight className="h-4 w-4" />
           </button>
@@ -197,7 +197,7 @@ export function BestMatchesRail({ matches, visible }: { matches: RankedMatch[]; 
                       alt=""
                       className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-[1.04]"
                     />
-                    <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-caption font-medium text-[#C99A28] backdrop-blur">
+                    <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-caption font-medium text-accent backdrop-blur">
                       <span className="tabular-nums">{Math.round(match.percent)}%</span>&nbsp;Match
                     </span>
                     <Avatar
@@ -239,14 +239,14 @@ export function ProfileWidget({
   return (
     <article className={GLOW_CARD}>
       <div className="relative flex items-center gap-3">
-        <Avatar name={name} src={profile?.avatarUrl} size="sm" className="ring-2 ring-[#FFC555]/30" />
+        <Avatar name={name} src={profile?.avatarUrl} size="sm" className="ring-2 ring-accent/30" />
         <div className="min-w-0">
           <p className="text-caption font-medium uppercase tracking-[0.06em] text-quiet">Your profile</p>
           <p className="truncate text-body-sm font-medium text-foreground">{name}</p>
         </div>
       </div>
       <p className="relative mt-3 text-body-sm text-foreground">
-        Profile <span className="font-medium tabular-nums text-[#C99A28]">{percent}%</span> complete
+        Profile <span className="font-medium tabular-nums text-accent">{percent}%</span> complete
       </p>
       <p className="relative mt-1 text-body-sm text-muted">Complete your profile to improve your matching quality.</p>
       <div className="relative mt-4">
@@ -337,7 +337,7 @@ export function HandshakesCard({ incoming }: { incoming: ConnectionRecord[] }) {
                     name={person?.displayName || connection.requesterHandle}
                     src={person?.avatarUrl}
                     size="sm"
-                    className="ring-2 ring-[#FFC555]/30"
+                    className="ring-2 ring-accent/30"
                   />
                   <div className="min-w-0">
                     <p className="truncate text-body-sm font-medium">{person?.displayName || `@${connection.requesterHandle}`}</p>
@@ -377,7 +377,7 @@ export function ConnectionsCard({ handle, connected }: { handle: string; connect
           {rows.slice(0, 3).map(({ connection, other, profile }) => (
             <li key={connection.id} className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <Avatar name={profile?.displayName || other} src={profile?.avatarUrl} size="sm" className="ring-2 ring-[#FFC555]/30" />
+                <Avatar name={profile?.displayName || other} src={profile?.avatarUrl} size="sm" className="ring-2 ring-accent/30" />
                 <div className="min-w-0">
                   <p className="truncate text-body-sm font-medium">{profile?.displayName || `@${other}`}</p>
                   <p className="truncate text-body-sm text-muted">{profile?.headline || "Connected"}</p>
@@ -430,7 +430,7 @@ export function ConversationsCard({
             return (
               <li key={connection.id}>
                 <Link to={`${PRODUCT_HOME}/connections/${connection.id}`} className="flex min-w-0 items-center gap-3">
-                  <Avatar name={person?.displayName || other} src={person?.avatarUrl} size="sm" className="ring-2 ring-[#FFC555]/30" />
+                  <Avatar name={person?.displayName || other} src={person?.avatarUrl} size="sm" className="ring-2 ring-accent/30" />
                   <div className="min-w-0">
                     <p className="text-body-sm font-medium">{person?.displayName || `@${other}`}</p>
                     <p className="mt-0.5 truncate text-body-sm text-muted">{last?.body ? `“${last.body}”` : "Open conversation"}</p>
@@ -473,7 +473,7 @@ function CommunityPostPreviewCard({ view }: { view: CommunityPostView }) {
         {image ? (
           <img src={image} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
         ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FFC555] text-body font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-body font-semibold text-[#0B0C0C] dark:bg-accent dark:text-[#0B0C0C]">
             {initial}
           </span>
         )}
@@ -487,7 +487,7 @@ function CommunityPostPreviewCard({ view }: { view: CommunityPostView }) {
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-3 py-1 text-caption font-medium text-foreground">
           {district}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#FFC555]/15 px-3 py-1 text-caption font-semibold text-[#C99A28] dark:bg-accent/15 dark:text-accent">
+        <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-3 py-1 text-caption font-semibold text-accent dark:bg-accent/15 dark:text-accent">
           <KindIcon className="h-3.5 w-3.5" aria-hidden />
           {kindLabel}
         </span>
@@ -511,7 +511,7 @@ function CommunityPostPreviewCard({ view }: { view: CommunityPostView }) {
         </button>
         <Link
           to={`${PRODUCT_HOME}/community`}
-          className="group flex items-center gap-1 text-body-sm font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 hover:text-[#C99A28] dark:text-[#F5F3EE] dark:hover:text-accent"
+          className="group flex items-center gap-1 text-body-sm font-medium text-foreground motion-safe:transition-colors motion-safe:duration-150 hover:text-accent dark:text-[#F5F3EE] dark:hover:text-accent"
         >
           View Post
           <IconChevronRight className="h-3.5 w-3.5 motion-safe:transition-transform motion-safe:duration-150 group-hover:translate-x-0.5" />
@@ -541,7 +541,7 @@ export function CommunityRail({
         </div>
         <Link
           to={`${PRODUCT_HOME}/community`}
-          className="text-body-sm font-medium text-[#C99A28] underline underline-offset-4 hover:text-foreground dark:text-accent"
+          className="text-body-sm font-medium text-accent underline underline-offset-4 hover:text-foreground dark:text-accent"
         >
           Show all →
         </Link>
@@ -591,7 +591,7 @@ export function ActivityWidget({ notices }: { notices: LocalNotice[] }) {
         <ul className="relative mt-4 space-y-3">
           {recent.map((item) => (
             <li key={item.id} className="flex gap-2.5">
-              <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#C99A28]" />
+              <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
               <div className="min-w-0">
                 <p className="text-body-sm font-medium">{item.title}</p>
                 <p className="mt-0.5 truncate text-body-sm text-muted">{item.body}</p>
