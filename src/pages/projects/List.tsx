@@ -189,8 +189,11 @@ export function OpportunityCard({ item }: { item: CxProject }) {
       </dl>
 
       <CardFooter>
-        <Link to={projectHref(item.id)} className={buttonClassName({ size: "sm" })}>
-          View Opportunity
+        <Link
+          to={projectHref(item.id)}
+          className="text-body-sm font-medium text-accent underline-offset-4 hover:underline"
+        >
+          View Opportunity →
         </Link>
         {canExtend ? (
           <Button type="button" size="sm" variant="outline" onClick={() => extendCxProject(item.id)}>
