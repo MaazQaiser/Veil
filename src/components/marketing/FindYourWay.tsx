@@ -227,26 +227,14 @@ export function FindYourWay() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // A small hello appears once per visit, a few seconds after the page loads.
+  // The "Find your way here" note shows on every page load until it is closed.
   useEffect(() => {
-    let seen = false;
-    try {
-      seen = sessionStorage.getItem("vael_fyw_teaser") === "1";
-    } catch {
-      /* ignore */
-    }
-    if (seen) return;
-    const id = window.setTimeout(() => setTeaser(true), 2500);
+    const id = window.setTimeout(() => setTeaser(true), 1200);
     return () => window.clearTimeout(id);
   }, []);
 
   function dismissTeaser() {
     setTeaser(false);
-    try {
-      sessionStorage.setItem("vael_fyw_teaser", "1");
-    } catch {
-      /* ignore */
-    }
   }
 
   function openPanel() {
@@ -259,9 +247,9 @@ export function FindYourWay() {
       {!open ? (
         <div className="relative">
           {teaser ? (
-            <div className="absolute bottom-full right-0 mb-3 w-56 motion-safe:animate-[fyw-in_0.3s_ease-out]">
+            <div className="absolute bottom-full right-0 mb-3 w-52 motion-safe:animate-[fyw-in_0.3s_ease-out]">
               <div className="relative rounded-2xl rounded-br-md bg-[#1B1B1B] p-3.5 pr-8 font-sans text-body-sm text-white shadow-[0_14px_34px_rgba(0,0,0,0.4)] ring-1 ring-white/10">
-                Hey! Need a hand finding your way around VAEL?
+                Find your way here
                 <button
                   type="button"
                   onClick={dismissTeaser}
