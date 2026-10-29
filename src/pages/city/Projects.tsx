@@ -217,37 +217,33 @@ export function WebsiteProjectsPage() {
   const shown = category === "All" ? MARKETING_PROJECTS : MARKETING_PROJECTS.filter((project) => project.category === category);
 
   return (
-    <CityPage width="wide">
-      <div className="flex items-center justify-between gap-4 border-b border-border-subtle pb-4 text-body-sm">
-        <p className="flex items-center gap-3 text-muted">
-          <span className="inline-flex items-center gap-2 text-caption font-semibold uppercase tracking-[0.14em] text-success">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-success" />
-            Live
-          </span>
-          <span>
-            <span className="text-foreground">{MARKETING_PROJECTS.length}</span> opportunities
-          </span>
-        </p>
-      </div>
-
-      <div className="mt-10 flex flex-wrap items-end justify-between gap-6">
+    <CityPage width="wide" className="py-8 md:py-10">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div>
-          <p className="text-caption font-semibold uppercase tracking-[0.16em] text-accent">Opportunities</p>
-          <h1 className="mt-2 font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-medium tracking-tight text-foreground">
+          <h1 className="font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-medium tracking-tight text-foreground">
             Opportunities
           </h1>
-          <p className="mt-2 max-w-xl text-body text-muted">Live opportunities from across THE CITY OF VAEL.</p>
+          <p className="mt-1.5 max-w-xl text-body text-muted">Live opportunities from across THE CITY OF VAEL.</p>
         </div>
-        <Link
-          to={NEED_PATH}
-          className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
-        >
-          <span aria-hidden className="text-lg leading-none">+</span>
-          Post an opportunity
-        </Link>
+        <div className="flex items-center gap-3">
+          <span
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 text-body-sm font-medium text-success"
+            aria-label={`${shown.length} live ${shown.length === 1 ? "opportunity" : "opportunities"}`}
+          >
+            <span aria-hidden className="h-2 w-2 rounded-full bg-success" />
+            {shown.length} live
+          </span>
+          <Link
+            to={NEED_PATH}
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
+          >
+            <span aria-hidden className="text-lg leading-none">+</span>
+            Post an opportunity
+          </Link>
+        </div>
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-3" role="group" aria-label="Filter opportunities">
+      <div className="mt-6 flex flex-wrap gap-3" role="group" aria-label="Filter opportunities">
         {categories.map((name) => {
           const active = name === category;
           return (
@@ -268,7 +264,7 @@ export function WebsiteProjectsPage() {
       </div>
 
       {locked ? (
-        <div className="mt-6 rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:p-6">
+        <div className="mt-5 rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:p-6">
           <p className="flex items-start gap-3 text-body text-foreground">
             <IconLock className="mt-1 h-4 w-4 shrink-0 text-accent" />
             You're seeing previews. Create a free account and join {DISTRICT_NAME} to see full opportunities and show interest.
@@ -287,10 +283,7 @@ export function WebsiteProjectsPage() {
         </div>
       ) : null}
 
-      <p className="mt-10 text-caption font-semibold uppercase tracking-[0.14em] text-muted">
-        {shown.length} live {shown.length === 1 ? "opportunity" : "opportunities"}
-      </p>
-      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {shown.map((project) => (
           <ProjectCard key={project.id} project={project} locked={locked} onDetails={() => setOpenId(project.id)} />
         ))}
