@@ -8,6 +8,7 @@ import { Drawer } from "@/components/ui/overlays";
 import { Container } from "@/components/ui/layout";
 import { Avatar } from "@/components/ui/avatar";
 import { DistrictStatus } from "@/components/vael/status";
+import { DistrictSearch } from "./DistrictSearch";
 import {
   IconBell,
   IconClose,
@@ -20,7 +21,7 @@ import {
   IconSearch,
   IconUsers,
 } from "@/components/ui/icons";
-import { CITY_CONTEXT, districtFromPath, primaryDistricts } from "@/lib/districts";
+import { CITY_CONTEXT, districtFromPath, districts } from "@/lib/districts";
 import { useCitySession } from "@/lib/citySession";
 import { useVael } from "@/lib/vaelCore";
 import { onboardingComplete, onboardingRoute, signedInLanding } from "@/lib/onboarding";
@@ -36,7 +37,7 @@ const DEFAULT_AVATAR_URL = "/people/p04.jpg";
 /** Site-header pill links — shown on the public marketing site only, not inside the product. */
 const cityEntryNav = [
   { id: "explore", label: "Explore Districts", to: "/districts" },
-  { id: "projects", label: "Projects", to: "/projects" },
+  { id: "projects", label: "Opportunities", to: "/projects" },
   { id: "community", label: "Community", to: "/feed" },
 ] as const;
 
@@ -509,7 +510,7 @@ function AccountMenu({
           {isHomeownerPath(location.pathname) ? null : (
             <>
           <p className={cn("px-3 py-1 text-label", dark ? "text-white/45" : "text-muted")}>Switch district</p>
-          {primaryDistricts.map((district) => (
+          {districts.map((district) => (
             <button
               key={district.id}
               type="button"
@@ -617,7 +618,7 @@ export function DistrictSwitcher() {
               <Badge tone="outline">City</Badge>
             </button>
           </li>
-          {primaryDistricts.map((district) => (
+          {districts.map((district) => (
             <li key={district.id}>
               <button
                 type="button"
@@ -710,7 +711,8 @@ export function CityShell() {
     location.pathname === "/sign-up" ||
     location.pathname === "/go-visible" ||
     isHomeownerPath(location.pathname);
-  const darkNav = isWebsiteNavPath(location.pathname) || inJoinFlow;
+  // Every non-product page shares the dark website bar; only the signed-in product keeps its own.
+  const darkNav = !inProduct || isWebsiteNavPath(location.pathname) || inJoinFlow;
   const onNeedFlow = location.pathname === "/need" || location.pathname.startsWith("/need/");
 
   useEffect(() => {
@@ -750,6 +752,7 @@ export function CityShell() {
             <img src="/vael-medallion.png" alt="" className="h-9 w-9 sm:h-10 sm:w-10" />
             <span className="sr-only">VAEL — City home</span>
           </Link>
+          {!inProduct ? <DistrictSearch className="hidden lg:block lg:w-44 xl:w-60" /> : null}
           {!inProduct ? (
             <nav
               className="hidden min-w-0 items-center gap-8 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
@@ -937,6 +940,7 @@ export function CityShell() {
           </>
         ) : (
           <>
+            <DistrictSearch inline tone="default" className="mb-3" onNavigate={() => setMoreOpen(false)} />
             <ul className="flex flex-col">
               {cityEntryNav.map((item) => (
                 <li key={item.id}>

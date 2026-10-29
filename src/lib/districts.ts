@@ -125,6 +125,10 @@ export const districts: CityDistrict[] = [
 
 export const primaryDistricts = districts.filter((d) => d.primary);
 
+export function districtStatusLabel(status: DistrictLotStatus): string {
+  return status === "live" ? "Live" : status === "soon" ? "Coming soon" : "Early access";
+}
+
 export const CITY_CONTEXT = {
   id: "city",
   name: "The City",

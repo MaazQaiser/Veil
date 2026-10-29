@@ -20,7 +20,11 @@ export function CityLayout() {
   // orange design language now — no longer a user-toggleable preference.
   const inProductFlow = isDarkModeFlowPath(location.pathname);
   // Dark is the default; the product can switch to light from the top bar.
-  const { theme } = useTheme();
+  const { theme: preferredTheme } = useTheme();
+  // Public website pages (Districts, Projects, Community) always match the dark landing page;
+  // the light/dark preference only applies inside the product.
+  const onWebsite = isSitePath(location.pathname, session.signedIn);
+  const theme = onWebsite ? "dark" : preferredTheme;
   const showDark = inProductFlow && theme === "dark";
   const hideFooter = inJoinFlow || location.pathname === "/messages" || inProductFlow;
 

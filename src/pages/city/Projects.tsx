@@ -1,9 +1,15 @@
-import { useState } from "react";
-import { CityPage } from "@/components/city/CityShell";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/overlays";
-import { IconCalendar, IconClock, IconMapPin, IconWallet } from "@/components/ui/icons";
+import { IconCalendar, IconClock, IconLock, IconMapPin, IconWallet } from "@/components/ui/icons";
+import { useCitySession } from "@/lib/citySession";
+import { NEED_PATH } from "@/lib/cxRoutes";
+import { cn } from "@/lib/cn";
 import { MARKETING_PROJECTS, type MarketingProject, type MarketingProjectIcon } from "@/lib/marketingProjects";
+
+const DISTRICT_NAME = "Contractor Exchange";
 
 const CARD =
   "flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]";
@@ -95,10 +101,24 @@ function Fact({ icon, label }: { icon: "pin" | "time" | "budget"; label: string 
   );
 }
 
-function ProjectCard({ project, onDetails }: { project: MarketingProject; onDetails: () => void }) {
+export function ProjectCard({ project, locked, onDetails }: { project: MarketingProject; locked: boolean; onDetails: () => void }) {
   return (
     <article className={CARD}>
-      <img src={project.image} alt="" className="h-48 w-full shrink-0 object-cover" />
+      <div className="relative h-48 w-full shrink-0 overflow-hidden">
+        <img
+          src={project.image}
+          alt=""
+          className={cn("h-full w-full object-cover", locked && "scale-110 opacity-60 blur-xl")}
+        />
+        {locked ? (
+          <span className="absolute inset-x-0 bottom-4 flex justify-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/90 px-3 py-1.5 text-caption font-medium text-foreground">
+              <IconLock className="h-3.5 w-3.5" />
+              Members only
+            </span>
+          </span>
+        ) : null}
+      </div>
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
@@ -116,7 +136,14 @@ function ProjectCard({ project, onDetails }: { project: MarketingProject; onDeta
             Live
           </Badge>
         </div>
-        <p className="line-clamp-3 min-h-[4.5rem] text-body-sm leading-6 text-foreground">{project.description}</p>
+        {locked ? (
+          <p className="flex min-h-[4.5rem] items-start gap-2 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-body-sm leading-6 text-foreground">
+            <IconLock className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
+            The description is for members of {DISTRICT_NAME}
+          </p>
+        ) : (
+          <p className="line-clamp-3 min-h-[4.5rem] text-body-sm leading-6 text-foreground">{project.description}</p>
+        )}
         <div className="flex flex-wrap gap-2">
           <Fact icon="pin" label={project.city} />
           <Fact icon="time" label={project.timing} />
@@ -127,66 +154,148 @@ function ProjectCard({ project, onDetails }: { project: MarketingProject; onDeta
             <IconClock className="h-3.5 w-3.5 shrink-0" />
             {project.daysLeft} {project.daysLeft === 1 ? "day" : "days"} left
           </p>
-          <button type="button" onClick={onDetails} className="shrink-0 text-body-sm font-medium leading-none text-accent">
-            Show details <span aria-hidden>→</span>
-          </button>
+          {locked ? (
+            <Link to={JOIN_ROUTE} className="shrink-0 text-body-sm font-medium leading-none text-accent">
+              Join to view <span aria-hidden>→</span>
+            </Link>
+          ) : (
+            <button type="button" onClick={onDetails} className="shrink-0 text-body-sm font-medium leading-none text-accent">
+              Show details <span aria-hidden>→</span>
+            </button>
+          )}
         </div>
       </div>
     </article>
   );
 }
 
+export function ProjectDetailsDialog({ project: open, onClose }: { project?: MarketingProject; onClose: () => void }) {
+  return (
+    <Dialog open={Boolean(open)} onClose={onClose} title={open?.category ?? "Opportunity"}>
+      {open ? (
+        <div className="space-y-4">
+          <img src={open.image} alt="" className="h-44 w-full rounded-xl object-cover" />
+          <p className="text-body-sm text-muted">
+            {open.name} · {open.posted}
+          </p>
+          <p className="text-body text-foreground">{open.description}</p>
+          <dl className="grid gap-3 text-body-sm">
+            <div>
+              <dt className="text-muted">Location</dt>
+              <dd className="text-foreground">{open.city}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Timing</dt>
+              <dd className="text-foreground">{open.timing}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Budget</dt>
+              <dd className="text-foreground">{open.budget}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Time left</dt>
+              <dd className="text-foreground">
+                {open.daysLeft} {open.daysLeft === 1 ? "day" : "days"} left
+              </dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
+    </Dialog>
+  );
+}
+
+const PILL = "inline-flex items-center rounded-full border px-5 py-2.5 text-body-sm font-medium motion-safe:transition-colors";
+
 export function WebsiteProjectsPage() {
+  const { session } = useCitySession();
+  const locked = !session.signedIn;
   const [openId, setOpenId] = useState<string | null>(null);
+  const [category, setCategory] = useState<string>("All");
   const open = MARKETING_PROJECTS.find((project) => project.id === openId);
+  const categories = useMemo(() => ["All", ...Array.from(new Set(MARKETING_PROJECTS.map((project) => project.category)))], []);
+  const shown = category === "All" ? MARKETING_PROJECTS : MARKETING_PROJECTS.filter((project) => project.category === category);
 
   return (
     <CityPage width="wide">
-      <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
-        Live projects
-      </h1>
-      <p className="mt-1 max-w-xl text-body-sm text-muted">
-        What homeowners in THE CITY OF VAEL need done right now.
-      </p>
-      <p className="mt-8 text-caption font-semibold uppercase tracking-[0.14em] text-muted">
-        {MARKETING_PROJECTS.length} live projects
+      <div className="flex items-center justify-between gap-4 border-b border-border-subtle pb-4 text-body-sm">
+        <p className="flex items-center gap-3 text-muted">
+          <span className="inline-flex items-center gap-2 text-caption font-semibold uppercase tracking-[0.14em] text-success">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-success" />
+            Live
+          </span>
+          <span>
+            <span className="text-foreground">{MARKETING_PROJECTS.length}</span> opportunities
+          </span>
+        </p>
+      </div>
+
+      <div className="mt-10 flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <p className="text-caption font-semibold uppercase tracking-[0.16em] text-accent">Opportunities</p>
+          <h1 className="mt-2 font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-medium tracking-tight text-foreground">
+            Opportunities
+          </h1>
+          <p className="mt-2 max-w-xl text-body text-muted">Live opportunities from across THE CITY OF VAEL.</p>
+        </div>
+        <Link
+          to={NEED_PATH}
+          className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
+        >
+          <span aria-hidden className="text-lg leading-none">+</span>
+          Post an opportunity
+        </Link>
+      </div>
+
+      <div className="mt-8 flex flex-wrap gap-3" role="group" aria-label="Filter opportunities">
+        {categories.map((name) => {
+          const active = name === category;
+          return (
+            <button
+              key={name}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setCategory(name)}
+              className={cn(
+                PILL,
+                active ? "border-accent/60 bg-accent/10 text-accent" : "border-border text-muted hover:text-foreground",
+              )}
+            >
+              {name === "All" ? "All opportunities" : name}
+            </button>
+          );
+        })}
+      </div>
+
+      {locked ? (
+        <div className="mt-6 rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:p-6">
+          <p className="flex items-start gap-3 text-body text-foreground">
+            <IconLock className="mt-1 h-4 w-4 shrink-0 text-accent" />
+            You're seeing previews. Create a free account and join {DISTRICT_NAME} to see full opportunities and show interest.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-5">
+            <Link
+              to={JOIN_ROUTE}
+              className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
+            >
+              Create a free account
+            </Link>
+            <Link to="/sign-in" className="text-body font-medium text-accent">
+              I have an account
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      <p className="mt-10 text-caption font-semibold uppercase tracking-[0.14em] text-muted">
+        {shown.length} live {shown.length === 1 ? "opportunity" : "opportunities"}
       </p>
       <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {MARKETING_PROJECTS.map((project) => (
-          <ProjectCard key={project.id} project={project} onDetails={() => setOpenId(project.id)} />
+        {shown.map((project) => (
+          <ProjectCard key={project.id} project={project} locked={locked} onDetails={() => setOpenId(project.id)} />
         ))}
       </div>
-      <Dialog open={Boolean(open)} onClose={() => setOpenId(null)} title={open?.category ?? "Project"}>
-        {open ? (
-          <div className="space-y-4">
-            <img src={open.image} alt="" className="h-44 w-full rounded-xl object-cover" />
-            <p className="text-body-sm text-muted">
-              {open.name} · {open.posted}
-            </p>
-            <p className="text-body text-foreground">{open.description}</p>
-            <dl className="grid gap-3 text-body-sm">
-              <div>
-                <dt className="text-muted">Location</dt>
-                <dd className="text-foreground">{open.city}</dd>
-              </div>
-              <div>
-                <dt className="text-muted">Timing</dt>
-                <dd className="text-foreground">{open.timing}</dd>
-              </div>
-              <div>
-                <dt className="text-muted">Budget</dt>
-                <dd className="text-foreground">{open.budget}</dd>
-              </div>
-              <div>
-                <dt className="text-muted">Time left</dt>
-                <dd className="text-foreground">
-                  {open.daysLeft} {open.daysLeft === 1 ? "day" : "days"} left
-                </dd>
-              </div>
-            </dl>
-          </div>
-        ) : null}
-      </Dialog>
+      <ProjectDetailsDialog project={open} onClose={() => setOpenId(null)} />
     </CityPage>
   );
 }

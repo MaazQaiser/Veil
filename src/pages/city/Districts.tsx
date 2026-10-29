@@ -115,7 +115,7 @@ const WEBSITE_DISTRICT_CARDS: {
   id: string;
   name: string;
   status: DistrictLotStatus;
-  icon: "media" | "contractor" | "trucking" | "nursing" | "equipment" | "government";
+  icon: "media" | "contractor" | "trucking" | "residential" | "commercial" | "nursing" | "equipment" | "government" | "realestate" | "legal";
   lead: string;
   audience: string;
   roles?: [string, string];
@@ -131,7 +131,7 @@ const WEBSITE_DISTRICT_CARDS: {
   },
   {
     id: "construction",
-    name: "The Contractor Exchange",
+    name: "Contractor Exchange",
     status: "live",
     icon: "contractor",
     lead: "Skilled trades, construction, and the homeowners and businesses who hire them.",
@@ -140,12 +140,30 @@ const WEBSITE_DISTRICT_CARDS: {
   },
   {
     id: "trucking",
-    name: "Trucking Exchange",
+    name: "Trucking",
     status: "live",
     icon: "trucking",
     lead: "Drivers, carriers, dispatchers, and the freight that needs moving — matched by equipment and lane.",
     audience: "Drivers, owner operators, carriers, dispatchers, and shippers.",
     roles: ["I'm available to drive", "I need a driver"],
+  },
+  {
+    id: "residential",
+    name: "Residential",
+    status: "live",
+    icon: "residential",
+    lead: "Home projects matched to vetted pros who are free right now.",
+    audience: "Homeowners and the home-service professionals they hire.",
+    roles: ["I'm available for work", "I'm hiring"],
+  },
+  {
+    id: "commercial",
+    name: "Commercial",
+    status: "live",
+    icon: "commercial",
+    lead: "Companies and providers connect on capability and capacity.",
+    audience: "Businesses and the commercial providers they hire.",
+    roles: ["I'm available for work", "I'm hiring"],
   },
   {
     id: "nursing-healthcare",
@@ -170,6 +188,22 @@ const WEBSITE_DISTRICT_CARDS: {
     icon: "government",
     lead: "Public-sector contracting and staffing — early access planning underway.",
     audience: "Public-sector agencies and the contractors who serve them.",
+  },
+  {
+    id: "real-estate",
+    name: "Real Estate",
+    status: "early",
+    icon: "realestate",
+    lead: "Property professionals — early access planning underway.",
+    audience: "Agents, brokers, and property teams. Separate from the Residential district.",
+  },
+  {
+    id: "legal-finance",
+    name: "Legal & Finance",
+    status: "early",
+    icon: "legal",
+    lead: "Legal, accounting, and financial services — early access planning underway.",
+    audience: "Attorneys, accountants, and the people who need them.",
   },
 ];
 
@@ -209,6 +243,42 @@ function DistrictMark({ icon }: { icon: (typeof WEBSITE_DISTRICT_CARDS)[number][
         <path d="M13.7 9.2h3.2L20.4 13v4.4h-6.7V9.2z" />
         <circle cx="7" cy="19.2" r="1.5" />
         <circle cx="16.6" cy="19.2" r="1.5" />
+      </svg>
+    );
+  }
+  if (icon === "residential") {
+    return (
+      <svg {...svg}>
+        <path d="M4 11.4 12 4.4l8 7" />
+        <path d="M6.4 10.4V19.6h11.2V10.4" />
+        <path d="M10.2 19.6v-5h3.6v5" />
+      </svg>
+    );
+  }
+  if (icon === "commercial") {
+    return (
+      <svg {...svg}>
+        <path d="M5.4 20V4.6h9.2V20" />
+        <path d="M14.6 9.6h4V20" />
+        <path d="M8.4 8h.1M11.6 8h.1M8.4 11.6h.1M11.6 11.6h.1M8.4 15.2h.1M11.6 15.2h.1" />
+        <path d="M3.6 20h16.8" />
+      </svg>
+    );
+  }
+  if (icon === "realestate") {
+    return (
+      <svg {...svg}>
+        <circle cx="8.4" cy="12" r="3.4" />
+        <path d="M11.8 12h8.6M17 12v3M20.4 12v2" />
+      </svg>
+    );
+  }
+  if (icon === "legal") {
+    return (
+      <svg {...svg}>
+        <path d="M12 4.2v15.4M7.4 19.8h9.2" />
+        <path d="M5 8.2h14" />
+        <path d="M5 8.2 2.8 13.4a2.6 2.6 0 0 0 4.4 0L5 8.2zM19 8.2l-2.2 5.2a2.6 2.6 0 0 0 4.4 0L19 8.2z" />
       </svg>
     );
   }

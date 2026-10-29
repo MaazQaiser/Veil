@@ -26,7 +26,8 @@ import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { DashboardShell } from "@/components/mt/DashboardShell";
 import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
-import { primaryDistricts } from "@/lib/districts";
+import { districts, primaryDistricts } from "@/lib/districts";
+import { DistrictStatus } from "@/components/vael/status";
 import { DISTRICT_CARDS } from "@/lib/marketingDirectory";
 import { profileCompletion } from "@/lib/providerJourney";
 import { useVael } from "@/lib/vaelCore";
@@ -103,7 +104,7 @@ export function DistrictsPage() {
 
   const [query, setQuery] = useState("");
 
-  const visibleDistricts = primaryDistricts.filter((district) => {
+  const visibleDistricts = districts.filter((district) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return `${district.name} ${district.blurb}`.toLowerCase().includes(q);
@@ -138,6 +139,31 @@ export function DistrictsPage() {
           const hasVisited = Boolean(visitedByDistrict.get(district.id));
           const isHome = district.id === homeDistrictId;
           const image = DISTRICT_CARDS.find((card) => card.id === district.id)?.image;
+          if (district.status !== "live") {
+            return (
+              <div
+                key={district.id}
+                className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-body font-medium text-muted">
+                    {district.name.charAt(0)}
+                  </span>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <p className="truncate vael-h4">{district.name}</p>
+                    <DistrictStatus status={district.status} />
+                  </div>
+                </div>
+                <p className="line-clamp-2 text-body-sm text-muted">{district.blurb}</p>
+                <div className="mt-auto flex items-end justify-between gap-3 border-t border-border-subtle pt-4">
+                  <p className="text-caption text-muted">Not open to join yet</p>
+                  <Link to={district.route} className="shrink-0 text-body-sm font-medium text-accent underline underline-offset-4 hover:text-foreground">
+                    View status →
+                  </Link>
+                </div>
+              </div>
+            );
+          }
           return (
             <div
               key={district.id}

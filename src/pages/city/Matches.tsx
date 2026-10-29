@@ -9,7 +9,7 @@ import { FilterBar, FilterChip } from "@/components/ui/search";
 import { useCitySession } from "@/lib/citySession";
 import { useCommercial } from "@/lib/commercialCore";
 import { useConstruction } from "@/lib/constructionCore";
-import { primaryDistricts } from "@/lib/districts";
+import { districts, districtStatusLabel, primaryDistricts } from "@/lib/districts";
 import {
   applyMarketplaceChips,
   collectMarketplace,
@@ -123,6 +123,20 @@ function DistrictSelect({
               </button>
             </li>
           ))}
+          {districts
+            .filter((district) => district.status !== "live")
+            .map((district) => (
+              <li key={district.id}>
+                <Link
+                  to={district.route}
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left text-body-sm text-muted hover:bg-surface-muted"
+                >
+                  {district.name}
+                  <span className="shrink-0 text-caption text-quiet">{districtStatusLabel(district.status)}</span>
+                </Link>
+              </li>
+            ))}
         </ul>
       ) : null}
     </div>
@@ -257,6 +271,14 @@ function MatchesInner() {
                     {district.name}
                   </Link>
                 ))}
+                {districts
+                  .filter((district) => district.status !== "live")
+                  .map((district) => (
+                    <Link key={district.id} to={district.route} className={buttonClassName({ variant: "ghost", size: "sm" })}>
+                      {district.name}
+                      <span className="ml-2 text-caption text-quiet">{districtStatusLabel(district.status)}</span>
+                    </Link>
+                  ))}
               </div>
             </section>
           ) : null}

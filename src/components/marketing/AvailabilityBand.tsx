@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { JOIN_ROUTE } from "@/components/city/CityShell";
 import { cn } from "@/lib/cn";
-import { NEED_PATH } from "@/lib/cxRoutes";
 import { Reveal } from "./Reveal";
 
 const CARDS = [
@@ -23,23 +22,14 @@ const CARDS = [
     to: "/sign-in?intent=out",
     accent: false,
   },
-  {
-    id: "need",
-    eyebrow: "I NEED SOMETHING DONE",
-    title: "I need work done",
-    description: "Tell us what you need and we'll take you to people who can help.",
-    cta: "Get started",
-    to: NEED_PATH,
-    accent: true,
-  },
 ] as const;
 
-/** Three ways into VAEL, sitting under the Hero. In and Out stay the existing flows. */
+/** Two ways into VAEL, sitting under the Hero. In and Out stay the existing flows. */
 export function AvailabilityBand() {
   return (
     <section className="relative z-[1] border-t border-white/10 py-16 md:py-20">
       <div className="site-container">
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2">
           {CARDS.map((card, index) => (
             <Reveal key={card.id} delay={index * 80}>
               <div className="flex h-full flex-col rounded-md border border-[#EE8A4A]/50 bg-[#141414]/90 px-7 py-8 text-white">

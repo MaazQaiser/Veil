@@ -16,7 +16,7 @@ import {
   NEED_LOCATION_PATH,
   NEED_MEDIA_PATH,
   NEED_TIMING_PATH,
-  PROJECTS_PATH,
+  OPPORTUNITY_PATH,
 } from "@/lib/cxRoutes";
 import { readNeedWork } from "@/lib/needWork";
 import { NEED_START_OPTIONS, type NeedStart } from "./Timing";
@@ -68,8 +68,8 @@ export function NeedReviewPage() {
   function makeVisible() {
     const handle = claimedHandle || session.handle;
     try {
-      publishResidentialOpportunity(handle);
-      navigate(PROJECTS_PATH);
+      const projectId = publishResidentialOpportunity(handle);
+      navigate(`${OPPORTUNITY_PATH}?tab=mine&published=${projectId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not publish this project.");
     }

@@ -73,21 +73,12 @@ export function SearchPage() {
 }
 
 /** Plain list. Each intent lands in an existing flow via `entry`. No two mean the same thing. */
-const GO_VISIBLE_DISTRICTS: { id: string; name: string; status: string; live: boolean }[] = [
-  ["media-technology", "Media & Technology"],
-  ["construction", "The Contractor Exchange"],
-  ["trucking", "Trucking Exchange"],
-  ["nursing-healthcare", "Nursing / Healthcare"],
-  ["equipment", "Equipment"],
-  ["government", "Government"],
-  ["real-estate", "Real Estate"],
-  ["legal-finance", "Legal & Finance"],
-].flatMap(([id, name]) => {
-  const d = districts.find((x) => x.id === id);
-  if (!d) return [];
-  const status = d.status === "live" ? "Live" : d.status === "soon" ? "Coming soon" : "Early access";
-  return [{ id, name, status, live: d.status === "live" }];
-});
+const GO_VISIBLE_DISTRICTS: { id: string; name: string; status: string; live: boolean }[] = districts.map((district) => ({
+  id: district.id,
+  name: district.name,
+  status: district.status === "live" ? "Live" : district.status === "soon" ? "Coming soon" : "Early access",
+  live: district.status === "live",
+}));
 
 const GO_VISIBLE_OPTIONS: { id: string; label: string; entry: GoVisibleEntry }[] = [
   { id: "work", label: "I am available for work", entry: "in" },

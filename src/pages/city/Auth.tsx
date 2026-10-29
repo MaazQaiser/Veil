@@ -39,6 +39,9 @@ export function SignInPage() {
   const intent = params.get("intent") === "out" ? "out" : params.get("intent") === "in" ? "in" : "";
   const entry = parseGoVisibleEntry(params.get("entry"));
   const fromProject = params.get("from") === "project";
+  // Optional "go here after signing in". Same-site paths only.
+  const rawNext = params.get("next") ?? "";
+  const afterSignIn = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "";
   const [form, setForm] = useState({ identity: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -85,7 +88,11 @@ export function SignInPage() {
     if (Object.keys(next).length > 0 || !account) return;
 
     signIn(account.handle);
-    navigate(fromProject ? NEED_CONTINUE_PATH : entry ? routeForGoVisibleEntry(account.handle, entry) : signedInLanding(account.handle));
+    navigate(
+      fromProject
+        ? NEED_CONTINUE_PATH
+        : afterSignIn || (entry ? routeForGoVisibleEntry(account.handle, entry) : signedInLanding(account.handle)),
+    );
   }
 
   if (session.signedIn && fromProject) return <Navigate to={NEED_CONTINUE_PATH} replace />;

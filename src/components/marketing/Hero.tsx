@@ -5,7 +5,7 @@ import { LiveTicker } from "@/components/marketing/LiveTicker";
 import { IconChevronDown, IconSearch } from "@/components/ui/icons";
 import { JOIN_ROUTE } from "@/components/city/CityShell";
 import { useCitySession } from "@/lib/citySession";
-import { primaryDistricts } from "@/lib/districts";
+import { districts, districtStatusLabel } from "@/lib/districts";
 
 const ROLE_EXAMPLES = ["Product designer", "Site supervisor", "Freight carrier", "Brand strategist"];
 
@@ -36,9 +36,9 @@ function DistrictSelect({
         <option value="" className="text-[#0B0C0C]">
           Any district
         </option>
-        {primaryDistricts.map((item) => (
+        {districts.map((item) => (
           <option key={item.id} value={item.name} className="text-[#0B0C0C]">
-            {item.name}
+            {item.status === "live" ? item.name : `${item.name} · ${districtStatusLabel(item.status)}`}
           </option>
         ))}
       </select>

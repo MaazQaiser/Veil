@@ -1,155 +1,237 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { IconClose } from "@/components/ui/icons";
-import { primaryDistricts, districts } from "@/lib/districts";
+import { districts, districtStatusLabel } from "@/lib/districts";
+import type { DistrictLotStatus } from "@/components/vael/status";
 import { communityHref } from "@/lib/communityStore";
 import { useCitySession } from "@/lib/citySession";
-import { routeForGoVisibleEntry, type GoVisibleEntry } from "@/lib/goVisible";
+import { routeForGoVisibleEntry } from "@/lib/goVisible";
 import { JOIN_ROUTE } from "@/components/city/CityShell";
-import { marketplaceHref, vaelRouteForDistrict, type MarketplaceDistrictId } from "@/lib/marketplace";
+import { isMarketplaceDistrict, marketplaceHref, vaelRouteForDistrict, type MarketplaceDistrictId } from "@/lib/marketplace";
 
 type Chip = { id: string; label: string };
 
+type Action = { label: string; href: string };
+
 type Step =
   | { kind: "question"; question: string; chips: Chip[] }
-  | { kind: "result"; title: string; description: string; ctaLabel: string; href: string; entry?: GoVisibleEntry; secondary?: { label: string; href: string } };
+  | { kind: "result"; title: string; description: string; primary: Action; secondary?: Action };
 
-/** Intents from the home page "Go Visible" list. Each lands in the same flow as there. */
-const INTENT_OPTIONS: Array<{ id: string; label: string; entry: GoVisibleEntry; description: string; ctaLabel: string }> = [
-  { id: "networking", label: "I am open to networking", entry: "in", description: "Show you're open to connecting and let people reach you.", ctaLabel: "Get started →" },
-  { id: "equipment-have", label: "I have equipment available", entry: "in", description: "List your equipment so people who need it can find you.", ctaLabel: "Get started →" },
-  { id: "equipment-need", label: "I need equipment", entry: "out", description: "Tell us what you need and we'll look for matches.", ctaLabel: "Get started →" },
-  { id: "freight-seek", label: "I am seeking freight or transportation", entry: "out", description: "Post what needs moving and see who can take it.", ctaLabel: "Get started →" },
-  { id: "freight-offer", label: "I am available to transport", entry: "in", description: "Show your availability to haul and get matched with loads.", ctaLabel: "Get started →" },
-  { id: "funding", label: "I am looking for funding", entry: "out", description: "Share what you're raising for and find people who can help.", ctaLabel: "Get started →" },
-];
+type Ctx = { signedIn: boolean; handle: string };
 
 const ROOT_CHIPS: Chip[] = [
-  { id: "find-people", label: "Find talent" },
-  { id: "find-opportunities", label: "Find opportunities" },
-  { id: "show-availability", label: "Show my availability" },
-  { id: "explore-district", label: "Explore a district" },
-  { id: "connect-people", label: "Connect with people" },
-  ...INTENT_OPTIONS.map(({ id, label }) => ({ id: `intent-${id}`, label })),
+  { id: "vael-in", label: "I'm available to work" },
+  { id: "vael-out", label: "I'm looking to hire" },
+  { id: "opportunities", label: "Find opportunities" },
+  { id: "talent", label: "See who's available" },
+  { id: "district", label: "Explore a district" },
+  { id: "community", label: "Join the community" },
 ];
 
-const FIND_PEOPLE_CHIPS: Chip[] = [
-  { id: "skill", label: "A specific skill" },
-  { id: "professional", label: "A professional" },
-  { id: "team", label: "A team" },
-  { id: "collaborator", label: "A collaborator" },
+const OPPORTUNITY_CHIPS: Chip[] = [
+  { id: "open", label: "Open opportunities" },
+  { id: "hiring", label: "People looking for talent" },
+  { id: "community", label: "Community posts" },
 ];
 
-const FIND_OPPORTUNITIES_CHIPS: Chip[] = [
-  { id: "projects", label: "Projects" },
-  { id: "collaborations", label: "Collaborations" },
-  { id: "people-looking", label: "People looking for talent" },
-  { id: "community-posts", label: "Community posts" },
-];
+const statusSuffix = (status: DistrictLotStatus) => (status === "live" ? "" : ` · ${districtStatusLabel(status)}`);
+const DISTRICT_CHIPS: Chip[] = districts.map((district) => ({ id: district.id, label: `${district.name}${statusSuffix(district.status)}` }));
+const DISTRICT_CHIPS_WITH_ANY: Chip[] = [{ id: "any", label: "All districts" }, ...DISTRICT_CHIPS];
 
-const DISTRICT_CHIPS: Chip[] = primaryDistricts.map((district) => ({ id: district.id, label: district.name }));
-const DISTRICT_CHIPS_WITH_ANY: Chip[] = [{ id: "any", label: "Any district" }, ...DISTRICT_CHIPS];
-
-function districtRoute(id: string) {
-  return districts.find((district) => district.id === id)?.route ?? "/districts";
+function districtOf(id: string) {
+  return districts.find((district) => district.id === id);
 }
 
 function districtName(id: string) {
-  return primaryDistricts.find((district) => district.id === id)?.name ?? id;
+  return districtOf(id)?.name ?? id;
+}
+
+function districtRoute(id: string) {
+  return districtOf(id)?.route ?? "/districts";
+}
+
+/** Where a member lands to see matches. Only live districts have a matching board. */
+function matchesHref(id: string) {
+  return id !== "any" && isMarketplaceDistrict(id) ? marketplaceHref(id) : "/matches";
+}
+
+/** Sign in, then come straight back to the page the visitor asked for. */
+function signInThen(intent: "in" | "out", next: string) {
+  return `/sign-in?intent=${intent}&next=${encodeURIComponent(next)}`;
+}
+
+/** Districts that are not live yet have no board, availability or hiring flow. Send them to the status page. */
+function notOpenYet(id: string): Step | null {
+  const district = districtOf(id);
+  if (!district || district.status === "live") return null;
+  return {
+    kind: "result",
+    title: "Not open yet.",
+    description: `${district.name} is ${district.status === "soon" ? "coming soon" : "in early access"}. See where it stands.`,
+    primary: { label: "See the district", href: district.route },
+  };
 }
 
 /** A small, hand-authored decision tree — not a model call. Every leaf lands on a real route. */
-function getStep(path: string[]): Step {
+function getStep(path: string[], ctx: Ctx): Step {
   const [root, second, third] = path;
 
   if (!root) {
     return { kind: "question", question: "What are you here to do?", chips: ROOT_CHIPS };
   }
 
-  const intent = INTENT_OPTIONS.find((option) => `intent-${option.id}` === root);
-  if (intent) {
-    return {
-      kind: "result",
-      title: "Let's get you set up.",
-      description: intent.description,
-      ctaLabel: intent.ctaLabel,
-      href: "",
-      entry: intent.entry,
-    };
-  }
-
-  if (root === "find-people") {
-    if (!second) return { kind: "question", question: "What are you looking for?", chips: FIND_PEOPLE_CHIPS };
-    if (!third) return { kind: "question", question: "Where?", chips: DISTRICT_CHIPS };
-    return {
-      kind: "result",
-      title: "You're ready to explore.",
-      description: `Search talent in ${districtName(third)}, or head straight to the district.`,
-      ctaLabel: "Continue to search →",
-      href: marketplaceHref(third as MarketplaceDistrictId),
-      secondary: { label: `Go to ${districtName(third)}`, href: districtRoute(third) },
-    };
-  }
-
-  if (root === "find-opportunities") {
-    if (!second) return { kind: "question", question: "What interests you?", chips: FIND_OPPORTUNITIES_CHIPS };
-    if (!third) return { kind: "question", question: "Where?", chips: DISTRICT_CHIPS_WITH_ANY };
-    const inCommunity = second === "collaborations" || second === "community-posts";
-    const where = third === "any" ? "VAEL" : districtName(third);
-    if (inCommunity) {
+  // Vael In: I'm available to work.
+  if (root === "vael-in") {
+    if (!second) return { kind: "question", question: "Which district do you work in?", chips: DISTRICT_CHIPS };
+    const closed = notOpenYet(second);
+    if (closed) return closed;
+    const name = districtName(second);
+    if (ctx.signedIn) {
       return {
         kind: "result",
-        title: "Start exploring.",
-        description: `See what people in ${where} are sharing.`,
-        ctaLabel: "Explore Community →",
-        href: third === "any" ? "/feed" : communityHref(third as MarketplaceDistrictId),
+        title: `Go visible in ${name}.`,
+        description: "Set your availability so people who are hiring can find you. You stay visible for 24 hours.",
+        primary: { label: "Set my availability", href: vaelRouteForDistrict(second as MarketplaceDistrictId) },
+        secondary: { label: "More ways to go visible", href: "/go-visible" },
       };
     }
     return {
       kind: "result",
-      title: "People are available.",
-      description: `See who's open for work in ${where}.`,
-      ctaLabel: "See who's available →",
-      href: third === "any" ? "/explore" : `/explore?district=${encodeURIComponent(districtName(third))}`,
+      title: `Show your availability in ${name}.`,
+      description: "Create an account, build your profile, then Vael In to be matched by fit.",
+      primary: { label: "Create account", href: `${JOIN_ROUTE}?intent=in` },
+      secondary: { label: "I already have an account", href: "/sign-in?intent=in" },
     };
   }
 
-  if (root === "show-availability") {
+  // Vael Out: I'm looking to hire.
+  if (root === "vael-out") {
+    if (!second) return { kind: "question", question: "Which district do you want to hire in?", chips: DISTRICT_CHIPS };
+    const closed = notOpenYet(second);
+    if (closed) return closed;
+    const name = districtName(second);
+    if (ctx.signedIn) {
+      return {
+        kind: "result",
+        title: `Hire in ${name}.`,
+        description: "Post who you need and see people who are available, ranked by fit.",
+        primary: { label: "Post what I need", href: routeForGoVisibleEntry(ctx.handle, "out") },
+        secondary: { label: "More ways to go visible", href: "/go-visible" },
+      };
+    }
+    return {
+      kind: "result",
+      title: `Hire in ${name}.`,
+      description: "Create an account and post who you need. People who are available are matched by fit.",
+      primary: { label: "Create account", href: `${JOIN_ROUTE}?intent=out` },
+      secondary: { label: "I already have an account", href: "/sign-in?intent=out" },
+    };
+  }
+
+  // Opportunities: work other people have posted.
+  if (root === "opportunities") {
+    if (!second) return { kind: "question", question: "What kind of opportunities?", chips: OPPORTUNITY_CHIPS };
+
+    if (second === "open") {
+      return ctx.signedIn
+        ? {
+            kind: "result",
+            title: "Open opportunities.",
+            description: "Browse the opportunities other people have posted, or post your own.",
+            primary: { label: "Browse opportunities", href: "/opportunities?tab=browse" },
+            secondary: { label: "Your opportunities", href: "/opportunities?tab=mine" },
+          }
+        : {
+            kind: "result",
+            title: "Open opportunities.",
+            description: "See what is live now. Sign in to see the full details and show interest.",
+            primary: { label: "See opportunities", href: "/projects" },
+            secondary: { label: "Sign in", href: signInThen("in", "/opportunities?tab=browse") },
+          };
+    }
+
+    if (second === "hiring") {
+      if (!third) return { kind: "question", question: "Which district?", chips: DISTRICT_CHIPS_WITH_ANY };
+      const closed = notOpenYet(third);
+      if (closed) return closed;
+      const where = third === "any" ? "VAEL" : districtName(third);
+      const target = matchesHref(third);
+      return ctx.signedIn
+        ? {
+            kind: "result",
+            title: `See who's hiring in ${where}.`,
+            description: "People looking for talent, ranked by how well you fit.",
+            primary: { label: "See matches", href: target },
+            secondary: { label: "Browse opportunities", href: "/opportunities?tab=browse" },
+          }
+        : {
+            kind: "result",
+            title: `See who's hiring in ${where}.`,
+            description: "Sign in to see the people looking for talent and how well you fit.",
+            primary: { label: "Sign in", href: signInThen("in", target) },
+            secondary: { label: "Create account", href: `${JOIN_ROUTE}?intent=in` },
+          };
+    }
+
+    // Community posts
+    if (!third) return { kind: "question", question: "Which district?", chips: DISTRICT_CHIPS_WITH_ANY };
+    return communityResult(third);
+  }
+
+  // See who's available.
+  if (root === "talent") {
+    if (!second) return { kind: "question", question: "Which district?", chips: DISTRICT_CHIPS_WITH_ANY };
+    const closed = notOpenYet(second);
+    if (closed) return closed;
+    const where = second === "any" ? "VAEL" : districtName(second);
+    return {
+      kind: "result",
+      title: `See who's available in ${where}.`,
+      description: "People open for work right now, ranked by fit.",
+      primary: {
+        label: "See who's available",
+        href: second === "any" ? "/explore" : `/explore?district=${encodeURIComponent(districtName(second))}`,
+      },
+      secondary: ctx.signedIn
+        ? { label: "Open my matches", href: matchesHref(second) }
+        : { label: "Create an account to reach out", href: `${JOIN_ROUTE}?intent=out` },
+    };
+  }
+
+  // Explore a district.
+  if (root === "district") {
     if (!second) return { kind: "question", question: "Which district?", chips: DISTRICT_CHIPS };
     return {
       kind: "result",
-      title: "You're set.",
-      description: `Go show your availability in ${districtName(second)}.`,
-      ctaLabel: "Set Availability →",
-      href: vaelRouteForDistrict(second as MarketplaceDistrictId),
+      title: `Take a look around ${districtName(second)}.`,
+      description: "See what the district is for and who it serves.",
+      primary: { label: "Explore district", href: districtRoute(second) },
     };
   }
 
-  if (root === "explore-district") {
-    if (!second) return { kind: "question", question: "Which district?", chips: DISTRICT_CHIPS };
-    const route = districtRoute(second);
-    return {
-      kind: "result",
-      title: "Take a look around.",
-      description: `Here's what's happening in ${districtName(second)}.`,
-      ctaLabel: "Explore District →",
-      href: route,
-    };
-  }
+  // Community.
+  if (!second) return { kind: "question", question: "Which district?", chips: DISTRICT_CHIPS_WITH_ANY };
+  return communityResult(second);
+}
 
-  // connect-people
-  if (!second) return { kind: "question", question: "Where?", chips: DISTRICT_CHIPS };
+/** Each live district has its own community; everything else shares the main feed. */
+function communityResult(id: string): Step {
+  const own = id !== "any" && isMarketplaceDistrict(id);
+  const where = id === "any" ? "VAEL" : districtName(id);
   return {
     kind: "result",
-    title: "You're ready to connect.",
-    description: `Start a Handshake with matches in ${districtName(second)}.`,
-    ctaLabel: "View Matches →",
-    href: marketplaceHref(second as MarketplaceDistrictId),
+    title: "Join the conversation.",
+    description: own
+      ? `See what people in ${where} are sharing.`
+      : id === "any"
+        ? "See what people across VAEL are sharing."
+        : `${where} has no community of its own yet. See what everyone is sharing.`,
+    primary: { label: "Open community", href: own ? communityHref(id) : "/feed" },
   };
 }
 
-function chipLabel(path: string[], index: number): string {
-  const step = getStep(path.slice(0, index));
+function chipLabel(path: string[], index: number, ctx: Ctx): string {
+  const step = getStep(path.slice(0, index), ctx);
   if (step.kind !== "question") return path[index];
   return step.chips.find((chip) => chip.id === path[index])?.label ?? path[index];
 }
@@ -211,12 +293,8 @@ export function FindYourWay() {
   const [path, setPath] = useState<string[]>([]);
   const [teaser, setTeaser] = useState(false);
   const { session } = useCitySession();
-  const step = getStep(path);
-
-  function hrefFor(result: { href: string; entry?: GoVisibleEntry }) {
-    if (!result.entry) return result.href;
-    return session.signedIn ? routeForGoVisibleEntry(session.handle, result.entry) : `${JOIN_ROUTE}?entry=${result.entry}`;
-  }
+  const ctx: Ctx = { signedIn: session.signedIn, handle: session.handle };
+  const step = getStep(path, ctx);
 
   useEffect(() => {
     if (!open) return;
@@ -307,7 +385,7 @@ export function FindYourWay() {
 
             {path.length > 0 ? (
               <p className="mb-2 font-sans text-caption text-white/45">
-                {path.map((_, index) => chipLabel(path, index)).join("  ›  ")}
+                {path.map((_, index) => chipLabel(path, index, ctx)).join("  ›  ")}
               </p>
             ) : null}
 
@@ -326,11 +404,11 @@ export function FindYourWay() {
                 <p className="mt-1.5 text-body-sm text-white/65">{step.description}</p>
                 <div className="mt-5 space-y-2">
                   <Link
-                    to={hrefFor(step)}
+                    to={step.primary.href}
                     onClick={() => setOpen(false)}
                     className="flex items-center justify-between gap-3 rounded-full bg-[#EE8A4A] px-5 py-3 font-sans text-body-sm font-medium text-[#0B0C0C] motion-safe:transition-colors hover:bg-[#F4A56C]"
                   >
-                    {step.ctaLabel.replace(/\s*→\s*$/, "")}
+                    {step.primary.label}
                     <span aria-hidden>→</span>
                   </Link>
                   {step.secondary ? (

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
-import { primaryDistricts } from "@/lib/districts";
+import { districts } from "@/lib/districts";
 import { AVAILABILITY_LABEL, MARKETING_DIRECTORY } from "@/lib/marketingDirectory";
 import { Reveal } from "./Reveal";
 
-const TABS = ["All", ...primaryDistricts.map((district) => district.name)];
+const TABS = ["All", ...districts.map((district) => district.name)];
 
 export function ExplorePreview() {
   const [activeTab, setActiveTab] = useState<string>("All");

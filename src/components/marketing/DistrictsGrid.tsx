@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { districts, districtStatusLabel } from "@/lib/districts";
 import { DISTRICT_CARDS } from "@/lib/marketingDirectory";
 import { ParallaxImage } from "./ParallaxImage";
 import { Reveal } from "./Reveal";
@@ -10,7 +11,7 @@ export function DistrictsGrid() {
         <Reveal className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <span className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#EE8A4A]">
-              One Network, Five Districts
+              One Network, Ten Districts
             </span>
             <h2 className="mt-4 max-w-2xl font-sans text-[clamp(1.75rem,3.2vw,2.75rem)] font-medium leading-[1.1] tracking-tight text-[#0B0C0C]">
               One network. <span className="text-[#0B0C0C]/65">Different worlds.</span>
@@ -63,6 +64,30 @@ export function DistrictsGrid() {
             </Reveal>
           </div>
         ))}
+      </div>
+
+      <div className="site-container mt-12">
+        <Reveal>
+          <p className="font-sans text-[0.75rem] font-bold uppercase tracking-[0.08em] text-[#0B0C0C]/55">More districts on the way</p>
+          <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {districts
+              .filter((district) => district.status !== "live")
+              .map((district) => (
+                <li key={district.id}>
+                  <Link
+                    to={district.route}
+                    className="flex h-full flex-col rounded-md border border-black/10 bg-white p-5 shadow-[0_8px_30px_rgba(11,12,12,0.04)] motion-safe:transition-colors hover:border-[#EE8A4A]/60"
+                  >
+                    <span className="inline-flex w-fit items-center rounded-md bg-[#0B0C0C]/[0.06] px-2.5 py-1 font-sans text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#0B0C0C]/70">
+                      {districtStatusLabel(district.status)}
+                    </span>
+                    <h3 className="mt-4 font-sans text-[1.125rem] font-medium tracking-tight text-[#0B0C0C]">{district.name}</h3>
+                    <p className="mt-2 text-body-sm text-[#0B0C0C]/60">{district.blurb}</p>
+                  </Link>
+                </li>
+              ))}
+          </ul>
+        </Reveal>
       </div>
     </section>
   );

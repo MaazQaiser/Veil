@@ -11,6 +11,8 @@ import { opportunityHref, opportunityStart, projectHref } from "@/lib/cxRoutes";
 import { formatDate } from "@/lib/time";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { OpportunityCard, opportunityStatus } from "@/pages/projects/List";
+import { ProjectCard, ProjectDetailsDialog } from "@/pages/city/Projects";
+import { MARKETING_PROJECTS, type MarketingProject } from "@/lib/marketingProjects";
 
 type Tab = "mine" | "browse";
 
@@ -21,6 +23,15 @@ function matchesQuery(item: CxProject, query: string) {
   const text = [item.category, item.description, item.city, item.postalCode, item.timing, item.budgetBand]
     .join(" ")
     .toLowerCase();
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((word) => text.includes(word));
+}
+
+function matchesSample(item: MarketingProject, query: string) {
+  const text = [item.category, item.name, item.description, item.city, item.timing, item.budget].join(" ").toLowerCase();
   return query
     .toLowerCase()
     .split(/\s+/)
@@ -65,6 +76,7 @@ export function OpportunityHomePage() {
   const publishedId = params.get("published") ?? "";
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [openSampleId, setOpenSampleId] = useState<string | null>(null);
 
   const mine = [...(session.handle ? projectsForHandle(session.handle) : [])].sort(
     (x, y) => Date.parse(y.publishedAt || y.createdAt) - Date.parse(x.publishedAt || x.createdAt),
@@ -72,8 +84,13 @@ export function OpportunityHomePage() {
   const others = liveCxProjects()
     .filter((item) => item.handle !== session.handle)
     .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
-  const categories = [...new Set(others.map((item) => item.category).filter(Boolean))];
+  const categories = [...new Set([...others.map((item) => item.category), ...MARKETING_PROJECTS.map((item) => item.category)].filter(Boolean))];
   const results = others.filter((item) => (!category || item.category === category) && matchesQuery(item, query));
+  // The same sample opportunities shown on the public website, here in full.
+  const samples = MARKETING_PROJECTS.filter((item) => (!category || item.category === category) && matchesSample(item, query));
+  const openSample = MARKETING_PROJECTS.find((item) => item.id === openSampleId);
+  const browseTotal = others.length + MARKETING_PROJECTS.length;
+  const shownTotal = results.length + samples.length;
   const justPublished = publishedId ? mine.find((item) => item.id === publishedId) : undefined;
 
   const counts = mine.reduce(
@@ -96,7 +113,7 @@ export function OpportunityHomePage() {
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: "mine", label: "Your opportunities", count: mine.length },
-    { id: "browse", label: "Browse opportunities", count: others.length },
+    { id: "browse", label: "Browse opportunities", count: browseTotal },
   ];
 
   return (
@@ -231,13 +248,13 @@ export function OpportunityHomePage() {
             ) : null}
           </div>
           <div className="mt-6">
-            {results.length === 0 ? (
+            {shownTotal === 0 ? (
               <div className="rounded-2xl border border-dashed border-border p-8 text-center">
                 <p className="text-body font-medium text-foreground">
-                  {others.length === 0 ? "No open opportunities right now" : "Nothing matches your search"}
+                  {browseTotal === 0 ? "No open opportunities right now" : "Nothing matches your search"}
                 </p>
                 <p className="mt-1 text-body-sm text-muted">
-                  {others.length === 0
+                  {browseTotal === 0
                     ? "Opportunities other people post will show up here."
                     : "Try a different word or clear the filter."}
                 </p>
@@ -245,13 +262,18 @@ export function OpportunityHomePage() {
             ) : (
               <>
                 <p className="mb-3 flex items-center gap-2 text-body-sm text-muted">
-                  <Badge tone="live">{results.length}</Badge>
-                  {results.length === 1 ? "opportunity" : "opportunities"}
+                  <Badge tone="live">{shownTotal}</Badge>
+                  {shownTotal === 1 ? "opportunity" : "opportunities"}
                 </p>
                 <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {results.map((item) => (
                     <li key={item.id}>
                       <BrowseCard item={item} />
+                    </li>
+                  ))}
+                  {samples.map((item) => (
+                    <li key={item.id}>
+                      <ProjectCard project={item} locked={false} onDetails={() => setOpenSampleId(item.id)} />
                     </li>
                   ))}
                 </ul>
@@ -260,6 +282,7 @@ export function OpportunityHomePage() {
           </div>
         </section>
       )}
+      <ProjectDetailsDialog project={openSample} onClose={() => setOpenSampleId(null)} />
     </DashboardShell>
   );
 }
