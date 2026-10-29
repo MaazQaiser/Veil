@@ -10,3 +10,4 @@ export { JoinCredentialsPage } from "./Credentials";
 export { JoinConfirmPhonePage } from "./ConfirmPhone";
 export { JoinPreviewPage } from "./Preview";
 export { VaelOutStepPage } from "./VaelOut";
+export { JoinContractorExchangePage } from "./ContractorJoin";

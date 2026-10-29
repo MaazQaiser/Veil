@@ -30,6 +30,16 @@ export function JoinLayout() {
   const outOpen = outInProgress || (draft?.intent === "out" && !onboardingComplete(session.handle));
   const publishingProject = new URLSearchParams(location.search).get("from") === "project";
 
+  // Members who are already in can join another district here without redoing first-time onboarding.
+  if (location.pathname === "/join/contractor-exchange") {
+    if (!session.signedIn) return <Navigate to="/join" replace />;
+    return (
+      <JoinShell>
+        <Outlet context={null} />
+      </JoinShell>
+    );
+  }
+
   if (session.signedIn && onboardingComplete(session.handle) && !outInProgress && !publishingProject) {
     return <Navigate to={signedInLanding(session.handle)} replace />;
   }
@@ -96,6 +106,14 @@ export function JoinLayout() {
           })();
 
   return (
+    <JoinShell wide={visiting === "Intent" || visiting === "Need"}>
+      <Outlet context={previousPath} />
+    </JoinShell>
+  );
+}
+
+function JoinShell({ wide = false, children }: { wide?: boolean; children: ReactNode }) {
+  return (
     <div
       data-surface="site-dark"
       className="join-flow wizard-flow relative isolate flex min-h-full flex-1 flex-col bg-background text-foreground"
@@ -105,9 +123,7 @@ export function JoinLayout() {
         <div className="absolute bottom-[-15%] right-[6%] h-[30rem] w-[30rem] rounded-full bg-[#EE8A4A]/10 blur-[120px]" />
       </div>
       <div className="site-container relative pb-28 pt-10 md:pb-32 md:pt-14">
-        <div className={cn("mx-auto w-full", visiting === "Intent" || visiting === "Need" ? "max-w-4xl" : "max-w-2xl")}>
-          <Outlet context={previousPath} />
-        </div>
+        <div className={cn("mx-auto w-full", wide ? "max-w-4xl" : "max-w-2xl")}>{children}</div>
       </div>
     </div>
   );

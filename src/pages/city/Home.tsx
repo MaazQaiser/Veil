@@ -102,7 +102,7 @@ const OPPORTUNITY_OPTIONS: {
   {
     id: "create",
     label: "Create",
-    title: "Create an opportunity.",
+    title: "Create an Opportunity.",
     body: "Post work for your home or your business.",
     icon: IconBriefcase,
   },

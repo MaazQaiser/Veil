@@ -100,7 +100,11 @@ export type CxVaelance = {
   handle: string;
   projectCategories: RxProjectCategory[];
   projectRole: CxProjectRole;
+  /** Towns or counties the member works in (up to CX_MAX_AREAS). Matched alongside the profile's service area. */
+  areas?: string[];
 };
+
+export const CX_MAX_AREAS = 10;
 
 export type CxInterest = {
   id: string;
@@ -599,7 +603,8 @@ export function responseGroupFor(role: CxProjectRole): CxResponseGroup {
 function worksInProjectLocation(project: CxProject, handle: string) {
   const profile = getCxProfile(handle);
   const listing = getActiveCxListing(handle);
-  const area = `${profile?.serviceArea ?? ""} ${profile?.location ?? ""} ${listing?.serviceArea ?? ""}`.toLowerCase();
+  const picked = (getVaelance(handle)?.areas ?? []).join(" ");
+  const area = `${profile?.serviceArea ?? ""} ${profile?.location ?? ""} ${listing?.serviceArea ?? ""} ${picked}`.toLowerCase();
   if (!area.trim() || !project.city.trim()) return false;
   const city = project.city.trim().toLowerCase();
   const zip = project.postalCode.trim().toLowerCase();

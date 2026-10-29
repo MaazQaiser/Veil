@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/mt/DashboardShell";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { EmptyState } from "@/components/ui/feedback";
@@ -17,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   IconBriefcase,
   IconCalendar,
+  IconCheck,
+  IconChevronDown,
   IconChevronLeft,
   IconClock,
   IconDocument,
@@ -34,6 +36,25 @@ import { cn } from "@/lib/cn";
 import { findAccountByHandle } from "@/lib/accounts";
 import { useCitySession } from "@/lib/citySession";
 import { formatDate } from "@/lib/time";
+import {
+  communityPostKind,
+  communityPostKindLabel,
+  communityPostTitle,
+  formatCommunityTime,
+  getVisibleCommunityPosts,
+} from "@/lib/communityStore";
+import {
+  CX_MAX_AREAS,
+  RX_PROJECT_CATEGORIES,
+  getVaelance,
+  projectsForHandle,
+  saveVaelance,
+  type CxProjectRole,
+  type RxProjectCategory,
+} from "@/lib/cxProjectStore";
+import { opportunityHref, opportunityStart, projectHref } from "@/lib/cxRoutes";
+import { addTeamMember, getTeam, removeTeamMember, subscribeTeam } from "@/lib/profileTeam";
+import { useCxProjects } from "@/lib/useCxProjects";
 import { visibilityKindFromListing } from "@/lib/visibilityPlans";
 import { DOC_TYPE_LABELS, normalizePortfolio, sectionErrors } from "@/lib/profileFields";
 import { useVael } from "@/lib/vaelCore";
@@ -91,66 +112,486 @@ function listed(value: string | undefined) {
   return text || "Not listed.";
 }
 
-/** Same fields as Complete your profile, shown on the member's own profile. */
-function OwnProfileDetails({ profile, docs }: { profile: ProfileRecord; docs: ProfileDocument[] }) {
+const SCOPES = [
+  { value: "whole", label: "The whole project" },
+  { value: "specialty", label: "A specialty" },
+  { value: "either", label: "Either" },
+] as const;
+
+function Chip({ children, onRemove }: { children: ReactNode; onRemove?: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-caption font-medium text-accent">
+      {children}
+      {onRemove ? (
+        <button type="button" onClick={onRemove} aria-label={`Remove ${String(children)}`} className="text-accent/70 hover:text-accent">
+          ×
+        </button>
+      ) : null}
+    </span>
+  );
+}
+
+function SaveButton({ dirty, onClick }: { dirty: boolean; onClick: () => void }) {
+  return (
+    <Button type="button" disabled={!dirty} onClick={onClick} className="mt-5">
+      {dirty ? "Save" : "Saved"}
+    </Button>
+  );
+}
+
+function PickerPanel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+      <p className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">{title}</p>
+      <p className="mt-1.5 flex items-center gap-1.5 text-caption text-muted">
+        <IconLock className="h-3 w-3" />
+        Provided by the member
+      </p>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+/** Scope, the kinds of project and the places a member works in. Editable on your own profile. */
+function ProjectDetails({ handle, mine }: { handle: string; mine: boolean }) {
+  useCxProjects();
+  const saved = getVaelance(handle);
+  const savedCategories = saved?.projectCategories ?? [];
+  const savedRole = saved?.projectRole ?? "";
+  const savedAreas = saved?.areas ?? [];
+
+  const [role, setRole] = useState<string>(savedRole || "whole");
+  const [categories, setCategories] = useState<string[]>(savedCategories);
+  const [areas, setAreas] = useState<string[]>(savedAreas);
+  const [areaText, setAreaText] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const projectsDirty = role !== (savedRole || "whole") || categories.join("|") !== savedCategories.join("|");
+  const areasDirty = areas.join("|") !== savedAreas.join("|");
+
+  function persist(patch: { role?: string; categories?: string[]; areas?: string[] }) {
+    const current = getVaelance(handle);
+    saveVaelance({
+      handle,
+      projectRole: (patch.role ?? current?.projectRole ?? "whole") as CxProjectRole,
+      projectCategories: (patch.categories ?? current?.projectCategories ?? []) as RxProjectCategory[],
+      areas: patch.areas ?? current?.areas ?? [],
+    });
+  }
+
+  function addArea() {
+    const value = areaText.trim();
+    if (!value || areas.length >= CX_MAX_AREAS || areas.some((item) => item.toLowerCase() === value.toLowerCase())) return;
+    setAreas([...areas, value]);
+    setAreaText("");
+  }
+
+  if (!mine) {
+    if (savedCategories.length === 0 && savedAreas.length === 0 && !savedRole) return null;
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <InfoTile
+          icon={<IconBriefcase className="h-4 w-4" />}
+          label="Scope"
+          value={SCOPES.find((item) => item.value === savedRole)?.label ?? "Not listed."}
+        />
+        <InfoTile icon={<IconBriefcase className="h-4 w-4" />} label="Projects they take on" value={listed(savedCategories.join(", "))} />
+        <InfoTile icon={<IconMapPin className="h-4 w-4" />} label="Areas they work in" value={listed(savedAreas.join(", "))} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <PickerPanel title="Projects">
+        <Field
+          label="Scope you take on"
+          htmlFor="pd-scope"
+          hint="Whether you run a whole job or do part of one. A homeowner sees whole-project and specialty contractors in separate groups."
+        >
+          <Select id="pd-scope" value={role} onChange={(event) => setRole(event.target.value)}>
+            {SCOPES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <div className="mt-5" ref={menuRef}>
+          <p className="text-label font-medium text-foreground">Projects you take on</p>
+          <div className="relative mt-2">
+            <button
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+              className="flex h-12 w-full items-center justify-between rounded-xl border border-border bg-surface px-4 text-left text-body-sm text-foreground"
+            >
+              {categories.length === 0 ? "Select" : `${categories.length} selected`}
+              <IconChevronDown className="h-4 w-4 text-muted" />
+            </button>
+            {menuOpen ? (
+              <ul
+                role="listbox"
+                aria-multiselectable
+                aria-label="Projects you take on"
+                className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-border bg-surface-elevated p-1.5 shadow-md"
+              >
+                {RX_PROJECT_CATEGORIES.map((category) => {
+                  const selected = categories.includes(category);
+                  return (
+                    <li key={category}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() =>
+                          setCategories((prev) => (prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]))
+                        }
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-body-sm text-foreground hover:bg-surface-muted"
+                      >
+                        {category}
+                        {selected ? <IconCheck className="h-4 w-4 text-accent" /> : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
+          {categories.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Chip key={category} onRemove={() => setCategories(categories.filter((item) => item !== category))}>
+                  {category}
+                </Chip>
+              ))}
+            </div>
+          ) : null}
+          <p className="mt-3 text-caption text-muted">The kinds of homeowner project you want to see. You only see projects of these kinds.</p>
+        </div>
+        <SaveButton dirty={projectsDirty} onClick={() => persist({ role, categories })} />
+      </PickerPanel>
+
+      <PickerPanel title="Areas you work in">
+        <label htmlFor="pd-area" className="sr-only">
+          Add a town or a county
+        </label>
+        <div className="flex h-12 items-center gap-2 rounded-xl border border-border bg-surface px-4">
+          <IconMapPin className="h-4 w-4 shrink-0 text-muted" />
+          <input
+            id="pd-area"
+            value={areaText}
+            disabled={areas.length >= CX_MAX_AREAS}
+            onChange={(event) => setAreaText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                addArea();
+              }
+            }}
+            placeholder="Type a town or a county…"
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-body-sm text-foreground shadow-none ring-0 placeholder:text-quiet focus:outline-none focus:ring-0"
+          />
+          <button type="button" onClick={addArea} disabled={!areaText.trim()} className="text-body-sm font-medium text-accent disabled:text-quiet">
+            Add
+          </button>
+        </div>
+        {areas.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {areas.map((area) => (
+              <Chip key={area} onRemove={() => setAreas(areas.filter((item) => item !== area))}>
+                {area}
+              </Chip>
+            ))}
+          </div>
+        ) : null}
+        <p className="mt-3 text-caption text-muted">
+          {areas.length} of {CX_MAX_AREAS} picked.
+        </p>
+        <p className="mt-1 text-caption text-muted">Pick up to {CX_MAX_AREAS} towns, or whole counties. You only see projects in these places.</p>
+        <SaveButton dirty={areasDirty} onClick={() => persist({ areas })} />
+      </PickerPanel>
+    </div>
+  );
+}
+
+function EmptyNote({ children }: { children: ReactNode }) {
+  return <p className="rounded-xl border border-dashed border-border px-5 py-8 text-center text-body-sm text-muted">{children}</p>;
+}
+
+type ActivityItem = { id: string; at: string; title: string; meta: string; href?: string };
+
+function TeamPanel({ handle, mine }: { handle: string; mine: boolean }) {
+  const [, setTick] = useState(0);
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  useEffect(() => subscribeTeam(() => setTick((n) => n + 1)), []);
+  const team = getTeam(handle);
+
+  return (
+    <div className="space-y-4">
+      {team.length === 0 ? (
+        <EmptyNote>{mine ? "No team members yet. Add the people you work with." : "No team members listed."}</EmptyNote>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {team.map((member) => (
+            <li key={member.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4">
+              <Avatar name={member.name} size="md" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-body-sm font-medium text-foreground">{member.name}</p>
+                {member.role ? <p className="truncate text-caption text-muted">{member.role}</p> : null}
+              </div>
+              {mine ? (
+                <button
+                  type="button"
+                  onClick={() => removeTeamMember(handle, member.id)}
+                  className="shrink-0 text-caption font-medium text-muted hover:text-foreground"
+                  aria-label={`Remove ${member.name}`}
+                >
+                  Remove
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {mine ? (
+        <form
+          className="grid gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!name.trim()) return;
+            addTeamMember(handle, { name, role });
+            setName("");
+            setRole("");
+          }}
+        >
+          <Field label="Name" htmlFor="team-name">
+            <Input id="team-name" value={name} onChange={(event) => setName(event.target.value)} />
+          </Field>
+          <Field label="Role" htmlFor="team-role">
+            <Input id="team-role" value={role} onChange={(event) => setRole(event.target.value)} />
+          </Field>
+          <Button type="submit" disabled={!name.trim()}>
+            Add team member
+          </Button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The profile, in seven tabs. Your own profile and anyone you are connected to show everything;
+ * other visitors see what is public and a note where something opens after a Handshake.
+ */
+function ProfileTabs({
+  profile,
+  docs,
+  mine,
+  hiring,
+  revealed,
+  signedIn,
+  listing,
+  account,
+  availabilityNote,
+}: {
+  profile: ProfileRecord;
+  docs: ProfileDocument[];
+  mine: boolean;
+  hiring: boolean;
+  revealed: boolean;
+  signedIn: boolean;
+  listing: ReturnType<typeof getLatestListing>;
+  account: ReturnType<typeof findAccountByHandle>;
+  availabilityNote: string;
+}) {
+  const vael = useVael();
+  useCxProjects();
+  const open = mine || revealed;
   const certifications = split(profile.credentials);
+  const projects = projectsForHandle(profile.handle).filter((item) => (mine ? true : item.status === "live"));
+
+  const activity: ActivityItem[] = [
+    ...getVisibleCommunityPosts()
+      .filter((post) => post.handle === profile.handle)
+      .map((post) => ({
+        id: `post-${post.id}`,
+        at: post.createdAt,
+        title: communityPostTitle(post),
+        meta: `Community · ${communityPostKindLabel(communityPostKind(post))}`,
+        href: `/feed/${post.id}`,
+      })),
+    ...projects
+      .filter((item) => item.status !== "draft")
+      .map((item) => ({
+        id: `opp-${item.id}`,
+        at: item.publishedAt || item.createdAt,
+        title: `Posted an opportunity: ${item.category || "Project"}`,
+        meta: "Opportunities",
+        href: mine ? projectHref(item.id) : opportunityHref(item.id),
+      })),
+    ...(mine
+      ? vael.myConnections.map((connection) => {
+          const other = vael.otherParty(connection, profile.handle);
+          const name = vael.profile(other)?.displayName || `@${other}`;
+          return {
+            id: `conn-${connection.id}`,
+            at: connection.createdAt,
+            title: connection.status === "connected" ? `Connected with ${name}` : `Handshake with ${name}`,
+            meta: connection.status === "connected" ? "Handshake · connected" : `Handshake · ${connection.status}`,
+            href: `/media-technology/connections/${connection.id}`,
+          };
+        })
+      : []),
+  ]
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, 20);
+
+  const hasExperience = Boolean(profile.experienceYears) || Boolean(profile.experience.trim());
+  const editWork = `/media-technology/profile/${profile.handle}/edit#work`;
+
   return (
     <Tabs defaultValue="overview" className="mt-8">
       <TabsList>
-        <TabsTrigger value="overview" className="flex items-center gap-1.5">
-          <IconUser className="h-3.5 w-3.5" />
-          Overview
-        </TabsTrigger>
-        <TabsTrigger value="expertise" className="flex items-center gap-1.5">
-          <IconHandshake className="h-3.5 w-3.5" />
-          Expertise
-        </TabsTrigger>
-        <TabsTrigger value="portfolio" className="flex items-center gap-1.5">
-          <IconVael className="h-3.5 w-3.5" />
-          Portfolio
-        </TabsTrigger>
-        <TabsTrigger value="projects" className="flex items-center gap-1.5">
-          <IconBriefcase className="h-3.5 w-3.5" />
-          Projects
-        </TabsTrigger>
-        <TabsTrigger value="documents" className="flex items-center gap-1.5">
-          <IconDocument className="h-3.5 w-3.5" />
-          Documents
-        </TabsTrigger>
+        {[
+          { id: "overview", label: "Overview", icon: <IconUser className="h-3.5 w-3.5" /> },
+          { id: "projects", label: "Projects", icon: <IconBriefcase className="h-3.5 w-3.5" /> },
+          { id: "history", label: "Work history", icon: <IconClock className="h-3.5 w-3.5" /> },
+          { id: "portfolio", label: "Portfolio", icon: <IconImage className="h-3.5 w-3.5" /> },
+          { id: "activity", label: "Activity", icon: <IconHandshake className="h-3.5 w-3.5" /> },
+          { id: "documents", label: "Documents", icon: <IconDocument className="h-3.5 w-3.5" /> },
+          { id: "team", label: "Team", icon: <IconUsers className="h-3.5 w-3.5" /> },
+        ].map((tab) => (
+          <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1.5">
+            {tab.icon}
+            {tab.label}
+          </TabsTrigger>
+        ))}
       </TabsList>
+
       <TabsContent value="overview" className="mt-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InfoTile icon={<IconUser className="h-4 w-4" />} label="Display name" value={listed(profile.displayName)} />
-          <InfoTile icon={<IconUser className="h-4 w-4" />} label="Handle" value={`@${profile.handle}`} />
-          <InfoTile icon={<IconMapPin className="h-4 w-4" />} label="Location" value={listed(profile.location)} />
-          <InfoTile
-            icon={<IconBriefcase className="h-4 w-4" />}
-            label="Professional type"
-            value={professionalTypeLabel(profile.profileType)}
-          />
-        </div>
+        {!signedIn ? (
+          <p className="text-body-sm text-muted">Sign in to see the full overview.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InfoTile icon={<IconUser className="h-4 w-4" />} label="Identity" value={`${profile.displayName} · @${profile.handle} · ${professionalTypeLabel(profile.profileType)}`} />
+            <InfoTile icon={<IconBriefcase className="h-4 w-4" />} label="Professional title" value={listed(profile.headline)} />
+            <InfoTile icon={<IconVael className="h-4 w-4" />} label="About" value={profile.bio.trim() || "Not written yet."} />
+            <InfoTile
+              icon={<IconMapPin className="h-4 w-4" />}
+              label="Location"
+              value={[profile.location, workPreferenceLabel(profile.workPreference)].filter(Boolean).join(" · ") || "Not listed."}
+            />
+            {hiring ? (
+              <InfoTile icon={<IconLock className="h-4 w-4" />} label="Requirements" value={listed(profile.credentials)} />
+            ) : (
+              <>
+                <InfoTile icon={<IconHandshake className="h-4 w-4" />} label="Discipline" value={listed(profile.disciplines.join(", "))} />
+                <InfoTile icon={<IconVael className="h-4 w-4" />} label="Skills" value={listed(profile.skills.join(", "))} />
+                <InfoTile icon={<IconVael className="h-4 w-4" />} label="Tools / technologies" value={listed(profile.tools.join(", "))} />
+                <InfoTile
+                  icon={<IconLock className="h-4 w-4" />}
+                  label="Rates"
+                  value={open ? listed(profile.rates) : "Opens after a Handshake."}
+                  locked={!open}
+                />
+              </>
+            )}
+            {open ? (
+              <>
+                <InfoTile icon={<IconBriefcase className="h-4 w-4" />} label="Employment type" value={listing?.engagement || "Not listed."} />
+                <InfoTile icon={<IconMapPin className="h-4 w-4" />} label="Service area" value={listing?.location || profile.location || "Not listed."} />
+                <InfoTile icon={<IconClock className="h-4 w-4" />} label="Current availability" value={availabilityNote} />
+                {!mine ? (
+                  <InfoTile
+                    icon={<IconLock className="h-4 w-4" />}
+                    label="Contact"
+                    value={[account?.email, account?.phone, listing?.contact].filter(Boolean).join(" · ") || "Not listed."}
+                  />
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        )}
       </TabsContent>
-      <TabsContent value="expertise" className="mt-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InfoTile icon={<IconHandshake className="h-4 w-4" />} label="Discipline" value={listed(profile.disciplines.join(", "))} />
-          <InfoTile icon={<IconVael className="h-4 w-4" />} label="Skills" value={listed(profile.skills.join(", "))} />
-          <InfoTile icon={<IconVael className="h-4 w-4" />} label="Tools / technologies" value={listed(profile.tools.join(", "))} />
-        </div>
+
+      <TabsContent value="projects" className="mt-6 space-y-6">
+        <ProjectDetails handle={profile.handle} mine={mine} />
+        {projects.length > 0 ? (
+          <div>
+            <p className="mb-3 text-caption font-semibold uppercase tracking-[0.14em] text-muted">Opportunities posted</p>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {projects.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    to={mine ? projectHref(item.id) : opportunityHref(item.id)}
+                    className="block rounded-xl border border-border bg-surface p-4 motion-safe:transition-colors hover:border-accent/40"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-body-sm font-medium text-foreground">{item.category || "Project"}</p>
+                      <span className="shrink-0 rounded-full bg-surface-muted px-2.5 py-0.5 text-caption capitalize text-muted">{item.status}</span>
+                    </div>
+                    <p className="mt-1 text-caption text-muted">{[item.city, item.timing, item.budgetBand].filter(Boolean).join(" · ")}</p>
+                    {item.description ? <p className="mt-2 line-clamp-2 text-body-sm text-muted">{item.description}</p> : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : mine ? (
+          <p className="text-body-sm text-muted">
+            You haven't posted an opportunity yet.{" "}
+            <Link to={opportunityStart("create").to} state={opportunityStart("create").state} className="font-medium text-accent">
+              Post an Opportunity
+            </Link>
+          </p>
+        ) : null}
+        {!mine && projects.length === 0 && !getVaelance(profile.handle) ? <EmptyNote>No project details yet.</EmptyNote> : null}
       </TabsContent>
+
+      <TabsContent value="history" className="mt-6">
+        {!hasExperience ? (
+          <EmptyNote>
+            No work history listed yet.
+            {mine ? (
+              <>
+                {" "}
+                <Link to={editWork} className="font-medium text-accent">
+                  Add work history
+                </Link>
+              </>
+            ) : null}
+          </EmptyNote>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InfoTile
+              icon={<IconClock className="h-4 w-4" />}
+              label="Years of experience"
+              value={profile.experienceYears ? `${profile.experienceYears} years` : "Not listed."}
+            />
+            <InfoTile icon={<IconBriefcase className="h-4 w-4" />} label="Experience" value={listed(profile.experience)} />
+            <InfoTile icon={<IconLock className="h-4 w-4" />} label="Certifications" value={certifications.length > 0 ? certifications.join(", ") : "Not listed."} />
+          </div>
+        )}
+      </TabsContent>
+
       <TabsContent value="portfolio" className="mt-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InfoTile icon={<IconBriefcase className="h-4 w-4" />} label="Professional title" value={listed(profile.headline)} />
-          <InfoTile icon={<IconUser className="h-4 w-4" />} label="Short bio" value={listed(profile.bio)} />
-          <InfoTile
-            icon={<IconClock className="h-4 w-4" />}
-            label="Years of experience"
-            value={profile.experienceYears ? `${profile.experienceYears} years` : "Not listed."}
-          />
-          <InfoTile icon={<IconClock className="h-4 w-4" />} label="Experience" value={listed(profile.experience)} />
-        </div>
-      </TabsContent>
-      <TabsContent value="projects" className="mt-6">
-        {profile.portfolio.length > 0 ? (
+        {!open && !mine ? (
+          <EmptyNote>The portfolio opens after a Handshake.</EmptyNote>
+        ) : profile.portfolio.length === 0 ? (
+          <EmptyNote>No portfolio items yet.</EmptyNote>
+        ) : (
           <ul className="space-y-3">
             {profile.portfolio.map((item) => (
               <li key={item.url || item.label} className="rounded-xl border border-border bg-surface p-4">
@@ -164,29 +605,49 @@ function OwnProfileDetails({ profile, docs }: { profile: ProfileRecord; docs: Pr
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="text-body-sm text-muted">Not listed.</p>
         )}
       </TabsContent>
-      <TabsContent value="documents" className="mt-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InfoTile
-            icon={<IconLock className="h-4 w-4" />}
-            label="Certifications"
-            value={certifications.length > 0 ? certifications.join(", ") : "Not listed."}
-          />
-        </div>
-        {docs.length > 0 ? (
-          <ul className="mt-3 space-y-3">
-            {docs.map((doc) => (
-              <li key={doc.id}>
-                <DocumentCard title={doc.title} type={doc.type} status={doc.publicFlag ? "public" : "uploaded"} />
-              </li>
-            ))}
-          </ul>
+
+      <TabsContent value="activity" className="mt-6">
+        {activity.length === 0 ? (
+          <EmptyNote>No activity yet.</EmptyNote>
         ) : (
-          <p className="mt-3 text-body-sm text-muted">No documents yet.</p>
+          <ul className="space-y-3">
+            {activity.map((item) => {
+              const body = (
+                <>
+                  <p className="text-body-sm font-medium text-foreground">{item.title}</p>
+                  <p className="mt-0.5 text-caption text-muted">
+                    {item.meta} · {formatCommunityTime(item.at)}
+                  </p>
+                </>
+              );
+              return (
+                <li key={item.id}>
+                  {item.href ? (
+                    <Link to={item.href} className="block rounded-xl border border-border bg-surface p-4 motion-safe:transition-colors hover:border-accent/40">
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className="rounded-xl border border-border bg-surface p-4">{body}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
+      </TabsContent>
+
+      <TabsContent value="documents" className="mt-6 space-y-6">
+        <ProfileDocumentsSection docs={docs} mine={mine} revealed={revealed} />
+        <ProfileTrustPanel
+          values={[profile.displayName, profile.headline, profile.bio, profile.disciplines, profile.experience, profile.credentials, profile.location]}
+          districtNote="Reputation is not modeled. Unverified is the only honest state."
+        />
+      </TabsContent>
+
+      <TabsContent value="team" className="mt-6">
+        <TeamPanel handle={profile.handle} mine={mine} />
       </TabsContent>
     </Tabs>
   );
@@ -391,174 +852,20 @@ export function ProfilePage() {
         </div>
       ) : null}
 
-      {mine && !hiring ? <OwnProfileDetails profile={profile} docs={docs} /> : null}
-
-      {providerLocked || (mine && !hiring) ? null : (
-      <Tabs defaultValue="about" className="mt-8">
-        <TabsList className="gap-1.5 rounded-full border-none bg-surface-muted p-1.5">
-          <PillTab value="about" icon={<IconUser className="h-3.5 w-3.5" />}>
-            Identity
-          </PillTab>
-          <PillTab value="work" icon={<IconHandshake className="h-3.5 w-3.5" />}>
-            {hiring ? "Requirements" : "Capabilities"}
-          </PillTab>
-          <PillTab value="docs" icon={<IconDocument className="h-3.5 w-3.5" />}>
-            Documents
-          </PillTab>
-          <PillTab value="trust" icon={<IconUsers className="h-3.5 w-3.5" />}>
-            Trust
-          </PillTab>
-        </TabsList>
-        <TabsContent value="about" className="mt-6">
-          {!showDistrict ? (
-            <p className="text-body-sm text-muted">Continue locally to see district profile details.</p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoTile
-                icon={<IconUser className="h-4 w-4" />}
-                label="Identity"
-                value={`${profile.displayName} · @${profile.handle} · ${profile.profileType}`}
-              />
-              <InfoTile icon={<IconVael className="h-4 w-4" />} label="About" value={profile.bio || "Not written yet."} />
-              <InfoTile
-                icon={<IconClock className="h-4 w-4" />}
-                label="Location"
-                value={
-                  [profile.location, workPreferenceLabel(profile.workPreference)].filter(Boolean).join(" · ") ||
-                  "Not listed."
-                }
-              />
-              {!hiring ? (
-                <InfoTile
-                  icon={<IconLock className="h-4 w-4" />}
-                  label="Rates"
-                  value={revealed ? profile.rates || "Not listed." : "Opens after a Handshake."}
-                  locked={!revealed}
-                />
-              ) : null}
-            </div>
-          )}
-        </TabsContent>
-        <TabsContent value="work" className="mt-6">
-          {!showDistrict ? (
-            <p className="text-body-sm text-muted">{hiring ? "Sign in to see requirements." : "Sign in to see capabilities."}</p>
-          ) : hiring ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoTile
-                icon={<IconLock className="h-4 w-4" />}
-                label="Requirements"
-                value={profile.credentials || "None listed."}
-              />
-              <InfoTile
-                icon={<IconDocument className="h-4 w-4" />}
-                label="Links"
-                value={
-                  revealed
-                    ? profile.portfolio.map((item) => item.label).join(", ") || "None listed."
-                    : "Opens after a Handshake."
-                }
-                locked={!revealed}
-              />
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoTile icon={<IconHandshake className="h-4 w-4" />} label="Capabilities" value={profile.disciplines.join(", ") || "None listed."} />
-              <InfoTile icon={<IconVael className="h-4 w-4" />} label="Skills" value={profile.skills.join(", ") || "None listed."} />
-              <InfoTile icon={<IconVael className="h-4 w-4" />} label="Tools" value={profile.tools.join(", ") || "None listed."} />
-              <InfoTile
-                icon={<IconClock className="h-4 w-4" />}
-                label="Experience"
-                value={
-                  [profile.experienceYears ? `${profile.experienceYears} years` : "", profile.experience]
-                    .filter(Boolean)
-                    .join(" · ") || "None listed."
-                }
-              />
-              <InfoTile
-                icon={<IconLock className="h-4 w-4" />}
-                label="Credentials"
-                value={profile.credentials || "None listed. Labels only — not a verified credential record."}
-              />
-              <InfoTile
-                icon={<IconDocument className="h-4 w-4" />}
-                label="Portfolio"
-                value={
-                  revealed
-                    ? profile.portfolio.map((item) => item.label).join(", ") || "None listed."
-                    : "Opens after a Handshake."
-                }
-                locked={!revealed}
-              />
-              {revealed ? (
-                <>
-                  <InfoTile icon={<IconBriefcase className="h-4 w-4" />} label="Employment type" value={listing?.engagement || "Not listed."} />
-                  <InfoTile
-                    icon={<IconBriefcase className="h-4 w-4" />}
-                    label="Project categories"
-                    value={(profile.offers ?? []).join(", ") || listing?.category || "Not listed."}
-                  />
-                  <InfoTile icon={<IconHandshake className="h-4 w-4" />} label="Participation" value={profile.specialization || "Not listed."} />
-                  <InfoTile
-                    icon={<IconDocument className="h-4 w-4" />}
-                    label={profile.profileType === "business" ? "Workstation" : "Own gear"}
-                    value={listing?.requirements || "Not listed."}
-                  />
-                  <InfoTile icon={<IconMapPin className="h-4 w-4" />} label="Service area" value={listing?.location || profile.location || "Not listed."} />
-                  <InfoTile icon={<IconClock className="h-4 w-4" />} label="Current availability" value={availabilityNote} />
-                  <InfoTile
-                    icon={<IconLock className="h-4 w-4" />}
-                    label="Contact"
-                    value={[account?.email, account?.phone, listing?.contact].filter(Boolean).join(" · ") || "Not listed."}
-                  />
-                </>
-              ) : null}
-            </div>
-          )}
-          {showDistrict && revealed && profile.portfolio.length > 0 ? (
-            <ul className="mt-3 space-y-2 text-body-sm">
-              {profile.portfolio.map((item) => (
-                <li key={item.url}>
-                  <a href={item.url} className="underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
-                    {item.label || item.url}
-                  </a>
-                  {item.note ? <p className="text-caption text-muted">{item.note}</p> : null}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </TabsContent>
-        <TabsContent value="docs" className="mt-6">
-          <ProfileDocumentsSection docs={docs} mine={mine} revealed={revealed} />
-        </TabsContent>
-        <TabsContent value="trust" className="mt-6">
-          <ProfileTrustPanel
-            values={[
-              profile.displayName,
-              profile.headline,
-              profile.bio,
-              profile.disciplines,
-              profile.experience,
-              profile.credentials,
-              profile.location,
-            ]}
-            districtNote="Reputation is not modeled. Unverified is the only honest state."
-          />
-        </TabsContent>
-      </Tabs>
+      {providerLocked ? null : (
+        <ProfileTabs
+          profile={profile}
+          docs={docs}
+          mine={mine}
+          hiring={hiring}
+          revealed={revealed}
+          signedIn={signedIn}
+          listing={listing}
+          account={account}
+          availabilityNote={availabilityNote}
+        />
       )}
     </DashboardShell>
-  );
-}
-
-function PillTab({ value, icon, children }: { value: string; icon: ReactNode; children: ReactNode }) {
-  return (
-    <TabsTrigger
-      value={value}
-      className="-mb-0 flex items-center gap-1.5 rounded-full border-b-0 px-3.5 py-2 text-button font-medium text-muted aria-selected:bg-[#0B0C0C] aria-selected:text-white dark:aria-selected:bg-accent dark:aria-selected:text-[#0B0C0C]"
-    >
-      {icon}
-      {children}
-    </TabsTrigger>
   );
 }
 

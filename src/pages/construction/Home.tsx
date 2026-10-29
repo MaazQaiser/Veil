@@ -3,13 +3,10 @@ import { PageHeader } from "@/components/ui/headers";
 import { buttonClassName } from "@/components/ui/button";
 import { CityPage } from "@/components/city/CityShell";
 import { DashboardShell } from "@/components/mt/DashboardShell";
+import { OpportunityBoard } from "@/components/opportunities/OpportunityBoard";
 import { EmptyState } from "@/components/ui/feedback";
 import { IconChevronLeft } from "@/components/ui/icons";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useVael } from "@/lib/vaelCore";
-import { CONTRACTOR_OPPS_PATH, PROJECTS_PATH } from "@/lib/cxRoutes";
-import { getOnboardingDraft } from "@/lib/onboarding";
-import { visibilityKindFromListing } from "@/lib/visibilityPlans";
 
 const BASE = "/districts/contractor";
 
@@ -20,43 +17,23 @@ type ContractorCategory = "residential" | "commercial";
  * creates opportunities, Vael In reviews the ones Vael Out posted. Commercial
  * stays here until it has its own entry.
  */
+function ContractorOpportunities() {
+  return (
+    <DashboardShell>
+      <OpportunityBoard
+        title="Opportunities in Contractor Exchange"
+        subtitle="Live opportunities from homeowners, for members of this district."
+        samples="fallback"
+      />
+    </DashboardShell>
+  );
+}
+
 export function ConstructionHomePage({ category = "residential" }: { category?: ContractorCategory }) {
   const navigate = useNavigate();
-  const { latestListing, handle, signedIn } = useVael();
-  const kind = visibilityKindFromListing(latestListing);
-  const vaeledIn = (kind === "in" || kind === "expiring") && latestListing?.side !== "out";
-  const vaeledOut = kind === "out" || ((kind === "in" || kind === "expiring") && latestListing?.side === "out");
-  const intent = signedIn ? (getOnboardingDraft(handle)?.intent ?? "") : "";
-  const vaelOut = vaeledOut || (intent === "out" && !vaeledIn);
 
   if (category === "residential") {
-    return (
-      <DashboardShell>
-        <Link
-          to="/media-technology/districts"
-          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
-        >
-          <IconChevronLeft className="h-3.5 w-3.5" />
-          Back to Districts
-        </Link>
-        <div>
-          <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
-            Contractor Exchange
-          </h1>
-          <p className="mt-1 max-w-xl text-body-sm text-muted">
-            Available contractors, and people who need construction work.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link to={vaelOut ? PROJECTS_PATH : CONTRACTOR_OPPS_PATH} className={buttonClassName()}>
-            {vaelOut ? "Your projects" : "Available opportunities"} →
-          </Link>
-          <Link to="/matches?district=construction" className={buttonClassName({ variant: "outline" })}>
-            Matches
-          </Link>
-        </div>
-      </DashboardShell>
-    );
+    return <ContractorOpportunities />;
   }
 
   return (

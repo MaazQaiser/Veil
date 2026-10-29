@@ -480,7 +480,7 @@ function AccountMenu({
           role="menu"
           aria-label="Account"
           className={cn(
-            "absolute right-0 z-40 mt-2 w-[min(16rem,calc(100vw-2.5rem))] rounded-lg border p-2 shadow-md",
+            "absolute right-0 z-40 mt-2 w-[min(18.5rem,calc(100vw-2.5rem))] rounded-lg border p-2 shadow-md",
             dark
               ? "border-white/15 bg-[#141414] text-[#F5F3EE] shadow-[0_16px_48px_rgba(0,0,0,0.5)]"
               : "border-border bg-surface-elevated dark:border-white/10 dark:backdrop-blur-2xl",

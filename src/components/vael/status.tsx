@@ -48,10 +48,11 @@ export function HandshakeStatus({ kind, className }: { kind: HandshakeKind; clas
 export type DistrictLotStatus = "live" | "soon" | "early" | "future";
 
 export function DistrictStatus({ status }: { status: DistrictLotStatus }) {
-  if (status === "live") return <Badge tone="live">Live</Badge>;
-  if (status === "early") return <Badge tone="early">Early Access</Badge>;
-  if (status === "future") return <Badge tone="muted">Future</Badge>;
-  return <Badge tone="soon">Coming Soon</Badge>;
+  const keep = "shrink-0 whitespace-nowrap";
+  if (status === "live") return <Badge tone="live" className={keep}>Live</Badge>;
+  if (status === "early") return <Badge tone="early" className={keep}>Early Access</Badge>;
+  if (status === "future") return <Badge tone="muted" className={keep}>Future</Badge>;
+  return <Badge tone="outline" className={keep}>Coming Soon</Badge>;
 }
 
 export type VerificationKind = "unverified" | "pending" | "verified";

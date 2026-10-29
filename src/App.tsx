@@ -21,6 +21,7 @@ import {
   JoinConfirmPhonePage,
   JoinPreviewPage,
   JoinProfileTypePage,
+  JoinContractorExchangePage,
   JoinSetupPage,
   JoinSignUpPage,
   JoinWelcomePage,
@@ -128,6 +129,7 @@ export default function App() {
               <Route path="need" element={<JoinNeedPage />} />
               <Route path="welcome" element={<JoinWelcomePage />} />
               <Route path="profile-type" element={<JoinProfileTypePage />} />
+              <Route path="contractor-exchange" element={<JoinContractorExchangePage />} />
               <Route path="setup" element={<JoinSetupPage />} />
               <Route path="handle" element={<Navigate to="/join/setup" replace />} />
               <Route path="type" element={<Navigate to="/join/setup" replace />} />

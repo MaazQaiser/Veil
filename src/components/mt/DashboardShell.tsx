@@ -41,7 +41,11 @@ export function DashboardShell({
   if (inShell) return <>{children}</>;
 
   if (!signedIn) {
-    return <CityPage>{children}</CityPage>;
+    return (
+      <CityPage>
+        <div className="space-y-6">{children}</div>
+      </CityPage>
+    );
   }
 
   const mine = profile(handle);

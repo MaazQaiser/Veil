@@ -10,7 +10,8 @@ export type MarketingProjectIcon =
   | "roofing"
   | "bathroom"
   | "electrical"
-  | "painting";
+  | "painting"
+  | "kitchen";
 
 export type MarketingProject = {
   id: string;

@@ -74,6 +74,15 @@ function CategoryGlyph({ icon }: { icon: MarketingProjectIcon }) {
       </svg>
     );
   }
+  if (icon === "kitchen") {
+    return (
+      <svg {...svg}>
+        <path d="M5 11.4h14v5.2a3.2 3.2 0 0 1-3.2 3.2H8.2A3.2 3.2 0 0 1 5 16.6v-5.2z" />
+        <path d="M3 11.4h18" />
+        <path d="M9.2 7.6c0-1.3 1-1.7 1-3M13.6 7.6c0-1.3 1-1.7 1-3" />
+      </svg>
+    );
+  }
   if (icon === "electrical") {
     return (
       <svg {...svg}>
@@ -101,20 +110,44 @@ function Fact({ icon, label }: { icon: "pin" | "time" | "budget"; label: string 
   );
 }
 
-export function ProjectCard({ project, locked, onDetails }: { project: MarketingProject; locked: boolean; onDetails: () => void }) {
+export type OpportunityCardProps = {
+  category: string;
+  icon: MarketingProjectIcon;
+  meta: string;
+  description: string;
+  city: string;
+  timing: string;
+  budget: string;
+  daysLeft: number;
+  image?: string;
+  photoCount?: number;
+  locked: boolean;
+  lockedNote: string;
+  lockedAction: { label: string; to: string };
+  action: { label: string; onClick?: () => void; to?: string };
+};
+
+/** One opportunity as a card. Locked cards blur the photo and hide the description. */
+export function OpportunityCardView(props: OpportunityCardProps) {
+  const { category, icon, meta, description, city, timing, budget, daysLeft, image, photoCount, locked, lockedNote, lockedAction, action } = props;
+  const members = photoCount && photoCount > 0 ? `${photoCount} photo${photoCount === 1 ? "" : "s"} · members only` : "Members only";
   return (
     <article className={CARD}>
-      <div className="relative h-48 w-full shrink-0 overflow-hidden">
-        <img
-          src={project.image}
-          alt=""
-          className={cn("h-full w-full object-cover", locked && "scale-110 opacity-60 blur-xl")}
-        />
+      <div className="relative h-48 w-full shrink-0 overflow-hidden bg-surface-muted">
+        {image ? (
+          <img src={image} alt="" className={cn("h-full w-full object-cover", locked && "scale-110 opacity-60 blur-xl")} />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-accent/10 via-transparent to-accent/5 text-accent/40">
+            <span className="scale-[3]">
+              <CategoryGlyph icon={icon} />
+            </span>
+          </span>
+        )}
         {locked ? (
           <span className="absolute inset-x-0 bottom-4 flex justify-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/90 px-3 py-1.5 text-caption font-medium text-foreground">
               <IconLock className="h-3.5 w-3.5" />
-              Members only
+              {members}
             </span>
           </span>
         ) : null}
@@ -123,13 +156,11 @@ export function ProjectCard({ project, locked, onDetails }: { project: Marketing
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent">
-              <CategoryGlyph icon={project.icon} />
+              <CategoryGlyph icon={icon} />
             </span>
             <div className="min-w-0">
-              <h2 className="text-body font-semibold leading-snug text-foreground">{project.category}</h2>
-              <p className="mt-0.5 text-caption leading-snug text-muted">
-                {project.name} · {project.posted}
-              </p>
+              <h2 className="text-body font-semibold leading-snug text-foreground">{category}</h2>
+              <p className="mt-0.5 text-caption leading-snug text-muted">{meta}</p>
             </div>
           </div>
           <Badge tone="live" className="shrink-0">
@@ -139,33 +170,68 @@ export function ProjectCard({ project, locked, onDetails }: { project: Marketing
         {locked ? (
           <p className="flex min-h-[4.5rem] items-start gap-2 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-body-sm leading-6 text-foreground">
             <IconLock className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
-            The description is for members of {DISTRICT_NAME}
+            {lockedNote}
           </p>
         ) : (
-          <p className="line-clamp-3 min-h-[4.5rem] text-body-sm leading-6 text-foreground">{project.description}</p>
+          <p className="line-clamp-3 min-h-[4.5rem] text-body-sm leading-6 text-foreground">{description}</p>
         )}
         <div className="flex flex-wrap gap-2">
-          <Fact icon="pin" label={project.city} />
-          <Fact icon="time" label={project.timing} />
-          <Fact icon="budget" label={project.budget} />
+          {city ? <Fact icon="pin" label={city} /> : null}
+          {timing ? <Fact icon="time" label={timing} /> : null}
+          {budget ? <Fact icon="budget" label={budget} /> : null}
         </div>
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-subtle pt-4">
           <p className="inline-flex items-center gap-1.5 text-caption leading-none text-muted">
             <IconClock className="h-3.5 w-3.5 shrink-0" />
-            {project.daysLeft} {project.daysLeft === 1 ? "day" : "days"} left
+            {daysLeft} {daysLeft === 1 ? "day" : "days"} left
           </p>
           {locked ? (
-            <Link to={JOIN_ROUTE} className="shrink-0 text-body-sm font-medium leading-none text-accent">
-              Join to view <span aria-hidden>→</span>
+            <Link to={lockedAction.to} className="inline-flex shrink-0 items-center gap-1.5 text-body-sm font-medium leading-none text-accent">
+              <IconLock className="h-3.5 w-3.5" />
+              {lockedAction.label}
+            </Link>
+          ) : action.to ? (
+            <Link to={action.to} className="shrink-0 text-body-sm font-medium leading-none text-accent">
+              {action.label} <span aria-hidden>→</span>
             </Link>
           ) : (
-            <button type="button" onClick={onDetails} className="shrink-0 text-body-sm font-medium leading-none text-accent">
-              Show details <span aria-hidden>→</span>
+            <button type="button" onClick={action.onClick} className="shrink-0 text-body-sm font-medium leading-none text-accent">
+              {action.label} <span aria-hidden>→</span>
             </button>
           )}
         </div>
       </div>
     </article>
+  );
+}
+
+export function ProjectCard({
+  project,
+  locked,
+  onDetails,
+  lockedAction = { label: "Join to view", to: JOIN_ROUTE },
+}: {
+  project: MarketingProject;
+  locked: boolean;
+  onDetails: () => void;
+  lockedAction?: { label: string; to: string };
+}) {
+  return (
+    <OpportunityCardView
+      category={project.category}
+      icon={project.icon}
+      meta={`${project.name} · ${project.posted}`}
+      description={project.description}
+      city={project.city}
+      timing={project.timing}
+      budget={project.budget}
+      daysLeft={project.daysLeft}
+      image={project.image}
+      locked={locked}
+      lockedNote={`The description is for members of ${DISTRICT_NAME}`}
+      lockedAction={lockedAction}
+      action={{ label: "Show details", onClick: onDetails }}
+    />
   );
 }
 
@@ -238,7 +304,7 @@ export function WebsiteProjectsPage() {
             className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
           >
             <span aria-hidden className="text-lg leading-none">+</span>
-            Post an opportunity
+            Post an Opportunity
           </Link>
         </div>
       </div>
