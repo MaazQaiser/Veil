@@ -293,7 +293,7 @@ export function WebsiteProjectsPage() {
       <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-success" />
       {shown.length} {shown.length === 1 ? "opportunity is" : "opportunities are"} live in {DISTRICT_NAME}
     </p>
-    <CityPage width="wide" className="py-8 md:py-10">
+    <CityPage width="wide" className="pb-8 pt-3 md:pb-10 md:pt-4">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div>
           <h1 className="font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-medium tracking-tight text-foreground">
