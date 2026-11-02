@@ -212,17 +212,6 @@ export function isOpportunitiesOnly(handle: string): boolean {
   return Boolean(handle) && getOnboardingDraft(handle)?.opportunitiesOnly === true;
 }
 
-/** Leaves the Opportunities-only view and starts the onboarding for the side they picked. */
-export function startVaelFromOpportunities(handle: string, intent: "in" | "out"): string {
-  patchOnboarding(
-    handle,
-    intent === "out"
-      ? { intent, completedStep: "Intent", outStep: "need", completedAt: undefined, opportunitiesOnly: false }
-      : { intent, completedStep: "Intent", completedAt: undefined, opportunitiesOnly: false },
-  );
-  return intent === "out" ? vaelOutPath("need") : ONBOARDING_PATH.Welcome;
-}
-
 export function onboardingComplete(handle: string): boolean {
   if (!handle) return false;
   const draft = getOnboardingDraft(handle);

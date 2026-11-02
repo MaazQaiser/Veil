@@ -38,6 +38,7 @@ export function NeedAccountPage() {
     }
     const displayName = firstName.trim();
     let account = findAccountByEmail(email);
+    const isNewAccount = !account;
     if (!account) {
       account = createAccount({
         email,
@@ -51,6 +52,8 @@ export function NeedAccountPage() {
     startOnboarding(account.handle);
     patchOnboarding(account.handle, { intent: "need", needPlace: "home", profileType: "individual" });
     finishOnboarding(account.handle);
+    // New here only for Opportunities: they get the short top bar until they pick Vael In or Vael Out.
+    if (isNewAccount) patchOnboarding(account.handle, { opportunitiesOnly: true });
     setContractorExperience(account.handle, "residential");
     signIn(account.handle);
     navigate(NEED_CONFIRM_PATH);

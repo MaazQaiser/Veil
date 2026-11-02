@@ -82,7 +82,7 @@ export function CreatePostPage() {
   }
 
   return (
-    <DashboardShell>
+    <DashboardShell sidebar={false}>
       <div className="w-full max-w-3xl space-y-6">
       <PageHeader
         kicker="Community"
@@ -208,7 +208,7 @@ export function PostDetailPage() {
   }
 
   return (
-    <DashboardShell>
+    <DashboardShell sidebar={false}>
       <Link
         to={communityHref(post.districtId)}
         className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"

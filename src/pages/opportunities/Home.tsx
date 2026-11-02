@@ -125,7 +125,7 @@ export function OpportunityHomePage() {
     ) : undefined;
 
   return (
-    <DashboardShell>
+    <DashboardShell sidebar={false}>
       <OpportunityBoard
         title="Opportunities in Contractor Exchange"
         subtitle="Live opportunities from homeowners, for members of this district."

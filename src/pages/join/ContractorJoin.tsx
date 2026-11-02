@@ -7,8 +7,9 @@ import { DocumentCard } from "@/components/vael";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { useConstruction } from "@/lib/constructionCore";
-import { CX_TRADES, subscribeConstruction, type ConstructionProfile } from "@/lib/constructionStore";
-import { RX_PROJECT_CATEGORIES, getVaelance, saveVaelance, type CxProjectRole } from "@/lib/cxProjectStore";
+import { subscribeConstruction, type ConstructionProfile } from "@/lib/constructionStore";
+import { ContractorDetailFields, PortfolioLinkFields, tradesOf } from "@/components/construction/ContractorDetailFields";
+import { CX_MAX_AREAS, RX_PROJECT_CATEGORIES, getVaelance, saveVaelance, type CxProjectRole } from "@/lib/cxProjectStore";
 import { addManualDistricts } from "@/lib/myDistricts";
 import { DOC_TYPES } from "@/lib/vaelStore";
 import { useVael } from "@/lib/vaelCore";
@@ -42,13 +43,6 @@ const STEPS = ["Profile type", "Your profile", "Your projects", "Documents"] as 
 const OPTION =
   "flex h-full w-full flex-col items-start rounded-lg border bg-surface px-5 py-4 text-left motion-safe:transition-colors motion-safe:duration-150 hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.06]";
 
-function split(value: string) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 /**
  * Joining Contractor Exchange, one step at a time: who you are, your profile, the projects you take
  * on, then documents. Saving everything at the end makes it the member's active district.
@@ -69,6 +63,8 @@ export function JoinContractorExchangePage() {
   );
   const [categories, setCategories] = useState<string[]>(existing?.projectCategories ?? []);
   const [role, setRole] = useState<CxProjectRole | "">(existing?.projectRole ?? "");
+  const [areas, setAreas] = useState<string[]>(existing?.areas ?? []);
+  const [areaText, setAreaText] = useState("");
   const [docType, setDocType] = useState<(typeof DOC_TYPES)[number]>(DOC_TYPES[0]);
   const [error, setError] = useState("");
   const [, setTick] = useState(0);
@@ -84,6 +80,11 @@ export function JoinContractorExchangePage() {
     setError("");
   }
 
+  function update(change: (profile: ConstructionProfile) => ConstructionProfile) {
+    setForm((current) => (current ? change(current) : current));
+    setError("");
+  }
+
   function chooseKind(id: string) {
     const chosen = KINDS.find((item) => item.id === id);
     if (!chosen) return;
@@ -91,6 +92,13 @@ export function JoinContractorExchangePage() {
     setForm((current) =>
       current ? { ...current, profileType: chosen.type, trade: current.trade || chosen.trade } : current,
     );
+  }
+
+  function addArea() {
+    const value = areaText.trim();
+    if (!value || areas.length >= CX_MAX_AREAS || areas.some((item) => item.toLowerCase() === value.toLowerCase())) return;
+    setAreas([...areas, value]);
+    setAreaText("");
   }
 
   function back() {
@@ -103,7 +111,9 @@ export function JoinContractorExchangePage() {
     if (step === 0 && !kind) return;
     if (step === 1) {
       if (!form.displayName.trim()) return setError("Enter the name you work under.");
-      if (!form.trade && KINDS.find((item) => item.id === kind)?.needsTrade) return setError("Choose your trade.");
+      if (tradesOf(form).length === 0 && KINDS.find((item) => item.id === kind)?.needsTrade) {
+        return setError("Choose at least one trade.");
+      }
       if (!form.serviceArea.trim()) return setError("Add the city or area you work in.");
     }
     if (step === 2) {
@@ -121,6 +131,7 @@ export function JoinContractorExchangePage() {
       handle: form.handle,
       projectCategories: categories as (typeof RX_PROJECT_CATEGORIES)[number][],
       projectRole: role,
+      areas,
     });
     addManualDistricts(session.handle, ["construction"]);
     navigate(OPPORTUNITY_PATH, { state: { joinedContractor: true } });
@@ -165,28 +176,20 @@ export function JoinContractorExchangePage() {
             <Field label="Headline" htmlFor="cj-headline" hint="One line, like “Kitchen and bath renovations”.">
               <Input id="cj-headline" value={form.headline} onChange={(e) => set("headline", e.target.value)} />
             </Field>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Trade" htmlFor="cj-trade" required={KINDS.find((item) => item.id === kind)?.needsTrade ?? true}>
-                <Select id="cj-trade" value={form.trade} onChange={(e) => set("trade", e.target.value)}>
-                  <option value="">Select</option>
-                  {CX_TRADES.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Specialization" htmlFor="cj-spec">
-                <Input id="cj-spec" value={form.specialization} onChange={(e) => set("specialization", e.target.value)} />
-              </Field>
-            </div>
             <Field label="Service area" htmlFor="cj-area" required hint="The city or area you work in.">
               <Input id="cj-area" value={form.serviceArea} onChange={(e) => set("serviceArea", e.target.value)} />
             </Field>
             <Field label="About" htmlFor="cj-about">
               <Textarea id="cj-about" value={form.about} onChange={(e) => set("about", e.target.value)} />
             </Field>
-            <Field label="Capabilities" htmlFor="cj-caps" hint="Separate with commas.">
-              <Input id="cj-caps" value={form.capabilities.join(", ")} onChange={(e) => set("capabilities", split(e.target.value))} />
-            </Field>
+          </div>
+          <div className="mt-6 space-y-10 rounded-lg border border-border bg-surface p-6 sm:p-7">
+            <ContractorDetailFields
+              form={form}
+              update={update}
+              tradeRequired={KINDS.find((item) => item.id === kind)?.needsTrade ?? true}
+            />
+            <PortfolioLinkFields form={form} update={update} />
           </div>
         </>
       ) : null}
@@ -237,6 +240,51 @@ export function JoinContractorExchangePage() {
               </li>
             ))}
           </ul>
+          <h2 className="mt-8 text-h4 font-medium text-foreground">Areas you work in</h2>
+          <p className="mt-1 text-caption text-muted">
+            Pick up to {CX_MAX_AREAS} towns, or whole counties. You only see projects in these places.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Input
+              aria-label="Add a town or a county"
+              placeholder="Type a town or a county…"
+              value={areaText}
+              disabled={areas.length >= CX_MAX_AREAS}
+              onChange={(e) => setAreaText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addArea();
+                }
+              }}
+            />
+            <Button type="button" variant="outline" disabled={!areaText.trim()} onClick={addArea}>
+              Add
+            </Button>
+          </div>
+          {areas.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {areas.map((area) => (
+                <span
+                  key={area}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-caption font-medium text-accent"
+                >
+                  {area}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${area}`}
+                    className="text-accent/70 hover:text-accent"
+                    onClick={() => setAreas(areas.filter((item) => item !== area))}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <p className="mt-2 text-caption text-muted">
+            {areas.length} of {CX_MAX_AREAS} picked.
+          </p>
         </>
       ) : null}
 

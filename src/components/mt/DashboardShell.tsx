@@ -30,9 +30,12 @@ export function DashboardLayout() {
 export function DashboardShell({
   children,
   contentClassName,
+  sidebar = true,
 }: {
   children: ReactNode;
   contentClassName?: string;
+  /** False for pages that rely on the top bar alone, like Opportunities. */
+  sidebar?: boolean;
 }) {
   const inShell = useContext(InShellContext);
   const vael = useVael();
@@ -48,7 +51,7 @@ export function DashboardShell({
     );
   }
 
-  if (isOpportunitiesOnly(handle)) {
+  if (!sidebar || isOpportunitiesOnly(handle)) {
     return (
       <CityPage width="wide" className="py-8 md:py-10">
         <InShellContext.Provider value>

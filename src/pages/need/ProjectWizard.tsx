@@ -428,6 +428,7 @@ function AccountStep({
     }
     saveProjectContact(draft.id, email, phone);
     let account = findAccountByEmail(email);
+    const isNewAccount = !account;
     if (!account) {
       account = createAccount({
         email,
@@ -445,6 +446,8 @@ function AccountStep({
       profileType: "individual",
     });
     finishOnboarding(account.handle);
+    // New here only for Opportunities: they get the short top bar until they pick Vael In or Vael Out.
+    if (isNewAccount) patchOnboarding(account.handle, { opportunitiesOnly: true });
     setContractorExperience(account.handle, "residential");
     setActiveDistrict(account.handle, "construction");
     attachDraftToHandle(draft.id, account.handle, firstName.trim());

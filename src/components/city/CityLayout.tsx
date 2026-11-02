@@ -25,14 +25,16 @@ export function CityLayout() {
   // the light/dark preference only applies inside the product.
   const onWebsite = isSitePath(location.pathname, session.signedIn);
   const theme = onWebsite ? "dark" : preferredTheme;
+  // A signed-in member opening the Vael In / Vael Out sign-in keeps the dark top bar they came from.
+  const onSignedInAuth = session.signedIn && location.pathname === "/sign-in";
   const showDark = inProductFlow && theme === "dark";
   const hideFooter = inJoinFlow || location.pathname === "/messages" || inProductFlow;
 
   return (
     <div
       data-surface={inProduct ? undefined : "site"}
-      data-theme={inProductFlow ? theme : undefined}
-      data-accent={inProductFlow ? "orange" : undefined}
+      data-theme={inProductFlow ? theme : onSignedInAuth ? "dark" : undefined}
+      data-accent={inProductFlow || onSignedInAuth ? "orange" : undefined}
       className={cn(
         "flex min-w-0 flex-col text-foreground dark:text-[#F5F3EE]",
         inJoinFlow ? "h-dvh overflow-hidden" : "min-h-screen",

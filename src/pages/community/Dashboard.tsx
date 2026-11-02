@@ -87,7 +87,7 @@ export function CommunityDashboardPage() {
   }
 
   return (
-    <DashboardShell>
+    <DashboardShell sidebar={false}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-xl">
           <h1 className="font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-medium tracking-tight text-foreground">

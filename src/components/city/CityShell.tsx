@@ -32,7 +32,6 @@ import {
   onboardingComplete,
   onboardingRoute,
   signedInLanding,
-  startVaelFromOpportunities,
 } from "@/lib/onboarding";
 import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
 import { relativeTime } from "@/lib/time";
@@ -721,7 +720,9 @@ export function CityShell() {
   const location = useLocation();
   const onSite = isSitePath(location.pathname, session.signedIn);
   const onHero = location.pathname === "/";
-  const inProduct = session.signedIn && !onSite;
+  // Signed-in members who open the Vael In / Vael Out sign-in page keep the same top bar they came from.
+  const onSignIn = session.signedIn && location.pathname === "/sign-in";
+  const inProduct = session.signedIn && (!onSite || onSignIn);
   // Signed up from the Opportunities page: a short top bar instead of the full dashboard chrome.
   const lean = inProduct && isOpportunitiesOnly(session.handle);
   // The signed-in top bar. Accounts that only joined for Opportunities start Vael In or Vael Out from here;
@@ -732,12 +733,18 @@ export function CityShell() {
     listingKind === "out" ||
     ((listingKind === "in" || listingKind === "expiring") && vael.latestListing?.side === "out");
   const leanLinks: TopLink[] = [
-    lean
-      ? { id: "in", label: "Vael In", icon: IconUsers, onClick: () => navigate(startVaelFromOpportunities(session.handle, "in")) }
-      : { id: "in", label: "Vael In", icon: IconUsers, to: onOutSide ? "/sign-in?intent=in" : `${PRODUCT_HOME}/vael?create=1&side=in` },
-    lean
-      ? { id: "out", label: "Vael Out", icon: IconHandshake, onClick: () => navigate(startVaelFromOpportunities(session.handle, "out")) }
-      : { id: "out", label: "Vael Out", icon: IconHandshake, to: onOutSide ? `${PRODUCT_HOME}/vael?create=1&side=out` : "/sign-in?intent=out" },
+    {
+      id: "in",
+      label: "Vael In",
+      icon: IconUsers,
+      to: lean || onOutSide ? "/sign-in?intent=in" : `${PRODUCT_HOME}/vael?create=1&side=in`,
+    },
+    {
+      id: "out",
+      label: "Vael Out",
+      icon: IconHandshake,
+      to: lean || !onOutSide ? "/sign-in?intent=out" : `${PRODUCT_HOME}/vael?create=1&side=out`,
+    },
     { id: "community", label: "Community", icon: IconMessage, to: `${PRODUCT_HOME}/community` },
     { id: "opportunities", label: "Opportunities", icon: IconBriefcase, to: "/opportunities" },
   ];
@@ -796,7 +803,7 @@ export function CityShell() {
               {leanLinks.map((item) => {
                 const className = cn(
                   "px-0 py-2 font-sans text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-200",
-                  item.to && location.pathname.startsWith(item.to.split("?")[0]) ? "text-foreground" : "text-muted hover:text-foreground",
+                  item.to && (item.to.includes("?") ? location.pathname + location.search === item.to : location.pathname.startsWith(item.to)) ? "text-foreground" : "text-muted hover:text-foreground",
                 );
                 return item.to ? (
                   <Link key={item.id} to={item.to} className={className}>

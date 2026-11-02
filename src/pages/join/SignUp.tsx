@@ -98,7 +98,7 @@ export function JoinSignUpPage() {
           ? { intent, completedStep: "Intent", outStep: "need" }
           : { intent, completedStep: "Intent" },
     );
-    if (fromOpportunities) patchOnboarding(account.handle, { opportunitiesOnly: true });
+    if (fromOpportunities || entry === "opportunities") patchOnboarding(account.handle, { opportunitiesOnly: true });
     signIn(account.handle);
     if (fromProject) {
       navigate(NEED_CONTINUE_PATH, { replace: true });

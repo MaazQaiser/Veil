@@ -125,7 +125,7 @@ export function SavedPostsPage() {
   }
 
   return (
-    <DashboardShell>
+    <DashboardShell sidebar={false}>
       <div className="w-full">
         <Link to={PRODUCT_HOME} className="text-body-sm font-medium text-muted hover:text-foreground">
           ← Back to Dashboard
@@ -586,7 +586,7 @@ function DistrictFeedPage({ districtId }: { districtId?: CommunityDistrictId }) 
   );
 
   if (inDashboard) {
-    return <DashboardShell>{body}</DashboardShell>;
+    return <DashboardShell sidebar={false}>{body}</DashboardShell>;
   }
 
   return <CityPage className={isCity ? undefined : "-mt-4 sm:-mt-6"}>{body}</CityPage>;
