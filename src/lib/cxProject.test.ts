@@ -8,6 +8,7 @@ import {
   canHomeownerHandshake,
   closeCxProject,
   closeOtherHandshakes,
+  contractorStanding,
   confirmCxEmail,
   confirmCxPhone,
   confirmProjectScopeChange,
@@ -18,6 +19,7 @@ import {
   extendCxProject,
   getCxProject,
   homeownerInterested,
+  ineligibleReason,
   intakeReady,
   openProjectHandshakesFor,
   projectsForHandle,
@@ -28,6 +30,7 @@ import {
   projectThreadFor,
   publishCxProject,
   publicProjectCard,
+  respondentCount,
   respondentsFor,
   responseGroupFor,
   restoreDraftByEmail,
@@ -211,6 +214,39 @@ describe("cx residential projects", () => {
     expect(connection?.status).toBe("connected");
     expect(connection?.source).toBe("project_interest");
     expect(sendMessage(connection!.id, handle, "Let's talk timing").body).toBe("Let's talk timing");
+  });
+
+  it("tells both sides where a contractor stands on an opportunity", () => {
+    saveVaelance({ handle: "ridgeworks", projectCategories: ["Kitchen"], projectRole: "whole" });
+    ensureCxProfile("ridgeworks");
+    saveCxProfile({ ...ensureCxProfile("ridgeworks"), serviceArea: "Jacksonville", location: "Jacksonville, FL" });
+    const { id, handle } = readyDraft();
+    fillIntake(id);
+    publishCxProject(id);
+
+    expect(contractorStanding(id, "ridgeworks")).toBe("open");
+    expect(respondentCount(id)).toBe(0);
+    contractorInterested(id, "ridgeworks");
+    expect(contractorStanding(id, "ridgeworks")).toBe("interested");
+    expect(respondentCount(id)).toBe(1);
+    homeownerInterested(id, "ridgeworks", handle);
+    expect(contractorStanding(id, "ridgeworks")).toBe("connected");
+  });
+
+  it("explains why a contractor cannot respond instead of failing silently", () => {
+    saveVaelance({ handle: "pro1", projectCategories: ["Plumbing"], projectRole: "whole", areas: ["Orange, CA"] });
+    ensureCxProfile("pro1");
+    saveCxProfile({ ...ensureCxProfile("pro1"), serviceArea: "Orange, CA" });
+    const { id } = readyDraft();
+    fillIntake(id);
+    publishCxProject(id);
+    const project = getCxProject(id)!;
+    expect(ineligibleReason(project, "pro1")).toContain("Kitchen");
+    expect(ineligibleReason(project, "nobody")).toContain("work you take on");
+    saveVaelance({ handle: "pro1", projectCategories: ["Kitchen"], projectRole: "whole", areas: ["Orange, CA"] });
+    expect(ineligibleReason(project, "pro1")).toContain("Jacksonville");
+    saveVaelance({ handle: "pro1", projectCategories: ["Kitchen"], projectRole: "whole", areas: ["Jacksonville"] });
+    expect(ineligibleReason(project, "pro1")).toBe("");
   });
 
   it("keeps private messages on that project Handshake", () => {

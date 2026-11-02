@@ -9,7 +9,7 @@ import { Dialog } from "@/components/ui/overlays";
 import { useCitySession } from "@/lib/citySession";
 import { getVaelance, RX_PROJECT_CATEGORIES, saveVaelance, type CxProjectRole } from "@/lib/cxProjectStore";
 import { ensureCxProfile, saveCxProfile } from "@/lib/constructionStore";
-import { CONTRACTOR_OPPS_PATH } from "@/lib/cxRoutes";
+import { BROWSE_OPPORTUNITIES_PATH } from "@/lib/cxRoutes";
 import { CX_ACCESS_NOTICE, CX_ACCESS_PRICE_LABEL } from "@/lib/cxAccess";
 import { Alert } from "@/components/ui/feedback";
 import { cn } from "@/lib/cn";
@@ -33,7 +33,7 @@ export function VaelanceSetupPage() {
   /** Closing the confirmation — by the button, the X, Escape, or the backdrop — moves straight to Avail Opportunities. */
   function goToOpportunities() {
     setReadyOpen(false);
-    navigate(CONTRACTOR_OPPS_PATH);
+    navigate(BROWSE_OPPORTUNITIES_PATH);
   }
 
   function toggle(category: string) {

@@ -68,10 +68,9 @@ import { NeedVerifyPage } from "@/pages/need/Verify";
 import { NeedPublishPage } from "@/pages/need/Publish";
 import { NeedPublishedPage } from "@/pages/need/Published";
 import { NeedProjectWizardPage } from "@/pages/need/ProjectWizard";
-import { ContractorProjectsLayout, ProjectsListPage } from "@/pages/projects/List";
+import { ContractorProjectsLayout } from "@/pages/projects/List";
 import { ProjectDetailPage } from "@/pages/projects/Detail";
 import { ProjectHandshakeRoomPage } from "@/pages/projects/HandshakeRoom";
-import { OpportunitiesListPage } from "@/pages/cxOpportunities/List";
 import { OpportunityDetailPage } from "@/pages/cxOpportunities/Detail";
 import { VaelanceSetupPage } from "@/pages/cxOpportunities/VaelanceSetup";
 import { VaelanceComparePage, VaelancePage } from "@/pages/cx/Vaelance";
@@ -166,7 +165,7 @@ export default function App() {
             <Route path="/districts/contractor/connections" element={<ConstructionConnectionsPage />} />
             <Route path="/districts/contractor/connections/:id" element={<ConstructionConnectionDetailPage />} />
             <Route path="/districts/contractor/community" element={<DistrictCommunityPage />} />
-            <Route path="/districts/contractor/opportunities" element={<OpportunitiesListPage />} />
+            <Route path="/districts/contractor/opportunities" element={<Navigate to="/opportunities" replace />} />
             <Route path="/districts/contractor/opportunities/:projectId" element={<OpportunityDetailPage />} />
             <Route path="/districts/contractor/vaelance" element={<VaelanceSetupPage />} />
             <Route path="/districts/contractor/residential" element={<ConstructionHomePage category="residential" />} />
@@ -192,7 +191,7 @@ export default function App() {
               <Route path="project" element={<NeedProjectWizardPage />} />
             </Route>
             <Route path="/districts/contractor/projects" element={<ContractorProjectsLayout />}>
-              <Route index element={<ProjectsListPage />} />
+              <Route index element={<Navigate to="/opportunities?tab=mine" replace />} />
               <Route path=":projectId" element={<ProjectDetailPage />} />
               <Route path=":projectId/handshake/:connectionId" element={<ProjectHandshakeRoomPage />} />
             </Route>

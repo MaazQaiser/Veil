@@ -23,7 +23,7 @@ import {
   sendHandshakeMessage,
   type CxQuestion,
 } from "@/lib/cxProjectStore";
-import { PROJECTS_PATH, projectHref } from "@/lib/cxRoutes";
+import { MY_OPPORTUNITIES_PATH, opportunityHref, projectHref } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { useVael } from "@/lib/vaelCore";
 import { getCxProfile } from "@/lib/constructionStore";
@@ -62,7 +62,7 @@ export function ProjectHandshakeRoomPage() {
       <div className="flex flex-1 flex-col">
         <NeedHead title="Handshake not found" />
         <NeedFooter>
-          <Link to={PROJECTS_PATH} className={buttonClassName({ size: "lg", className: "rounded-lg px-10" })}>
+          <Link to={MY_OPPORTUNITIES_PATH} className={buttonClassName({ size: "lg", className: "rounded-lg px-10" })}>
             Your projects
           </Link>
         </NeedFooter>
@@ -88,11 +88,11 @@ export function ProjectHandshakeRoomPage() {
   return (
     <div className="flex flex-1 flex-col">
       <Link
-        to={projectHref(project.id)}
+        to={session.handle === project.handle ? projectHref(project.id) : opportunityHref(project.id)}
         className="mb-4 inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
       >
         <IconChevronLeft className="h-3.5 w-3.5" />
-        Back to project
+        Back to opportunity
       </Link>
       <NeedHead title="Handshake" lede={`With ${otherName}. Only the two of you can see this room.`} />
       {connected && session.handle === project.handle ? (
@@ -292,8 +292,11 @@ export function ProjectHandshakeRoomPage() {
         </section>
       ) : null}
 
-      <Link to={projectHref(project.id)} className="mt-10 inline-block text-body-sm font-medium text-muted hover:text-foreground">
-        ← Project
+      <Link
+        to={session.handle === project.handle ? projectHref(project.id) : opportunityHref(project.id)}
+        className="mt-10 inline-block text-body-sm font-medium text-muted hover:text-foreground"
+      >
+        ← Opportunity
       </Link>
     </div>
   );

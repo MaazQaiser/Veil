@@ -31,6 +31,9 @@ export const CONTRACTOR_RESIDENTIAL_PATH = "/districts/contractor/residential";
 export const CONTRACTOR_OPPS_PATH = "/districts/contractor/opportunities";
 /** The top-level Opportunity entry — Create or Avail — not nested inside Contractor Exchange. */
 export const OPPORTUNITY_PATH = "/opportunities";
+/** Where contractors browse, and where posters manage what they posted. */
+export const BROWSE_OPPORTUNITIES_PATH = "/opportunities";
+export const MY_OPPORTUNITIES_PATH = "/opportunities?tab=mine";
 export const CONTRACTOR_VAELANCE_SETUP_PATH = "/districts/contractor/vaelance";
 export const CONTRACTOR_BUSINESS_PATH = "/districts/contractor/vael?side=out";
 

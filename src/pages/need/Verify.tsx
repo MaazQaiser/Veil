@@ -12,7 +12,7 @@ import {
   NEED_HOME_PATH,
   NEED_LOCATION_PATH,
   NEED_TIMING_PATH,
-  PROJECTS_PATH,
+  MY_OPPORTUNITIES_PATH,
 } from "@/lib/cxRoutes";
 import { readNeedWork, saveNeedWork } from "@/lib/needWork";
 import { publishResidentialOpportunity } from "./Publish";
@@ -172,7 +172,7 @@ export function NeedVerifyPage() {
   /** Closing the confirmation — by the button, the X, Escape, or the backdrop — moves to My Opportunities. */
   function goToMyOpportunities() {
     setLiveOpen(false);
-    navigate(PROJECTS_PATH);
+    navigate(MY_OPPORTUNITIES_PATH);
   }
 
   return (

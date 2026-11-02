@@ -124,11 +124,13 @@ export type OpportunityCardProps = {
   lockedNote: string;
   lockedAction: { label: string; to: string };
   action: { label: string; onClick?: () => void; to?: string };
+  /** Replaces the Live badge, for example "Interested" or "Handshake open". */
+  badge?: { label: string; tone?: "live" | "soon" | "default" };
 };
 
 /** One opportunity as a card. Locked cards blur the photo and hide the description. */
 export function OpportunityCardView(props: OpportunityCardProps) {
-  const { category, icon, meta, description, city, timing, budget, daysLeft, image, photoCount, locked, lockedNote, lockedAction, action } = props;
+  const { category, icon, meta, description, city, timing, budget, daysLeft, image, photoCount, locked, lockedNote, lockedAction, action, badge } = props;
   const members = photoCount && photoCount > 0 ? `${photoCount} photo${photoCount === 1 ? "" : "s"} · members only` : "Members only";
   return (
     <article className={CARD}>
@@ -162,8 +164,8 @@ export function OpportunityCardView(props: OpportunityCardProps) {
               <p className="mt-0.5 text-caption leading-snug text-muted">{meta}</p>
             </div>
           </div>
-          <Badge tone="live" className="shrink-0">
-            Live
+          <Badge tone={badge?.tone ?? "live"} className="shrink-0">
+            {badge?.label ?? "Live"}
           </Badge>
         </div>
         {locked ? (

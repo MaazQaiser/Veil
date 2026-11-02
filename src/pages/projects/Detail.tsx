@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { NeedFooter, NeedHead } from "@/pages/need/NeedLayout";
 import { IconChevronLeft } from "@/components/ui/icons";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonClassName } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/controls";
 import { useCitySession } from "@/lib/citySession";
@@ -27,7 +27,7 @@ import {
   type CxRespondent,
   type CxTiming,
 } from "@/lib/cxProjectStore";
-import { projectHandshakeHref, PROJECTS_PATH, vaelanceCompareHref, vaelanceHref } from "@/lib/cxRoutes";
+import { MY_OPPORTUNITIES_PATH, projectHandshakeHref, vaelanceCompareHref, vaelanceHref } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { displayNameFor } from "@/lib/cxProjectStore";
 import { getConnection, getConnections } from "@/lib/vaelStore";
@@ -45,18 +45,17 @@ export function ProjectDetailPage() {
   if (!project) {
     return (
       <div className="flex flex-1 flex-col">
-        <NeedHead title="Project not found" lede="That project is not on this device." />
-        <NeedFooter>
-          <Link to={PROJECTS_PATH} className={buttonClassName({ size: "lg", className: "rounded-lg px-10" })}>
-            Your projects
-          </Link>
-        </NeedFooter>
+        <h1 className="font-sans text-h2 font-medium text-foreground">Opportunity not found</h1>
+        <p className="mt-2 text-body text-muted">That opportunity is not on this device.</p>
+        <Link to={MY_OPPORTUNITIES_PATH} className={buttonClassName({ className: "mt-6 w-fit" })}>
+          Your opportunities
+        </Link>
       </div>
     );
   }
 
   if (session.signedIn && project.handle && project.handle !== session.handle) {
-    return <Navigate to={PROJECTS_PATH} replace />;
+    return <Navigate to={MY_OPPORTUNITIES_PATH} replace />;
   }
 
   const respondents = respondentsFor(project);
@@ -78,20 +77,52 @@ export function ProjectDetailPage() {
   return (
     <div className="flex flex-1 flex-col">
       <Link
-        to={PROJECTS_PATH}
-        className="mb-4 inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
+        to={MY_OPPORTUNITIES_PATH}
+        className="mb-4 inline-flex w-fit items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
       >
         <IconChevronLeft className="h-3.5 w-3.5" />
-        Back to My Projects
+        Back to Your opportunities
       </Link>
-      <NeedHead
-        title={project.category || "Project"}
-        lede={
-          openHandshake
-            ? "You and a contractor are both interested. Open the Handshake to continue."
-            : "Contractors who match this project show up here. When you are both interested, the Handshake opens."
-        }
-      />
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">
+            {project.category || "Opportunity"}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-body-sm text-muted">
+            {openHandshake
+              ? "You and a contractor are both interested. Open the Handshake to continue."
+              : "Contractors who match this project show up here. When you are both interested, the Handshake opens."}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge tone={closed ? "default" : "live"}>{closed ? "Closed" : "Live"}</Badge>
+          {project.status === "live" ? (
+            <span className="text-body-sm text-muted">
+              {liveDaysLeft} {liveDaysLeft === 1 ? "day" : "days"} left
+            </span>
+          ) : null}
+        </div>
+      </header>
+      <div className="mt-6 grid grid-cols-3 gap-3">
+        {[
+          ["Interested contractors", respondents.length],
+          ["Saved", saved.length],
+          ["Handshakes", handshakes.length],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-border bg-surface p-4">
+            <p className="text-h3 font-medium tabular-nums text-foreground">{value}</p>
+            <p className="mt-1 text-body-sm text-muted">{label}</p>
+          </div>
+        ))}
+      </div>
+      {openHandshake ? (
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-body font-medium text-foreground">A Handshake is open on this opportunity.</p>
+          <Link to={projectHandshakeHref(project.id, openHandshake.id)} className={buttonClassName()}>
+            Open Handshake
+          </Link>
+        </div>
+      ) : null}
       {closed ? (
         <dl className="mt-6 space-y-4">
           <div>
@@ -218,9 +249,6 @@ export function ProjectDetailPage() {
           onDone={() => setEditing(false)}
         />
       ) : null}
-      <p className="mt-3 text-body-sm text-muted">
-        {project.status === "live" ? `Live · ${liveDaysLeft} days left` : `Status: ${project.status}`}
-      </p>
 
       <section className="mt-10">
         <h2 className="text-h3 font-medium text-foreground">Questions on this project</h2>
@@ -328,16 +356,6 @@ export function ProjectDetailPage() {
           onError={setError}
         />
       </section>
-      {openHandshake ? (
-        <NeedFooter>
-          <Link
-            to={projectHandshakeHref(project.id, openHandshake.id)}
-            className={buttonClassName({ size: "lg", className: "rounded-lg px-10" })}
-          >
-            Open Handshake
-          </Link>
-        </NeedFooter>
-      ) : null}
     </div>
   );
 }

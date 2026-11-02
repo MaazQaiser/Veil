@@ -721,6 +721,34 @@ export function interestBetween(projectId: string, contractorHandle: string) {
   return getInterests().find((item) => item.projectId === projectId && item.contractorHandle === contractorHandle);
 }
 
+/** Where a contractor stands on one opportunity: not responded, waiting on the homeowner, or connected. */
+export type CxStanding = "open" | "interested" | "connected";
+
+export function contractorStanding(projectId: string, contractorHandle: string): CxStanding {
+  const interest = interestBetween(projectId, contractorHandle);
+  if (interest?.connectionId) return "connected";
+  return interest?.contractorInterested ? "interested" : "open";
+}
+
+/** How many contractors have said they are interested in this project. */
+export function respondentCount(projectId: string) {
+  return interestsForProject(projectId).filter((item) => item.contractorInterested).length;
+}
+
+/** Why a contractor cannot respond to a live project, or "" when they can. */
+export function ineligibleReason(project: CxProject, handle: string) {
+  if (project.status !== "live") return "This opportunity is closed.";
+  if (project.handle === handle) return "This is your own opportunity.";
+  const vaelance = getVaelance(handle);
+  if (!vaelance) return "Tell us the work you take on and where, then you can respond.";
+  if (!project.category || !vaelance.projectCategories.includes(project.category as RxProjectCategory)) {
+    return `You haven't listed ${project.category || "this kind of work"} among the projects you take on.`;
+  }
+  if (!worksInProjectLocation(project, handle)) return `${project.city || "This area"} isn't one of the areas you work in.`;
+  if (!credentialsAvailable(project, handle)) return "This opportunity needs credentials your profile doesn't list yet.";
+  return "";
+}
+
 function saveInterest(next: CxInterest) {
   const all = getInterests();
   const exists = all.some((item) => item.id === next.id);

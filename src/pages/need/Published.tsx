@@ -15,7 +15,7 @@ import {
   toggleSavedContractor,
   type CxRespondent,
 } from "@/lib/cxProjectStore";
-import { PROJECTS_PATH } from "@/lib/cxRoutes";
+import { MY_OPPORTUNITIES_PATH } from "@/lib/cxRoutes";
 import { formatDate, relativeTime } from "@/lib/time";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { VaelanceBody } from "@/pages/cx/Vaelance";
@@ -31,9 +31,9 @@ export function NeedPublishedPage() {
   const [openHandle, setOpenHandle] = useState("");
   const [interestError, setInterestError] = useState("");
 
-  if (!project || project.status === "draft") return <Navigate to={PROJECTS_PATH} replace />;
+  if (!project || project.status === "draft") return <Navigate to={MY_OPPORTUNITIES_PATH} replace />;
   if (session.signedIn && project.handle && project.handle !== session.handle) {
-    return <Navigate to={PROJECTS_PATH} replace />;
+    return <Navigate to={MY_OPPORTUNITIES_PATH} replace />;
   }
 
   const live = project.status === "live";

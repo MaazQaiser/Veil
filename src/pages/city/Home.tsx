@@ -11,7 +11,7 @@ import { FindYourWay } from "@/components/marketing/FindYourWay";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { IconBriefcase, IconCheck, IconSearch, IconUser } from "@/components/ui/icons";
-import { CONTRACTOR_OPPS_PATH, NEED_PATH } from "@/lib/cxRoutes";
+import { BROWSE_OPPORTUNITIES_PATH, NEED_PATH } from "@/lib/cxRoutes";
 import { districts } from "@/lib/districts";
 import { disciplinesFor, saveGoVisibleInfo } from "@/lib/disciplines";
 import { setActiveDistrict } from "@/lib/myDistricts";
@@ -308,7 +308,7 @@ function GoVisibleSteps() {
         return;
       }
       const state = { from: "go-visible", districtId, districtIds, opportunityIntent };
-      navigate(opportunityIntent === "create" ? NEED_PATH : CONTRACTOR_OPPS_PATH, { state });
+      navigate(opportunityIntent === "create" ? NEED_PATH : BROWSE_OPPORTUNITIES_PATH, { state });
       return;
     }
     if (onOpportunityStep) {

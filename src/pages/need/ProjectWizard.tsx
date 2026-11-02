@@ -26,7 +26,7 @@ import {
   type CxTiming,
   type RxProjectCategory,
 } from "@/lib/cxProjectStore";
-import { NEED_HOME_PATH, PROJECTS_PATH } from "@/lib/cxRoutes";
+import { MY_OPPORTUNITIES_PATH, NEED_HOME_PATH } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { ensureProfile, saveProfile } from "@/lib/vaelStore";
 import { finishOnboarding, patchOnboarding, startOnboarding } from "@/lib/onboarding";
@@ -109,7 +109,7 @@ export function NeedProjectWizardPage() {
           handle={session.handle}
           signIn={signIn}
           onBack={() => go(signedIn ? "budget" : "account")}
-          onPublished={() => navigate(PROJECTS_PATH)}
+          onPublished={() => navigate(MY_OPPORTUNITIES_PATH)}
         />
       ) : null}
     </div>

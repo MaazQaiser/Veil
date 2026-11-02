@@ -4,8 +4,8 @@ import { useJoinedDistricts } from "@/components/mt/DistrictsRow";
 import { IconLock } from "@/components/ui/icons";
 import { OpportunityCardView, ProjectCard, ProjectDetailsDialog } from "@/pages/city/Projects";
 import { useCitySession } from "@/lib/citySession";
-import { liveCxProjects, type CxProject } from "@/lib/cxProjectStore";
-import { opportunityHref, opportunityStart } from "@/lib/cxRoutes";
+import { contractorStanding, liveCxProjects, respondentCount, type CxProject } from "@/lib/cxProjectStore";
+import { opportunityHref, opportunityStart, projectHref } from "@/lib/cxRoutes";
 import { MARKETING_PROJECTS, type MarketingProjectIcon } from "@/lib/marketingProjects";
 import { relativeTime } from "@/lib/time";
 import { useCxProjects } from "@/lib/useCxProjects";
@@ -122,7 +122,11 @@ export function OpportunityBoard({
             </p>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {real.map((item) => (
+              {real.map((item) => {
+                const own = item.handle === session.handle;
+                const standing = own ? "open" : contractorStanding(item.id, session.handle);
+                const responses = own ? respondentCount(item.id) : 0;
+                return (
                 <li key={item.id}>
                   <OpportunityCardView
                     category={item.category || "Project"}
@@ -138,10 +142,24 @@ export function OpportunityBoard({
                     locked={!joined && item.handle !== session.handle}
                     lockedNote={`The description is for members of ${DISTRICT_NAME}`}
                     lockedAction={{ label: "Unlock details", to: JOIN_DISTRICT_ROUTE }}
-                    action={{ label: "View opportunity", to: opportunityHref(item.id) }}
+                    action={
+                      own
+                        ? { label: "Manage opportunity", to: projectHref(item.id) }
+                        : { label: "View opportunity", to: opportunityHref(item.id) }
+                    }
+                    badge={
+                      own
+                        ? { label: responses > 0 ? `${responses} interested` : "Yours", tone: responses > 0 ? "soon" : "default" }
+                        : standing === "connected"
+                          ? { label: "Handshake open", tone: "soon" }
+                          : standing === "interested"
+                            ? { label: "Interested", tone: "soon" }
+                            : undefined
+                    }
                   />
                 </li>
-              ))}
+                );
+              })}
               {sampleList.map((project) => (
                 <li key={project.id}>
                   <ProjectCard
