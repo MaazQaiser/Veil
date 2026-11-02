@@ -727,7 +727,13 @@ export function CityShell() {
   const onSignIn = session.signedIn && location.pathname === "/sign-in";
   const inProduct = session.signedIn && (!onSite || onSignIn);
   // Signed up from the Opportunities page: a short top bar instead of the full dashboard chrome.
-  const lean = inProduct && isOpportunitiesOnly(session.handle);
+  const opportunitiesOnly = inProduct && isOpportunitiesOnly(session.handle);
+  // The Opportunities pages share one short top bar, for every member.
+  const onOpportunities =
+    location.pathname === "/opportunities" ||
+    location.pathname.startsWith("/opportunities/") ||
+    location.pathname === "/districts/contractor";
+  const lean = opportunitiesOnly || (inProduct && onOpportunities);
   // The signed-in top bar. Accounts that only joined for Opportunities start Vael In or Vael Out from here;
   // members already on a dashboard go to their own side, or sign in to the other one.
   const listingKind = visibilityKindFromListing(vael.latestListing);
@@ -737,8 +743,18 @@ export function CityShell() {
     ((listingKind === "in" || listingKind === "expiring") && vael.latestListing?.side === "out");
   const topLinks: TopLink[] = lean
     ? [
-        { id: "in", label: "Vael In", icon: IconUsers, to: "/sign-in?intent=in" },
-        { id: "out", label: "Vael Out", icon: IconHandshake, to: "/sign-in?intent=out" },
+        {
+          id: "in",
+          label: "Vael In",
+          icon: IconUsers,
+          to: !opportunitiesOnly && !onOutSide ? PRODUCT_HOME : "/sign-in?intent=in",
+        },
+        {
+          id: "out",
+          label: "Vael Out",
+          icon: IconHandshake,
+          to: !opportunitiesOnly && onOutSide ? PRODUCT_HOME : "/sign-in?intent=out",
+        },
         { id: "community", label: "Community", icon: IconMessage, to: `${PRODUCT_HOME}/community` },
         { id: "opportunities", label: "Opportunities", icon: IconBriefcase, to: "/opportunities" },
       ]
