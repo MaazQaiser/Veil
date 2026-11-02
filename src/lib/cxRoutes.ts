@@ -60,15 +60,15 @@ export function isHomeownerPath(pathname: string) {
   return false;
 }
 
-/** Go Visible is the one place an opportunity starts, from the website or from either dashboard. */
+/** Go Visible is where the website starts an opportunity. */
 export const GO_VISIBLE_PATH = "/go-visible";
 
-/** Opens Go Visible on the district step. Create is the Vael Out action, Avail is the Vael In action. */
-export function opportunityStart(intent: "create" | "avail") {
-  return {
-    to: GO_VISIBLE_PATH,
-    state: { opportunityStep: true, districtStep: true, opportunityIntent: intent },
-  };
+/**
+ * Posting an opportunity from either dashboard runs the same flow as the website: straight into
+ * "Is this for your home or your business?", with no extra district step first.
+ */
+export function opportunityStart(_intent: "create" | "avail") {
+  return { to: NEED_PATH, state: undefined };
 }
 
 /** Where each dashboard keeps its opportunities. Out posts them, In responds to them. */

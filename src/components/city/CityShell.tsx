@@ -16,6 +16,7 @@ import {
   IconGrid,
   IconHandshake,
   IconHome,
+  IconMapPin,
   IconMenu,
   IconMoon,
   IconSun,
@@ -88,6 +89,8 @@ type TopLink = {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   to?: string;
   onClick?: () => void;
+  /** Active only on this exact path, not on pages below it. */
+  exact?: boolean;
 };
 
 const mobilePrimary = [
@@ -732,22 +735,21 @@ export function CityShell() {
     getOnboardingDraft(session.handle)?.intent === "out" ||
     listingKind === "out" ||
     ((listingKind === "in" || listingKind === "expiring") && vael.latestListing?.side === "out");
-  const leanLinks: TopLink[] = [
-    {
-      id: "in",
-      label: "Vael In",
-      icon: IconUsers,
-      to: lean || onOutSide ? "/sign-in?intent=in" : `${PRODUCT_HOME}/vael?create=1&side=in`,
-    },
-    {
-      id: "out",
-      label: "Vael Out",
-      icon: IconHandshake,
-      to: lean || !onOutSide ? "/sign-in?intent=out" : `${PRODUCT_HOME}/vael?create=1&side=out`,
-    },
-    { id: "community", label: "Community", icon: IconMessage, to: `${PRODUCT_HOME}/community` },
-    { id: "opportunities", label: "Opportunities", icon: IconBriefcase, to: "/opportunities" },
-  ];
+  const topLinks: TopLink[] = lean
+    ? [
+        { id: "in", label: "Vael In", icon: IconUsers, to: "/sign-in?intent=in" },
+        { id: "out", label: "Vael Out", icon: IconHandshake, to: "/sign-in?intent=out" },
+        { id: "community", label: "Community", icon: IconMessage, to: `${PRODUCT_HOME}/community` },
+        { id: "opportunities", label: "Opportunities", icon: IconBriefcase, to: "/opportunities" },
+      ]
+    : [
+        { id: "home", label: onOutSide ? "Vael Out" : "Vael In", icon: IconHome, to: PRODUCT_HOME, exact: true },
+        { id: "districts", label: "Districts", icon: IconMapPin, to: `${PRODUCT_HOME}/districts` },
+        { id: "matches", label: "Matches", icon: IconGrid, to: `${PRODUCT_HOME}/matches` },
+        { id: "handshakes", label: "Handshakes", icon: IconHandshake, to: `${PRODUCT_HOME}/connections` },
+        { id: "community", label: "Community", icon: IconMessage, to: `${PRODUCT_HOME}/community` },
+        { id: "opportunities", label: "Opportunities", icon: IconBriefcase, to: "/opportunities" },
+      ];
   const inJoinFlow =
     location.pathname.startsWith("/join") ||
     location.pathname === "/sign-in" ||
@@ -797,13 +799,13 @@ export function CityShell() {
           </Link>
           {inProduct ? (
             <nav
-              className="hidden min-w-0 items-center gap-8 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
+              className="hidden min-w-0 items-center gap-6 lg:ml-6 lg:flex min-[1360px]:absolute min-[1360px]:left-1/2 min-[1360px]:ml-0 min-[1360px]:-translate-x-1/2"
               aria-label="Main"
             >
-              {leanLinks.map((item) => {
+              {topLinks.map((item) => {
                 const className = cn(
                   "px-0 py-2 font-sans text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-200",
-                  item.to && (item.to.includes("?") ? location.pathname + location.search === item.to : location.pathname.startsWith(item.to)) ? "text-foreground" : "text-muted hover:text-foreground",
+                  item.to && (item.exact || item.to.includes("?") ? location.pathname + location.search === item.to || (item.exact && location.pathname === item.to) : location.pathname.startsWith(item.to)) ? "text-foreground" : "text-muted hover:text-foreground",
                 );
                 return item.to ? (
                   <Link key={item.id} to={item.to} className={className}>
@@ -945,8 +947,8 @@ export function CityShell() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-background pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <ul className="grid grid-cols-4">
-          {inProduct
-            ? leanLinks.map((item) => (
+          {lean
+            ? topLinks.map((item) => (
                 <li key={item.id}>
                   {item.to ? (
                     <NavLink

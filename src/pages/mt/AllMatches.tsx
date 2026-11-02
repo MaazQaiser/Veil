@@ -1,7 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { CityPage } from "@/components/city/CityShell";
-import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { MatchDashboardCard } from "@/components/mt/MatchDashboardCard";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { EmptyState } from "@/components/ui/feedback";
@@ -94,13 +93,7 @@ export function AllMatchesPage() {
 
 function AllMatchesInner() {
   const vael = useVael();
-  const { listing, latestListing, matches, myConnections, handle, signedIn, profile, documents } = vael;
-  const mine = signedIn ? profile(handle) : undefined;
-  const docs = signedIn ? documents(handle) : [];
-  const incoming = myConnections.filter(
-    (connection) =>
-      connection.status === "pending" && connection.counterpartHandle === handle && !connection.counterpartAccepted,
-  );
+  const { listing, latestListing, matches, handle } = vael;
   const kind = visibilityKindFromListing(latestListing);
   const vaeledOut = kind === "out" || ((kind === "in" || kind === "expiring") && latestListing?.side === "out");
   const intent = getOnboardingDraft(handle)?.intent ?? "";
@@ -149,10 +142,8 @@ function AllMatchesInner() {
 
   return (
     <CityPage width="full">
-      <div className="flex w-full items-start">
-        <DashboardSidebar handle={handle} profile={mine} documents={docs} incomingCount={incoming.length} side={side} />
-
-        <div className="min-w-0 flex-1 space-y-6 bg-white px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-10 dark:bg-white/[0.02] dark:backdrop-blur-3xl">
+      <div className="mx-auto flex w-full max-w-[84rem] items-start">
+        <div className="min-w-0 flex-1 space-y-6 px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-10">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
             <div className="min-w-0">
               <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium tracking-tight text-foreground">

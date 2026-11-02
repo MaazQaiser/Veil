@@ -6,7 +6,6 @@ import { buttonClassName, Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/overlays";
 import { IconCheck, IconHandshake, IconMapPin, IconUser } from "@/components/ui/icons";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
-import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { DashboardMatchesRail } from "@/components/mt/DashboardMatchesRail";
 import { DistrictsRow, useJoinedDistricts } from "@/components/mt/DistrictsRow";
 import { CommunityRail } from "@/components/mt/HomeWidgets";
@@ -154,10 +153,8 @@ export function DistrictHomePage() {
   return (
     <CityPage width="full">
       <WelcomeCityModal />
-      <div className="flex w-full items-start">
-        <DashboardSidebar handle={handle} profile={mine} documents={docs} incomingCount={incoming.length} side={side} />
-
-        <div className="min-w-0 flex-1 space-y-10 bg-white px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-10 dark:bg-white/[0.02] dark:backdrop-blur-3xl">
+      <div className="mx-auto flex w-full max-w-[84rem] items-start">
+        <div className="min-w-0 flex-1 space-y-10 px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-10">
           {/* WELCOME — greeting on the left, Vael status + action on the right. */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">

@@ -10,7 +10,6 @@ import { CityPage } from "@/components/city/CityShell";
 import { HandshakeStatus } from "@/components/vael";
 import { ProfileDocumentsSection } from "@/components/vael/trust";
 import { BoardMatchCard, SkillChips } from "@/components/mt/BoardMatchCard";
-import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { Avatar } from "@/components/ui/avatar";
 import { RequireMember } from "@/components/mt/RequireMember";
 import { JourneyProgress } from "@/components/city/setup";
@@ -242,7 +241,7 @@ function MatchFactors({ mine, counterpart }: { mine: VaelListing; counterpart: V
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
       {rows.map((row) => (
-        <div key={row.label} className="rounded-xl border border-border bg-white px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]">
+        <div key={row.label} className="rounded-xl border border-border px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]">
           <dt className="text-caption font-medium uppercase tracking-[0.06em] text-quiet">{row.label}</dt>
           <dd className="mt-1 text-body-sm text-foreground">{row.value}</dd>
         </div>
@@ -269,9 +268,7 @@ function MatchDetailInner() {
     listing,
     latestListing,
     matches,
-    myConnections,
     handle,
-    signedIn,
     openWith,
     documents,
     profile,
@@ -279,12 +276,6 @@ function MatchDetailInner() {
     accept,
     decline,
   } = useVael();
-  const mine = signedIn ? profile(handle) : undefined;
-  const myDocs = signedIn ? documents(handle) : [];
-  const incoming = myConnections.filter(
-    (connection) =>
-      connection.status === "pending" && connection.counterpartHandle === handle && !connection.counterpartAccepted,
-  );
   const kind = visibilityKindFromListing(latestListing);
   const vaeledOut = kind === "out" || ((kind === "in" || kind === "expiring") && latestListing?.side === "out");
   const side: VaelSide = vaeledOut ? "out" : "in";
@@ -318,9 +309,8 @@ function MatchDetailInner() {
   if (!listing) {
     return (
       <CityPage width="full">
-        <div className="flex w-full items-start">
-          <DashboardSidebar handle={handle} profile={mine} documents={myDocs} incomingCount={incoming.length} side={side} />
-          <div className="min-w-0 flex-1 bg-white px-4 py-8 sm:px-8 lg:px-10 dark:bg-white/[0.02]">
+        <div className="mx-auto flex w-full max-w-[84rem] items-start">
+          <div className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:px-10">
             <EmptyState
               title="Vael to open a match"
               action={
@@ -338,9 +328,8 @@ function MatchDetailInner() {
   if (!other || !isLifecycleVisible(other) || !match) {
     return (
       <CityPage width="full">
-        <div className="flex w-full items-start">
-          <DashboardSidebar handle={handle} profile={mine} documents={myDocs} incomingCount={incoming.length} side={side} />
-          <div className="min-w-0 flex-1 bg-white px-4 py-8 sm:px-8 lg:px-10 dark:bg-white/[0.02]">
+        <div className="mx-auto flex w-full max-w-[84rem] items-start">
+          <div className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:px-10">
             <ErrorState
               title="This match is not visible"
               description="Their availability may have ended."
@@ -418,10 +407,8 @@ function MatchDetailInner() {
 
   return (
     <CityPage width="full">
-      <div className="flex w-full items-start">
-        <DashboardSidebar handle={handle} profile={mine} documents={myDocs} incomingCount={incoming.length} side={side} />
-
-        <div className="min-w-0 flex-1 space-y-6 bg-white px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-10 dark:bg-white/[0.02] dark:backdrop-blur-3xl">
+      <div className="mx-auto flex w-full max-w-[84rem] items-start">
+        <div className="min-w-0 flex-1 space-y-6 px-4 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-6 lg:px-10">
           <Link
             to="/media-technology/matches"
             className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
@@ -601,7 +588,7 @@ function MatchDetailInner() {
                           {otherProfile.portfolio.map((item) => (
                             <li
                               key={`${item.label}-${item.url}`}
-                              className="rounded-xl border border-border bg-white px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]"
+                              className="rounded-xl border border-border px-4 py-3.5 dark:border-white/10 dark:bg-white/[0.03]"
                             >
                               <p className="text-body font-medium text-foreground">{item.label || "Untitled project"}</p>
                               {item.note ? <p className="mt-1 text-body-sm text-muted">{item.note}</p> : null}
