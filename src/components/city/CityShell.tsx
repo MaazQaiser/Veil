@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
@@ -11,20 +11,29 @@ import { DistrictStatus } from "@/components/vael/status";
 import { DistrictSearch } from "./DistrictSearch";
 import {
   IconBell,
+  IconBriefcase,
   IconClose,
   IconGrid,
+  IconHandshake,
   IconHome,
   IconMenu,
   IconMoon,
   IconSun,
   IconMessage,
-  IconSearch,
   IconUsers,
 } from "@/components/ui/icons";
 import { CITY_CONTEXT, districtFromPath, districts } from "@/lib/districts";
 import { useCitySession } from "@/lib/citySession";
 import { useVael } from "@/lib/vaelCore";
-import { onboardingComplete, onboardingRoute, signedInLanding } from "@/lib/onboarding";
+import { visibilityKindFromListing } from "@/lib/visibilityPlans";
+import {
+  getOnboardingDraft,
+  isOpportunitiesOnly,
+  onboardingComplete,
+  onboardingRoute,
+  signedInLanding,
+  startVaelFromOpportunities,
+} from "@/lib/onboarding";
 import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
 import { relativeTime } from "@/lib/time";
 import { isHomeownerPath } from "@/lib/cxRoutes";
@@ -73,6 +82,14 @@ function siteNavActive(pathname: string, hash: string, to: string) {
   if (to === "/feed") return pathname === "/feed" || pathname.startsWith("/feed/");
   return pathname === to;
 }
+
+type TopLink = {
+  id: string;
+  label: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  to?: string;
+  onClick?: () => void;
+};
 
 const mobilePrimary = [
   { id: "home", label: "Home", to: PRODUCT_HOME, icon: IconHome, end: true },
@@ -695,7 +712,7 @@ function ProfileCompleteBanner({ handle }: { handle: string }) {
 }
 
 export function CityShell() {
-  const { session } = useCitySession();
+  const { session, signOut } = useCitySession();
   const navigate = useNavigate();
   const vael = useVael();
   const unreadNotifications = vael.unreadNotices || session.unreadNotifications;
@@ -705,6 +722,25 @@ export function CityShell() {
   const onSite = isSitePath(location.pathname, session.signedIn);
   const onHero = location.pathname === "/";
   const inProduct = session.signedIn && !onSite;
+  // Signed up from the Opportunities page: a short top bar instead of the full dashboard chrome.
+  const lean = inProduct && isOpportunitiesOnly(session.handle);
+  // The signed-in top bar. Accounts that only joined for Opportunities start Vael In or Vael Out from here;
+  // members already on a dashboard go to their own side, or sign in to the other one.
+  const listingKind = visibilityKindFromListing(vael.latestListing);
+  const onOutSide =
+    getOnboardingDraft(session.handle)?.intent === "out" ||
+    listingKind === "out" ||
+    ((listingKind === "in" || listingKind === "expiring") && vael.latestListing?.side === "out");
+  const leanLinks: TopLink[] = [
+    lean
+      ? { id: "in", label: "Vael In", icon: IconUsers, onClick: () => navigate(startVaelFromOpportunities(session.handle, "in")) }
+      : { id: "in", label: "Vael In", icon: IconUsers, to: onOutSide ? "/sign-in?intent=in" : `${PRODUCT_HOME}/vael?create=1&side=in` },
+    lean
+      ? { id: "out", label: "Vael Out", icon: IconHandshake, onClick: () => navigate(startVaelFromOpportunities(session.handle, "out")) }
+      : { id: "out", label: "Vael Out", icon: IconHandshake, to: onOutSide ? `${PRODUCT_HOME}/vael?create=1&side=out` : "/sign-in?intent=out" },
+    { id: "community", label: "Community", icon: IconMessage, to: `${PRODUCT_HOME}/community` },
+    { id: "opportunities", label: "Opportunities", icon: IconBriefcase, to: "/opportunities" },
+  ];
   const inJoinFlow =
     location.pathname.startsWith("/join") ||
     location.pathname === "/sign-in" ||
@@ -729,7 +765,7 @@ export function CityShell() {
       >
         Skip to content
       </a>
-      {inProduct ? <ProfileCompleteBanner handle={session.handle} /> : null}
+      {inProduct && !lean ? <ProfileCompleteBanner handle={session.handle} /> : null}
       <header
         className={cn(
           "z-40 text-foreground",
@@ -752,10 +788,31 @@ export function CityShell() {
             <img src="/vael-medallion.png" alt="" className="h-9 w-9 sm:h-10 sm:w-10" />
             <span className="sr-only">VAEL — City home</span>
           </Link>
-          {!inProduct ? <DistrictSearch className="hidden lg:block lg:w-44 xl:w-60" /> : null}
-          {!inProduct ? (
+          {inProduct ? (
             <nav
               className="hidden min-w-0 items-center gap-8 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
+              aria-label="Main"
+            >
+              {leanLinks.map((item) => {
+                const className = cn(
+                  "px-0 py-2 font-sans text-body-sm font-medium motion-safe:transition-colors motion-safe:duration-200",
+                  item.to && location.pathname.startsWith(item.to.split("?")[0]) ? "text-foreground" : "text-muted hover:text-foreground",
+                );
+                return item.to ? (
+                  <Link key={item.id} to={item.to} className={className}>
+                    {item.label}
+                  </Link>
+                ) : (
+                  <button key={item.id} type="button" onClick={item.onClick} className={className}>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          ) : null}
+          {!inProduct ? (
+            <nav
+              className="hidden min-w-0 items-center gap-8 lg:ml-4 lg:flex"
               aria-label="Site"
             >
               {cityEntryNav.map((item) => {
@@ -783,45 +840,37 @@ export function CityShell() {
             </nav>
           ) : null}
           <div className="ml-auto flex min-w-0 items-center gap-3">
+            {!inProduct ? <DistrictSearch className="hidden lg:block lg:w-44 xl:w-60" /> : null}
             {inProduct ? (
               <>
-                <form
-                  role="search"
-                  className="hidden min-w-0 items-center gap-2 rounded-lg border border-border bg-white px-4 md:flex md:w-72 lg:w-[26rem] dark:border-white/10 dark:bg-white/[0.05] dark:backdrop-blur-md"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    const query = String(new FormData(event.currentTarget).get("q") || "").trim();
-                    navigate(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
-                  }}
-                >
-                  <label htmlFor="city-header-search" className="sr-only">
-                    Search VAEL
-                  </label>
-                  <IconSearch className="h-4 w-4 shrink-0 text-quiet" />
-                  <input
-                    id="city-header-search"
-                    name="q"
-                    type="search"
-                    placeholder="Search people, skills, or districts"
-                    className="h-11 min-w-0 flex-1 bg-transparent text-body-sm text-foreground placeholder:text-quiet focus:outline-none"
-                  />
-                </form>
-                <ThemeToggle />
+                {lean ? null : <ThemeToggle />}
                 <NotificationsMenu notices={vael.notices} unread={unreadNotifications} />
-                <MessagesMenu
-                  handle={session.handle}
-                  connections={vael.myConnections}
-                  thread={vael.thread}
-                  profile={vael.profile}
-                  otherParty={vael.otherParty}
-                  unread={unreadMessages}
-                />
+                {lean ? null : (
+                  <MessagesMenu
+                    handle={session.handle}
+                    connections={vael.myConnections}
+                    thread={vael.thread}
+                    profile={vael.profile}
+                    otherParty={vael.otherParty}
+                    unread={unreadMessages}
+                  />
+                )}
                 <AccountMenu
                   handle={session.handle}
                   displayName={vael.profile(session.handle)?.displayName || session.handle}
                   avatarUrl={vael.profile(session.handle)?.avatarUrl || DEFAULT_AVATAR_URL}
                   profileHref={profileHrefForHandle(session.handle)}
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    signOut();
+                    navigate("/");
+                  }}
+                  className={buttonClassName({ variant: "outline", size: "sm" })}
+                >
+                  Sign out
+                </button>
               </>
             ) : session.signedIn ? (
               <>
@@ -889,7 +938,37 @@ export function CityShell() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-background pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <ul className="grid grid-cols-4">
-          {mobilePrimary.map((item) => (
+          {inProduct
+            ? leanLinks.map((item) => (
+                <li key={item.id}>
+                  {item.to ? (
+                    <NavLink
+                      to={item.to}
+                      aria-label={item.label}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex min-h-12 w-full min-w-0 flex-col items-center justify-center gap-1 overflow-hidden px-1 text-center text-caption font-medium leading-tight",
+                          isActive ? "text-foreground" : "text-muted",
+                        )
+                      }
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      <span className="max-w-full truncate">{item.label}</span>
+                    </NavLink>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={item.label}
+                      onClick={item.onClick}
+                      className="flex min-h-12 w-full min-w-0 flex-col items-center justify-center gap-1 overflow-hidden px-1 text-center text-caption font-medium leading-tight text-muted"
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      <span className="max-w-full truncate">{item.label}</span>
+                    </button>
+                  )}
+                </li>
+              ))
+            : mobilePrimary.map((item) => (
             <li key={item.id}>
               <NavLink
                 to={item.to}

@@ -18,10 +18,11 @@ import { JoinFooterBar, JoinHead } from "./JoinLayout";
 export const JOIN_CONTRACTOR_PATH = "/join/contractor-exchange";
 
 const KINDS = [
-  { id: "general-contractor", title: "General contractor", body: "Manage whole projects from start to finish.", type: "individual", trade: "General" },
-  { id: "skilled-trade", title: "Skilled trade", body: "Electrical, plumbing, HVAC, carpentry and other specialist work.", type: "individual", trade: "" },
-  { id: "crew", title: "Crew or subcontractor", body: "A team that takes on parts of a project.", type: "company", trade: "" },
-  { id: "company", title: "Company", body: "A construction or home-services business.", type: "company", trade: "" },
+  { id: "general-contractor", title: "General contractor", body: "Manage whole projects from start to finish.", type: "individual", trade: "General", needsTrade: true },
+  { id: "trade", title: "Trade", body: "Electrical, plumbing, HVAC, carpentry and other specialist work.", type: "individual", trade: "", needsTrade: true },
+  { id: "crew", title: "Crew", body: "A team that takes on parts of a project.", type: "company", trade: "", needsTrade: true },
+  { id: "homeowner", title: "Homeowner", body: "I own a home and want to follow work in my area.", type: "individual", trade: "", needsTrade: false },
+  { id: "property-manager", title: "Property manager", body: "I look after properties for owners.", type: "company", trade: "", needsTrade: false },
 ] as const;
 
 const ROLES: { id: CxProjectRole; title: string; body: string }[] = [
@@ -102,7 +103,7 @@ export function JoinContractorExchangePage() {
     if (step === 0 && !kind) return;
     if (step === 1) {
       if (!form.displayName.trim()) return setError("Enter the name you work under.");
-      if (!form.trade) return setError("Choose your trade.");
+      if (!form.trade && KINDS.find((item) => item.id === kind)?.needsTrade) return setError("Choose your trade.");
       if (!form.serviceArea.trim()) return setError("Add the city or area you work in.");
     }
     if (step === 2) {
@@ -165,7 +166,7 @@ export function JoinContractorExchangePage() {
               <Input id="cj-headline" value={form.headline} onChange={(e) => set("headline", e.target.value)} />
             </Field>
             <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Trade" htmlFor="cj-trade" required>
+              <Field label="Trade" htmlFor="cj-trade" required={KINDS.find((item) => item.id === kind)?.needsTrade ?? true}>
                 <Select id="cj-trade" value={form.trade} onChange={(e) => set("trade", e.target.value)}>
                   <option value="">Select</option>
                   {CX_TRADES.map((item) => (
@@ -304,7 +305,7 @@ export function JoinContractorExchangePage() {
           </Button>
         ) : (
           <Button type="button" size="lg" className="rounded-lg px-10" disabled={step === 0 && !kind} onClick={next}>
-            Continue
+            {step === 0 ? "Continue to profile" : "Continue"}
           </Button>
         )}
       </JoinFooterBar>

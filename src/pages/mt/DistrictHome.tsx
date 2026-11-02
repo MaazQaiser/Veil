@@ -1,15 +1,13 @@
 import { DashboardShell } from "@/components/mt/DashboardShell";
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { buttonClassName, Button } from "@/components/ui/button";
-import { opportunitiesHomeFor } from "@/lib/cxRoutes";
 import { Dialog } from "@/components/ui/overlays";
 import { IconCheck, IconHandshake, IconMapPin, IconUser } from "@/components/ui/icons";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { DashboardMatchesRail } from "@/components/mt/DashboardMatchesRail";
-import { OpportunitiesRail } from "@/components/mt/OpportunitiesRail";
 import { DistrictsRow, useJoinedDistricts } from "@/components/mt/DistrictsRow";
 import { CommunityRail } from "@/components/mt/HomeWidgets";
 import { useVael } from "@/lib/vaelCore";
@@ -19,7 +17,8 @@ import { visibilityKindFromListing } from "@/lib/visibilityPlans";
 import { profileFieldsFor } from "@/lib/profileFields";
 import { PRODUCT_HOME, profileCompletion } from "@/lib/providerJourney";
 import { hoursLeft, type VaelSide } from "@/lib/vaelStore";
-import { getOnboardingDraft } from "@/lib/onboarding";
+import { getOnboardingDraft, isOpportunitiesOnly } from "@/lib/onboarding";
+import { OPPORTUNITY_PATH } from "@/lib/cxRoutes";
 import { routeForGoVisibleEntry } from "@/lib/goVisible";
 import { handshakeIncomingLede, homeNetworkLede, vaelSideLabel, vaelSideStatusLabel } from "@/lib/vaelCopy";
 
@@ -94,6 +93,7 @@ export function DistrictHomePage() {
   const community = useCommunity();
   const { listing, latestListing, matches, myConnections, handle, signedIn, profile, documents } = vael;
   const mine = signedIn ? profile(handle) : undefined;
+  const opportunitiesOnly = signedIn && isOpportunitiesOnly(handle);
   const kind = visibilityKindFromListing(latestListing);
   const vaeledIn = (kind === "in" || kind === "expiring") && latestListing?.side !== "out";
   const vaeledOut = kind === "out" || ((kind === "in" || kind === "expiring") && latestListing?.side === "out");
@@ -140,6 +140,8 @@ export function DistrictHomePage() {
   const availabilityButtonClass = buttonClassName({
     className: "bg-accent text-[#0B0C0C] hover:bg-accent/90 dark:bg-accent dark:text-[#0B0C0C] dark:hover:bg-accent-hover",
   });
+
+  if (opportunitiesOnly) return <Navigate to={OPPORTUNITY_PATH} replace />;
 
   if (!signedIn) {
     return (
@@ -192,10 +194,6 @@ export function DistrictHomePage() {
                   <span className="normal-case tracking-normal">Go visible</span>
                 </Link>
               )}
-              <Link to={opportunitiesHomeFor(side)} className={buttonClassName({ variant: "outline" })}>
-                Opportunity
-                <span aria-hidden>→</span>
-              </Link>
               {vaelOutHome ? (
                 <Link to={inHref} className={availabilityButtonClass}>
                   Vael In
@@ -306,8 +304,6 @@ export function DistrictHomePage() {
 
           {/* "Your matches" — the primary reason a member opens Home. */}
           <DashboardMatchesRail matches={matches} visible={visible} side={side} />
-
-          <OpportunitiesRail side={side} handle={handle} />
 
           <CommunityRail
             posts={posts}

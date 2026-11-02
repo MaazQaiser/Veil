@@ -51,6 +51,8 @@ export type OnboardingDraft = {
   needPlace?: OnboardingNeedPlace;
   /** Current VAEL OUT step. "submitted" means the request was posted. */
   outStep?: VaelOutStep | "submitted";
+  /** Signed up from the Opportunities page: they only see Opportunities until they pick Vael In or Vael Out. */
+  opportunitiesOnly?: boolean;
 };
 
 export function isVaelOutStep(value: string): value is VaelOutStep {
@@ -204,6 +206,21 @@ export function clearOnboardingDraftFor(handle: string) {
   if (!(handle in store)) return;
   const { [handle]: _removed, ...rest } = store;
   writeStore(rest);
+}
+
+export function isOpportunitiesOnly(handle: string): boolean {
+  return Boolean(handle) && getOnboardingDraft(handle)?.opportunitiesOnly === true;
+}
+
+/** Leaves the Opportunities-only view and starts the onboarding for the side they picked. */
+export function startVaelFromOpportunities(handle: string, intent: "in" | "out"): string {
+  patchOnboarding(
+    handle,
+    intent === "out"
+      ? { intent, completedStep: "Intent", outStep: "need", completedAt: undefined, opportunitiesOnly: false }
+      : { intent, completedStep: "Intent", completedAt: undefined, opportunitiesOnly: false },
+  );
+  return intent === "out" ? vaelOutPath("need") : ONBOARDING_PATH.Welcome;
 }
 
 export function onboardingComplete(handle: string): boolean {

@@ -13,7 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IconCheck, IconChevronLeft } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
 import { useConstruction } from "@/lib/constructionCore";
-import { CX_TRADES, type ConstructionProfile } from "@/lib/constructionStore";
+import {
+  CX_BUDGET_TYPES,
+  CX_CREW_SIZES,
+  CX_EXPERIENCE_LEVELS,
+  CX_TRADES,
+  CX_WORK_SETTINGS,
+  type ConstructionProfile,
+} from "@/lib/constructionStore";
+import { cn } from "@/lib/cn";
 import { addManualDistricts } from "@/lib/myDistricts";
 import { DOC_TYPES } from "@/lib/vaelStore";
 
@@ -211,6 +219,7 @@ export function ConstructionProfileEditPage() {
   const [status, setStatus] = useState<"default" | "editing" | "saving" | "saved" | "error">("editing");
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [linkDraft, setLinkDraft] = useState("");
   const mine = cx.ensureMine();
   const [form, setForm] = useState<ConstructionProfile | null>(mine ?? null);
 
@@ -266,8 +275,8 @@ export function ConstructionProfileEditPage() {
       setStatus("error");
       return;
     }
-    if (!form.trade) {
-      setError("Choose a trade, then continue.");
+    if (!form.trade && !(form.trades ?? []).length) {
+      setError("Choose at least one trade, then continue.");
       setStatus("error");
       return;
     }
@@ -307,16 +316,6 @@ export function ConstructionProfileEditPage() {
           <Field label="Display name" htmlFor="dn" required>
             <Input id="dn" value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
           </Field>
-          <Field label="Profile type" htmlFor="pt">
-            <Select
-              id="pt"
-              value={form.profileType}
-              onChange={(e) => set("profileType", e.target.value as ConstructionProfile["profileType"])}
-            >
-              <option value="individual">Professional</option>
-              <option value="company">Company</option>
-            </Select>
-          </Field>
           <Field label="Headline" htmlFor="hl">
             <Input id="hl" value={form.headline} onChange={(e) => set("headline", e.target.value)} />
           </Field>
@@ -334,24 +333,113 @@ export function ConstructionProfileEditPage() {
           </Field>
         </section>
         <section className="space-y-5">
-          <p className="vael-kicker">Trade</p>
-          <Field label="Trade" htmlFor="trade" required>
-            <Select id="trade" value={form.trade} onChange={(e) => set("trade", e.target.value)}>
+          <p className="vael-kicker">The Contractor Exchange details</p>
+          <Field label="Trades you work in" required hint="Pick every trade you take work in.">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Trades you work in">
+              {CX_TRADES.map((item) => {
+                const picked = (form.trades ?? (form.trade ? [form.trade] : [])).includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    aria-pressed={picked}
+                    onClick={() => {
+                      setForm((value) => {
+                        if (!value) return value;
+                        const current = value.trades ?? (value.trade ? [value.trade] : []);
+                        const next = current.includes(item) ? current.filter((entry) => entry !== item) : [...current, item];
+                        return { ...value, trades: next, trade: next[0] ?? "" };
+                      });
+                      setStatus("editing");
+                    }}
+                    className={cn(
+                      "rounded-full border px-4 py-2 text-body-sm font-medium motion-safe:transition-colors",
+                      picked ? "border-accent/60 bg-accent/10 text-accent" : "border-border text-muted hover:text-foreground",
+                    )}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+          <Field label="Crew size" htmlFor="crew">
+            <Select id="crew" value={form.crewSize ?? ""} onChange={(e) => set("crewSize", e.target.value)}>
               <option value="">Select</option>
-              {CX_TRADES.map((item) => (
+              {CX_CREW_SIZES.map((item) => (
                 <option key={item}>{item}</option>
               ))}
+            </Select>
+          </Field>
+          <Field label="Equipment you bring" htmlFor="equip" hint="Tools, vehicles or machines you bring to a job.">
+            <Textarea id="equip" value={form.equipment ?? ""} onChange={(e) => set("equipment", e.target.value)} />
+          </Field>
+          <Field label="Capability statement" htmlFor="capstate" hint="A short paragraph on what you do best.">
+            <Textarea
+              id="capstate"
+              value={form.capabilityStatement ?? ""}
+              onChange={(e) => set("capabilityStatement", e.target.value)}
+            />
+          </Field>
+          <Field label="Are you a company or an individual?" htmlFor="pt">
+            <Select
+              id="pt"
+              value={form.profileType}
+              onChange={(e) => set("profileType", e.target.value as ConstructionProfile["profileType"])}
+            >
+              <option value="individual">Individual</option>
+              <option value="company">Company</option>
             </Select>
           </Field>
           <Field label="Specialization" htmlFor="spec">
             <Input id="spec" value={form.specialization} onChange={(e) => set("specialization", e.target.value)} />
           </Field>
-          <Field label="Capabilities" htmlFor="caps" hint="Comma-separated.">
+          <Field label="Skills" htmlFor="caps" hint="Comma-separated.">
             <Input
               id="caps"
               value={form.capabilities.join(", ")}
               onChange={(e) => set("capabilities", split(e.target.value))}
             />
+          </Field>
+        </section>
+        <section className="space-y-5">
+          <p className="vael-kicker">Location and experience</p>
+          <Field label="Location" htmlFor="loc">
+            <Input id="loc" value={form.location} onChange={(e) => set("location", e.target.value)} />
+          </Field>
+          <Field label="Where the work happens" htmlFor="setting">
+            <Select id="setting" value={form.workSetting ?? ""} onChange={(e) => set("workSetting", e.target.value)}>
+              <option value="">Select</option>
+              {CX_WORK_SETTINGS.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Experience level" htmlFor="level">
+            <Select
+              id="level"
+              value={form.experienceLevel ?? ""}
+              onChange={(e) => set("experienceLevel", e.target.value)}
+            >
+              <option value="">Select</option>
+              {CX_EXPERIENCE_LEVELS.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </Select>
+          </Field>
+        </section>
+        <section className="space-y-5">
+          <p className="vael-kicker">Typical budget range</p>
+          <Field label="Type" htmlFor="btype">
+            <Select id="btype" value={form.budgetType ?? ""} onChange={(e) => set("budgetType", e.target.value)}>
+              <option value="">Select</option>
+              {CX_BUDGET_TYPES.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Details" htmlFor="bdetails" hint="For example, “$75 to $95 an hour” or “projects from $10,000”.">
+            <Input id="bdetails" value={form.budgetDetails ?? ""} onChange={(e) => set("budgetDetails", e.target.value)} />
           </Field>
         </section>
         <section className="space-y-5">
@@ -372,23 +460,44 @@ export function ConstructionProfileEditPage() {
           </Field>
         </section>
         <section className="space-y-5">
-          <p className="vael-kicker">Portfolio</p>
-          <Field label="Portfolio label" htmlFor="pl">
-            <Input
-              id="pl"
-              value={form.portfolio[0]?.label ?? ""}
-              onChange={(e) => set("portfolio", [{ label: e.target.value, url: form.portfolio[0]?.url ?? "" }])}
-            />
-          </Field>
-          <Field label="Portfolio URL" htmlFor="pu">
+          <p className="vael-kicker">Portfolio links</p>
+          {form.portfolio.length > 0 ? (
+            <ul className="space-y-2">
+              {form.portfolio.map((link, index) => (
+                <li key={`${link.url}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-2.5">
+                  <span className="min-w-0 truncate text-body-sm text-foreground">{link.label || link.url}</span>
+                  <button
+                    type="button"
+                    className="shrink-0 text-body-sm text-muted hover:text-foreground"
+                    onClick={() => set("portfolio", form.portfolio.filter((_, at) => at !== index))}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="flex gap-2">
             <Input
               id="pu"
-              value={form.portfolio[0]?.url ?? ""}
-              onChange={(e) =>
-                set("portfolio", [{ label: form.portfolio[0]?.label ?? "Link", url: e.target.value }])
-              }
+              aria-label="Portfolio link"
+              placeholder="https://your-work.example.com"
+              value={linkDraft}
+              onChange={(e) => setLinkDraft(e.target.value)}
             />
-          </Field>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!linkDraft.trim()}
+              onClick={() => {
+                const url = linkDraft.trim();
+                set("portfolio", [...form.portfolio, { label: url.replace(/^https?:\/\//, ""), url }]);
+                setLinkDraft("");
+              }}
+            >
+              Add
+            </Button>
+          </div>
         </section>
         <section className="space-y-5">
           <p className="vael-kicker">Documents</p>

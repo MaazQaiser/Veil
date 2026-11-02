@@ -10,7 +10,7 @@ import { useCitySession } from "@/lib/citySession";
 import { seedDemoSampleContent } from "@/lib/demoJourney";
 import { parseGoVisibleEntry } from "@/lib/goVisible";
 import { ONBOARDING_PATH, patchOnboarding, startOnboarding, vaelOutPath } from "@/lib/onboarding";
-import { NEED_CONTINUE_PATH, NEED_PATH } from "@/lib/cxRoutes";
+import { NEED_CONTINUE_PATH, NEED_PATH, OPPORTUNITY_PATH } from "@/lib/cxRoutes";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { readNeedWork } from "@/lib/needWork";
 import { ensureProfile, saveProfile } from "@/lib/vaelStore";
@@ -40,6 +40,7 @@ export function JoinSignUpPage() {
   const presetIntent = params.get("intent") === "out" ? "out" : params.get("intent") === "in" ? "in" : "";
   const entry = parseGoVisibleEntry(params.get("entry"));
   const fromProject = params.get("from") === "project";
+  const fromOpportunities = params.get("from") === "opportunities";
   const savedWork = fromProject ? readNeedWork() : undefined;
   const [form, setForm] = useState({
     ...INITIAL_FORM,
@@ -88,7 +89,7 @@ export function JoinSignUpPage() {
     const intent = entry === "out" || presetIntent === "out" ? "out" : "in";
     // Vael In and Vael Out sign-ups continue into their onboarding; they must
     // not be marked complete here or they skip straight to the dashboard.
-    const startsOnboarding = !fromProject && entry !== "opportunities";
+    const startsOnboarding = !fromProject && !fromOpportunities && entry !== "opportunities";
     patchOnboarding(
       account.handle,
       !startsOnboarding
@@ -97,9 +98,14 @@ export function JoinSignUpPage() {
           ? { intent, completedStep: "Intent", outStep: "need" }
           : { intent, completedStep: "Intent" },
     );
+    if (fromOpportunities) patchOnboarding(account.handle, { opportunitiesOnly: true });
     signIn(account.handle);
     if (fromProject) {
       navigate(NEED_CONTINUE_PATH, { replace: true });
+      return;
+    }
+    if (fromOpportunities) {
+      navigate(OPPORTUNITY_PATH, { replace: true });
       return;
     }
     if (entry === "opportunities") {

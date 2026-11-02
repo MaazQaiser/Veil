@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/overlays";
 import { IconCalendar, IconClock, IconLock, IconMapPin, IconWallet } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
-import { NEED_PATH } from "@/lib/cxRoutes";
 import { cn } from "@/lib/cn";
 import { MARKETING_PROJECTS, type MarketingProject, type MarketingProjectIcon } from "@/lib/marketingProjects";
 
@@ -271,18 +270,27 @@ export function ProjectDetailsDialog({ project: open, onClose }: { project?: Mar
   );
 }
 
+const ALL_DISTRICTS = "All districts";
 const PILL = "inline-flex items-center rounded-full border px-5 py-2.5 text-body-sm font-medium motion-safe:transition-colors";
 
 export function WebsiteProjectsPage() {
   const { session } = useCitySession();
   const locked = !session.signedIn;
   const [openId, setOpenId] = useState<string | null>(null);
-  const [category, setCategory] = useState<string>("All");
+  const [district, setDistrict] = useState<string>(ALL_DISTRICTS);
   const open = MARKETING_PROJECTS.find((project) => project.id === openId);
-  const categories = useMemo(() => ["All", ...Array.from(new Set(MARKETING_PROJECTS.map((project) => project.category)))], []);
-  const shown = category === "All" ? MARKETING_PROJECTS : MARKETING_PROJECTS.filter((project) => project.category === category);
+  // Every opportunity today is posted into Contractor Exchange, so both views list the same cards.
+  const shown = MARKETING_PROJECTS;
 
   return (
+    <>
+    <p
+      role="status"
+      className="flex min-h-9 items-center justify-center gap-2.5 border-b border-success/25 bg-success/10 px-4 py-2 text-center text-body-sm font-medium text-success"
+    >
+      <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-success" />
+      {shown.length} {shown.length === 1 ? "opportunity is" : "opportunities are"} live in {DISTRICT_NAME}
+    </p>
     <CityPage width="wide" className="py-8 md:py-10">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div>
@@ -291,39 +299,23 @@ export function WebsiteProjectsPage() {
           </h1>
           <p className="mt-1.5 max-w-xl text-body text-muted">Live opportunities from across THE CITY OF VAEL.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <span
-            className="inline-flex h-9 items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 text-body-sm font-medium text-success"
-            aria-label={`${shown.length} live ${shown.length === 1 ? "opportunity" : "opportunities"}`}
-          >
-            <span aria-hidden className="h-2 w-2 rounded-full bg-success" />
-            {shown.length} live
-          </span>
-          <Link
-            to={NEED_PATH}
-            className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
-          >
-            <span aria-hidden className="text-lg leading-none">+</span>
-            Post an Opportunity
-          </Link>
-        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3" role="group" aria-label="Filter opportunities">
-        {categories.map((name) => {
-          const active = name === category;
+        {[ALL_DISTRICTS, DISTRICT_NAME].map((name) => {
+          const active = name === district;
           return (
             <button
               key={name}
               type="button"
               aria-pressed={active}
-              onClick={() => setCategory(name)}
+              onClick={() => setDistrict(name)}
               className={cn(
                 PILL,
                 active ? "border-accent/60 bg-accent/10 text-accent" : "border-border text-muted hover:text-foreground",
               )}
             >
-              {name === "All" ? "All opportunities" : name}
+              {name}
             </button>
           );
         })}
@@ -337,12 +329,12 @@ export function WebsiteProjectsPage() {
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-5">
             <Link
-              to={JOIN_ROUTE}
+              to={`${JOIN_ROUTE}?from=opportunities`}
               className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
             >
               Create a free account
             </Link>
-            <Link to="/sign-in" className="text-body font-medium text-accent">
+            <Link to="/sign-in?next=/opportunities" className="text-body font-medium text-accent">
               I have an account
             </Link>
           </div>
@@ -356,5 +348,6 @@ export function WebsiteProjectsPage() {
       </div>
       <ProjectDetailsDialog project={open} onClose={() => setOpenId(null)} />
     </CityPage>
+    </>
   );
 }

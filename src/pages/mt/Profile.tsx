@@ -54,6 +54,9 @@ import {
 } from "@/lib/cxProjectStore";
 import { opportunityHref, opportunityStart, projectHref } from "@/lib/cxRoutes";
 import { addTeamMember, getTeam, removeTeamMember, subscribeTeam } from "@/lib/profileTeam";
+import { useConstruction } from "@/lib/constructionCore";
+import { getActiveDistrictId } from "@/lib/myDistricts";
+import type { ConstructionProfile } from "@/lib/constructionStore";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { visibilityKindFromListing } from "@/lib/visibilityPlans";
 import { DOC_TYPE_LABELS, normalizePortfolio, sectionErrors } from "@/lib/profileFields";
@@ -418,6 +421,7 @@ function ProfileTabs({
 }) {
   const vael = useVael();
   useCxProjects();
+  const contractor = useConstruction().profile(profile.handle);
   const open = mine || revealed;
   const certifications = split(profile.credentials);
   const projects = projectsForHandle(profile.handle).filter((item) => (mine ? true : item.status === "live"));
@@ -524,6 +528,9 @@ function ProfileTabs({
             ) : null}
           </div>
         )}
+        {signedIn && contractor && (contractor.sample || getActiveDistrictId(profile.handle) === "construction") ? (
+          <ContractorOverview profile={contractor} />
+        ) : null}
       </TabsContent>
 
       <TabsContent value="projects" className="mt-6 space-y-6">
@@ -866,6 +873,83 @@ export function ProfilePage() {
         />
       )}
     </DashboardShell>
+  );
+}
+
+function DetailCard({ title, rows, note }: { title: string; rows?: [string, string][]; note?: string }) {
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+      <p className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">{title}</p>
+      {note ? <p className="mt-2 text-body-sm text-muted">{note}</p> : null}
+      {rows ? (
+        <dl className="mt-4 space-y-4">
+          {rows.map(([label, value]) => (
+            <div key={label}>
+              <dt className="text-caption font-medium uppercase tracking-[0.1em] text-muted">{label}</dt>
+              <dd className="mt-1 text-body-sm text-foreground">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+    </section>
+  );
+}
+
+/** What a member filled in for Contractor Exchange: trades, crew, location, budget and links. */
+function ContractorOverview({ profile }: { profile: ConstructionProfile }) {
+  const trades = (profile.trades?.length ? profile.trades : profile.trade ? [profile.trade] : []).join(", ");
+  return (
+    <div className="mt-3 grid gap-3 lg:grid-cols-2">
+      <DetailCard
+        title="The Contractor Exchange details"
+        note="These stay in Contractor Exchange. Provided by the member."
+        rows={[
+          ["Trades you work in", listed(trades)],
+          ["Crew size", listed(profile.crewSize)],
+          ["Equipment you bring", listed(profile.equipment)],
+          ["Capability statement", listed(profile.capabilityStatement)],
+          ["Are you a company or an individual?", profile.profileType === "company" ? "Company" : "Individual"],
+        ]}
+      />
+      <div className="space-y-3">
+        <DetailCard
+          title="Location and experience"
+          rows={[
+            ["Location", listed(profile.location)],
+            ["Where the work happens", listed(profile.workSetting)],
+            ["Experience level", listed(profile.experienceLevel)],
+          ]}
+        />
+        <DetailCard
+          title="Typical budget range"
+          rows={[
+            ["Type", listed(profile.budgetType)],
+            ["Details", listed(profile.budgetDetails)],
+          ]}
+        />
+        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+          <p className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">Portfolio links</p>
+          {profile.portfolio.length === 0 ? (
+            <p className="mt-3 text-body-sm text-muted">No portfolio links yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {profile.portfolio.map((link, index) => (
+                <li key={`${link.url}-${index}`}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-body-sm font-medium text-accent hover:underline"
+                  >
+                    {link.label || link.url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }
 

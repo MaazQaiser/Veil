@@ -79,7 +79,22 @@ export type ConstructionProfile = {
   offers?: string[];
   /** What you're looking for in this District. */
   lookingFor?: string[];
+  /** Every trade the member works in. `trade` stays the first of these. */
+  trades?: string[];
+  crewSize?: string;
+  equipment?: string;
+  capabilityStatement?: string;
+  /** Where the work happens: on site, remote or hybrid. */
+  workSetting?: string;
+  experienceLevel?: string;
+  budgetType?: string;
+  budgetDetails?: string;
 };
+
+export const CX_CREW_SIZES = ["Just me", "2 to 5", "6 to 15", "16 to 50", "More than 50"];
+export const CX_WORK_SETTINGS = ["On site", "Remote", "Hybrid"];
+export const CX_EXPERIENCE_LEVELS = ["Entry", "Mid-level", "Senior", "Expert"];
+export const CX_BUDGET_TYPES = ["Hourly", "Fixed price", "Per project"];
 
 /** District Profile option catalogs — the values change per District, the editor shape does not. */
 export const CX_SKILLS = ["Framing", "Electrical rough-in", "Plumbing rough-in", "Finishes", "Project management", "Estimating"];

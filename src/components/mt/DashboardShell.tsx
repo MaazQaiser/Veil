@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import { CityPage } from "@/components/city/CityShell";
 import { DashboardSidebar } from "@/components/mt/DashboardSidebar";
 import { cn } from "@/lib/cn";
-import { getOnboardingDraft } from "@/lib/onboarding";
+import { getOnboardingDraft, isOpportunitiesOnly } from "@/lib/onboarding";
 import { useVael } from "@/lib/vaelCore";
 import { visibilityKindFromListing } from "@/lib/visibilityPlans";
 import type { VaelSide } from "@/lib/vaelStore";
@@ -44,6 +44,16 @@ export function DashboardShell({
     return (
       <CityPage>
         <div className="space-y-6">{children}</div>
+      </CityPage>
+    );
+  }
+
+  if (isOpportunitiesOnly(handle)) {
+    return (
+      <CityPage width="wide" className="py-8 md:py-10">
+        <InShellContext.Provider value>
+          <div className="space-y-6">{children}</div>
+        </InShellContext.Provider>
       </CityPage>
     );
   }

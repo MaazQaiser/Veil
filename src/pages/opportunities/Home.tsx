@@ -1,11 +1,15 @@
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardShell } from "@/components/mt/DashboardShell";
 import { OpportunityBoard, useLiveOpportunityCount } from "@/components/opportunities/OpportunityBoard";
-import { buttonClassName } from "@/components/ui/button";
+import { Button, buttonClassName } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/overlays";
 import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
+import { useConstruction } from "@/lib/constructionCore";
+import { siblingCompletion } from "@/components/mt/DistrictsRow";
 import { projectsForHandle } from "@/lib/cxProjectStore";
-import { opportunityStart, projectHref } from "@/lib/cxRoutes";
+import { projectHref } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { OpportunityCard, opportunityStatus } from "@/pages/projects/List";
 
@@ -20,7 +24,12 @@ export function OpportunityHomePage() {
   useCxProjects();
   const { session } = useCitySession();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const construction = useConstruction();
   const joinedNow = Boolean((useLocation().state as { joinedContractor?: boolean } | null)?.joinedContractor);
+  const [reminderOpen, setReminderOpen] = useState(joinedNow);
+  const incomplete =
+    (siblingCompletion(construction.profile(session.handle)) ?? 0) < 100 || construction.documents(session.handle).length === 0;
   const tab: "browse" | "mine" = params.get("tab") === "mine" ? "mine" : "browse";
   const publishedId = params.get("published") ?? "";
   const browseCount = useLiveOpportunityCount("all");
@@ -42,7 +51,6 @@ export function OpportunityHomePage() {
     },
     { active: 0, drafts: 0, closingSoon: 0, closed: 0 },
   );
-  const start = opportunityStart("create");
 
   const tabs = (
     <div role="tablist" aria-label="Opportunities" className="flex gap-6 border-b border-border-subtle">
@@ -88,9 +96,6 @@ export function OpportunityHomePage() {
           <div className="rounded-2xl border border-dashed border-border p-8 text-center">
             <p className="text-body font-medium text-foreground">No opportunities posted yet</p>
             <p className="mt-1 text-body-sm text-muted">Post what you need done and people will respond here.</p>
-            <Link to={start.to} state={start.state} className={buttonClassName({ className: "mt-4" })}>
-              Create an Opportunity
-            </Link>
           </div>
         ) : (
           <>
@@ -137,6 +142,29 @@ export function OpportunityHomePage() {
       >
         {yours}
       </OpportunityBoard>
+      <Dialog
+        open={reminderOpen && incomplete}
+        onClose={() => setReminderOpen(false)}
+        title="Complete your profile"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setReminderOpen(false)}>
+              Not now
+            </Button>
+            <Button
+              type="button"
+              onClick={() => navigate(`/districts/contractor/profile/${session.handle}/edit`)}
+            >
+              Complete my profile
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body-sm text-muted">
+          You're in Contractor Exchange. Add your details and documents so homeowners can trust your profile when you show
+          interest.
+        </p>
+      </Dialog>
     </DashboardShell>
   );
 }

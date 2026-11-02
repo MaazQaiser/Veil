@@ -120,7 +120,7 @@ export function DistrictSearch({
           className={cn(
             "z-50 rounded-xl border p-1.5",
             dark ? "border-white/10 bg-[#141414]" : "border-border bg-surface-elevated",
-            inline ? "mt-2" : "absolute left-0 top-full mt-2 w-[22rem] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.8)]",
+            inline ? "mt-2" : "absolute right-0 top-full mt-2 w-[22rem] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.8)]",
           )}
         >
           {results.length ? (
