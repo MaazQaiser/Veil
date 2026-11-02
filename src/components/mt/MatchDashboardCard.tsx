@@ -43,7 +43,6 @@ export function MatchDashboardCard({
   const profile = nameOverride ? undefined : getProfile(listing.handle);
   const name = nameOverride ?? profile?.displayName ?? `@${listing.handle}`;
   const role = roleOverride ?? profile?.headline ?? listing.discipline ?? listing.category ?? "";
-  const percent = Math.max(0, Math.min(100, Math.round(match.percent)));
   const initial = name.trim().charAt(0).toUpperCase() || "V";
   const image = profile?.avatarUrl || profile?.coverUrl;
 
@@ -88,12 +87,6 @@ export function MatchDashboardCard({
             {districtName}
           </span>
         )}
-        <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-3 py-1 text-caption font-semibold text-accent dark:bg-[#4ADE80]/15 dark:text-[#4ADE80]">
-          <span aria-hidden className="hidden dark:inline">
-            ↑
-          </span>
-          {percent}% Match
-        </span>
       </div>
 
       {listing.description ? (
