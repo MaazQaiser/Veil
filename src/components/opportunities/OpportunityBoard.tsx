@@ -103,10 +103,15 @@ export function OpportunityBoard({
         <>
           {joined ? null : (
             <div className="flex flex-col gap-4 rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="flex items-start gap-3 text-body text-foreground">
+              <div className="flex items-start gap-3">
                 <IconLock className="mt-1 h-4 w-4 shrink-0 text-accent" />
-                You're seeing previews. Join the district to see the full projects and show interest.
-              </p>
+                <div>
+                  <p className="text-body font-semibold text-foreground">You're not part of a district yet.</p>
+                  <p className="mt-0.5 text-body-sm text-muted">
+                    Join the district to get access to the full projects and show interest. You're seeing previews until then.
+                  </p>
+                </div>
+              </div>
               <Link
                 to={JOIN_DISTRICT_ROUTE}
                 className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"

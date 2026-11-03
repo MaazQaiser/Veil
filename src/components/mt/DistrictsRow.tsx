@@ -8,6 +8,7 @@ import { useTrucking } from "@/lib/truckingCore";
 import { useResidential } from "@/lib/residentialCore";
 import { useCommercial } from "@/lib/commercialCore";
 import { useVael } from "@/lib/vaelCore";
+import { isOpportunitiesOnly } from "@/lib/onboarding";
 import { getActiveDistrictId, getDistrictHistory, subscribeMyDistricts } from "@/lib/myDistricts";
 import type { ProfileDocument, ProfileRecord } from "@/lib/vaelStore";
 
@@ -50,7 +51,7 @@ export function useDistrictCards(handle: string, mine: ProfileRecord | undefined
     commercial: siblingCompletion(commercial.profile(handle)) ?? 0,
   };
 
-  const fallbackActive = mine || vael.latestListing ? "media-technology" : undefined;
+  const fallbackActive = !isOpportunitiesOnly(handle) && (mine || vael.latestListing) ? "media-technology" : undefined;
   const activeId = storedActive ?? fallbackActive;
 
   return primaryDistricts.map((district) => {
