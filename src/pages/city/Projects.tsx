@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/overlays";
-import { IconCalendar, IconClock, IconLock, IconMapPin, IconWallet } from "@/components/ui/icons";
+import { IconCalendar, IconClock, IconLock, IconMapPin } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { MARKETING_PROJECTS, type MarketingProject, type MarketingProjectIcon } from "@/lib/marketingProjects";
@@ -98,12 +98,10 @@ function CategoryGlyph({ icon }: { icon: MarketingProjectIcon }) {
   );
 }
 
-function Fact({ icon, label }: { icon: "pin" | "time" | "budget"; label: string }) {
+function FactLine({ icon, label }: { icon: "pin" | "time"; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-caption leading-none text-muted">
-      {icon === "pin" ? <IconMapPin className="h-3.5 w-3.5 shrink-0 text-muted" /> : null}
-      {icon === "time" ? <IconCalendar className="h-3.5 w-3.5 shrink-0 text-muted" /> : null}
-      {icon === "budget" ? <IconWallet className="h-3.5 w-3.5 shrink-0 text-muted" /> : null}
+    <span className="inline-flex items-center gap-1.5 text-body-sm text-muted">
+      {icon === "pin" ? <IconMapPin className="h-4 w-4 shrink-0" /> : <IconCalendar className="h-4 w-4 shrink-0" />}
       {label}
     </span>
   );
@@ -132,9 +130,10 @@ export type OpportunityCardProps = {
 export function OpportunityCardView(props: OpportunityCardProps) {
   const { category, icon, meta, description, city, timing, budget, daysLeft, image, photoCount, locked, lockedNote, lockedAction, action, badge } = props;
   const members = photoCount && photoCount > 0 ? `${photoCount} photo${photoCount === 1 ? "" : "s"} · members only` : "Members only";
+  const linkClass = "inline-flex shrink-0 items-center gap-1.5 text-body-sm font-semibold leading-none text-accent hover:underline";
   return (
     <article className={CARD}>
-      <div className="relative h-48 w-full shrink-0 overflow-hidden bg-surface-muted">
+      <div className="relative h-40 w-full shrink-0 overflow-hidden bg-surface-muted">
         {image ? (
           <img src={image} alt="" className={cn("h-full w-full object-cover", locked && "scale-110 opacity-60 blur-xl")} />
         ) : (
@@ -144,59 +143,66 @@ export function OpportunityCardView(props: OpportunityCardProps) {
             </span>
           </span>
         )}
+        <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-caption font-medium leading-none text-white backdrop-blur-sm">
+          <IconClock className="h-3.5 w-3.5 shrink-0" />
+          {daysLeft} {daysLeft === 1 ? "day" : "days"} left
+        </span>
         {locked ? (
-          <span className="absolute inset-x-0 bottom-4 flex justify-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/90 px-3 py-1.5 text-caption font-medium text-foreground">
-              <IconLock className="h-3.5 w-3.5" />
-              {members}
-            </span>
+          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-caption font-medium leading-none text-white backdrop-blur-sm">
+            <IconLock className="h-3.5 w-3.5" />
+            {members}
           </span>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent">
-              <CategoryGlyph icon={icon} />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-body font-semibold leading-snug text-foreground">{category}</h2>
-              <p className="mt-0.5 text-caption leading-snug text-muted">{meta}</p>
-            </div>
+          <div className="min-w-0">
+            <h2 className="flex items-center gap-2 text-body-lg font-semibold leading-snug text-foreground">
+              <span className="text-accent">
+                <CategoryGlyph icon={icon} />
+              </span>
+              {category}
+            </h2>
+            <p className="mt-1 text-caption leading-snug text-muted">{meta}</p>
           </div>
           <Badge tone={badge?.tone ?? "live"} className="shrink-0">
             {badge?.label ?? "Live"}
           </Badge>
         </div>
         {locked ? (
-          <p className="flex min-h-[4.5rem] items-start gap-2 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-body-sm leading-6 text-foreground">
-            <IconLock className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
+          <p className="flex items-center gap-2 text-body-sm leading-6 text-muted">
+            <IconLock className="h-3.5 w-3.5 shrink-0" />
             {lockedNote}
           </p>
         ) : (
-          <p className="line-clamp-3 min-h-[4.5rem] text-body-sm leading-6 text-foreground">{description}</p>
+          <p className="line-clamp-2 text-body-sm leading-6 text-foreground/80">{description}</p>
         )}
-        <div className="flex flex-wrap gap-2">
-          {city ? <Fact icon="pin" label={city} /> : null}
-          {timing ? <Fact icon="time" label={timing} /> : null}
-          {budget ? <Fact icon="budget" label={budget} /> : null}
-        </div>
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-subtle pt-4">
-          <p className="inline-flex items-center gap-1.5 text-caption leading-none text-muted">
-            <IconClock className="h-3.5 w-3.5 shrink-0" />
-            {daysLeft} {daysLeft === 1 ? "day" : "days"} left
-          </p>
+        {city || timing ? (
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+            {city ? <FactLine icon="pin" label={city} /> : null}
+            {timing ? <FactLine icon="time" label={timing} /> : null}
+          </div>
+        ) : null}
+        <div className="mt-auto flex items-end justify-between gap-3 border-t border-border-subtle pt-4">
+          <div className="min-w-0">
+            {budget ? (
+              <>
+                <p className="text-caption leading-none text-muted">Budget</p>
+                <p className="mt-1.5 text-body font-semibold leading-none text-foreground">{budget}</p>
+              </>
+            ) : null}
+          </div>
           {locked ? (
-            <Link to={lockedAction.to} className="inline-flex shrink-0 items-center gap-1.5 text-body-sm font-medium leading-none text-accent">
+            <Link to={lockedAction.to} className={linkClass}>
               <IconLock className="h-3.5 w-3.5" />
               {lockedAction.label}
             </Link>
           ) : action.to ? (
-            <Link to={action.to} className="shrink-0 text-body-sm font-medium leading-none text-accent">
+            <Link to={action.to} className={linkClass}>
               {action.label} <span aria-hidden>→</span>
             </Link>
           ) : (
-            <button type="button" onClick={action.onClick} className="shrink-0 text-body-sm font-medium leading-none text-accent">
+            <button type="button" onClick={action.onClick} className={linkClass}>
               {action.label} <span aria-hidden>→</span>
             </button>
           )}
@@ -229,7 +235,7 @@ export function ProjectCard({
       daysLeft={project.daysLeft}
       image={project.image}
       locked={locked}
-      lockedNote={`The description is for members of ${DISTRICT_NAME}`}
+      lockedNote="Description is for members only"
       lockedAction={lockedAction}
       action={{ label: "Show details", onClick: onDetails }}
     />
@@ -327,7 +333,7 @@ export function WebsiteProjectsPage() {
         <div className="mt-5 rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:p-6">
           <p className="flex items-start gap-3 text-body text-foreground">
             <IconLock className="mt-1 h-4 w-4 shrink-0 text-accent" />
-            You're seeing previews. Create a free account and join {DISTRICT_NAME} to see full opportunities and show interest.
+            These opportunities are locked. Create a free account or sign in to get access, then make your profile to see the full projects.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-5">
             <Link

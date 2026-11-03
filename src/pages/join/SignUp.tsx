@@ -105,7 +105,7 @@ export function JoinSignUpPage() {
       return;
     }
     if (fromOpportunities) {
-      navigate(OPPORTUNITY_PATH, { replace: true });
+      navigate(OPPORTUNITY_PATH, { replace: true, state: { newAccount: true } });
       return;
     }
     if (entry === "opportunities") {

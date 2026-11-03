@@ -106,9 +106,9 @@ export function OpportunityBoard({
               <div className="flex items-start gap-3">
                 <IconLock className="mt-1 h-4 w-4 shrink-0 text-accent" />
                 <div>
-                  <p className="text-body font-semibold text-foreground">You're not part of a district yet.</p>
+                  <p className="text-body font-semibold text-foreground">Make your profile to access these opportunities.</p>
                   <p className="mt-0.5 text-body-sm text-muted">
-                    Join the district to get access to the full projects and show interest. You're seeing previews until then.
+                    Your account is ready. Make your profile to join the district, see the full projects and show interest. Until then you only see previews.
                   </p>
                 </div>
               </div>
@@ -116,7 +116,7 @@ export function OpportunityBoard({
                 to={JOIN_DISTRICT_ROUTE}
                 className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-primary px-6 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
               >
-                Join the {DISTRICT_NAME}
+                Make my profile
               </Link>
             </div>
           )}

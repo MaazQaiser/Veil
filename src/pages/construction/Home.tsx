@@ -1,9 +1,9 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/headers";
 import { buttonClassName } from "@/components/ui/button";
 import { CityPage } from "@/components/city/CityShell";
 import { DashboardShell } from "@/components/mt/DashboardShell";
-import { OpportunityBoard } from "@/components/opportunities/OpportunityBoard";
+import { OPPORTUNITY_PATH } from "@/lib/cxRoutes";
 import { EmptyState } from "@/components/ui/feedback";
 import { IconChevronLeft } from "@/components/ui/icons";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,15 +18,7 @@ type ContractorCategory = "residential" | "commercial";
  * stays here until it has its own entry.
  */
 function ContractorOpportunities() {
-  return (
-    <DashboardShell sidebar={false}>
-      <OpportunityBoard
-        title="Opportunities in Contractor Exchange"
-        subtitle="Live opportunities from homeowners, for members of this district."
-        samples="fallback"
-      />
-    </DashboardShell>
-  );
+  return <Navigate to={OPPORTUNITY_PATH} replace />;
 }
 
 export function ConstructionHomePage({ category = "residential" }: { category?: ContractorCategory }) {

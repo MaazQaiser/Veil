@@ -192,9 +192,9 @@ export function OpportunityDetailPage() {
 
           {!joined ? (
             <>
-              <p className="mt-3 text-body text-foreground">Join Contractor Exchange to see the full project and show interest.</p>
+              <p className="mt-3 text-body text-foreground">Make your profile to see the full project and show interest.</p>
               <Link to={JOIN_PATH} className={buttonClassName({ className: "mt-5 w-full" })}>
-                Join the Contractor Exchange
+                Make my profile
               </Link>
             </>
           ) : standing === "connected" && interest?.connectionId ? (

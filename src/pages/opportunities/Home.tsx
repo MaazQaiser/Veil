@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardShell } from "@/components/mt/DashboardShell";
 import { OpportunityBoard, useLiveOpportunityCount } from "@/components/opportunities/OpportunityBoard";
 import { Button, buttonClassName } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/overlays";
 import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
-import { useConstruction } from "@/lib/constructionCore";
-import { siblingCompletion } from "@/components/mt/DistrictsRow";
+import { useJoinedDistricts } from "@/components/mt/DistrictsRow";
 import { projectsForHandle } from "@/lib/cxProjectStore";
 import { projectHref } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
+import { useVael } from "@/lib/vaelCore";
 import { OpportunityCard, opportunityStatus } from "@/pages/projects/List";
 
 const cardClass =
@@ -25,11 +25,13 @@ export function OpportunityHomePage() {
   const { session } = useCitySession();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  const construction = useConstruction();
-  const joinedNow = Boolean((useLocation().state as { joinedContractor?: boolean } | null)?.joinedContractor);
-  const [reminderOpen, setReminderOpen] = useState(joinedNow);
-  const incomplete =
-    (siblingCompletion(construction.profile(session.handle)) ?? 0) < 100 || construction.documents(session.handle).length === 0;
+  const { handle, profile, documents } = useVael();
+  const joined = useJoinedDistricts(handle, handle ? profile(handle) : undefined, handle ? documents(handle) : []).some(
+    (row) => row.district.id === "construction",
+  );
+  const state = useLocation().state as { joinedContractor?: boolean; newAccount?: boolean } | null;
+  const joinedNow = Boolean(state?.joinedContractor);
+  const [promptOpen, setPromptOpen] = useState(Boolean(state?.newAccount));
   const tab: "browse" | "mine" = params.get("tab") === "mine" ? "mine" : "browse";
   const publishedId = params.get("published") ?? "";
   const browseCount = useLiveOpportunityCount("all");
@@ -124,6 +126,8 @@ export function OpportunityHomePage() {
       </>
     ) : undefined;
 
+  if (!session.signedIn) return <Navigate to="/projects" replace />;
+
   return (
     <DashboardShell sidebar={false}>
       <OpportunityBoard
@@ -134,7 +138,7 @@ export function OpportunityHomePage() {
         notice={
           joinedNow ? (
             <p className="rounded-2xl border border-success/30 bg-success/10 px-5 py-4 text-body text-success">
-              You're in Contractor Exchange. You can now see full opportunities and show interest.
+              Your profile is done. You can now browse the full opportunities, show interest and post your own.
             </p>
           ) : null
         }
@@ -143,26 +147,22 @@ export function OpportunityHomePage() {
         {yours}
       </OpportunityBoard>
       <Dialog
-        open={reminderOpen && incomplete}
-        onClose={() => setReminderOpen(false)}
-        title="Complete your profile"
+        open={promptOpen && !joined}
+        onClose={() => setPromptOpen(false)}
+        title="Make your profile"
         footer={
           <>
-            <Button type="button" variant="ghost" onClick={() => setReminderOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setPromptOpen(false)}>
               Not now
             </Button>
-            <Button
-              type="button"
-              onClick={() => navigate(`/districts/contractor/profile/${session.handle}/edit`)}
-            >
-              Complete my profile
+            <Button type="button" onClick={() => navigate("/join/contractor-exchange")}>
+              Make my profile
             </Button>
           </>
         }
       >
         <p className="text-body-sm text-muted">
-          You're in Contractor Exchange. Add your details and documents so homeowners can trust your profile when you show
-          interest.
+          Your account is ready. Make your profile to access these opportunities, see the full projects and show interest.
         </p>
       </Dialog>
     </DashboardShell>

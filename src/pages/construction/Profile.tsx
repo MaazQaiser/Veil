@@ -15,7 +15,9 @@ import { IconCheck, IconChevronLeft } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
 import { useConstruction } from "@/lib/constructionCore";
 import type { ConstructionProfile } from "@/lib/constructionStore";
+import { OPPORTUNITY_PATH } from "@/lib/cxRoutes";
 import { addManualDistricts } from "@/lib/myDistricts";
+import { isOpportunitiesOnly } from "@/lib/onboarding";
 import { DOC_TYPES } from "@/lib/vaelStore";
 
 const BASE = "/districts/contractor";
@@ -213,6 +215,7 @@ export function ConstructionProfileEditPage() {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const mine = cx.ensureMine();
+  const back = isOpportunitiesOnly(session.handle) ? OPPORTUNITY_PATH : DISTRICT_OVERVIEW;
   const [form, setForm] = useState<ConstructionProfile | null>(mine ?? null);
 
   if (!session.signedIn || session.handle !== username || !form) {
@@ -247,8 +250,8 @@ export function ConstructionProfileEditPage() {
               Your district profile is saved. Contractor Exchange is now your active district.
             </p>
           </div>
-          <Link to={BASE} className={buttonClassName()}>
-            Open Contractor Exchange →
+          <Link to={OPPORTUNITY_PATH} className={buttonClassName()}>
+            Go to Opportunities →
           </Link>
         </div>
       </CityPage>
@@ -391,7 +394,7 @@ export function ConstructionProfileEditPage() {
           <Button type="submit" loading={status === "saving"}>
             Continue
           </Button>
-          <Button type="button" variant="ghost" onClick={() => navigate(DISTRICT_OVERVIEW)}>
+          <Button type="button" variant="ghost" onClick={() => navigate(back)}>
             Back
           </Button>
         </div>
