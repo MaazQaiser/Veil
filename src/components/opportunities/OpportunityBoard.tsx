@@ -14,7 +14,7 @@ import { useVael } from "@/lib/vaelCore";
 const JOIN_DISTRICT_ROUTE = "/join/contractor-exchange";
 const DISTRICT_NAME = "Contractor Exchange";
 
-const CATEGORY_ICON: Record<string, MarketingProjectIcon> = {
+export const CATEGORY_ICON: Record<string, MarketingProjectIcon> = {
   Kitchen: "kitchen",
   Bathroom: "bathroom",
   Roofing: "roofing",

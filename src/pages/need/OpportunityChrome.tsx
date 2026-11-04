@@ -115,6 +115,72 @@ export function CategoryMark({ category }: { category: string }) {
   }
 }
 
+/**
+ * The fixed progress bar under the top nav: "Step N of M", a short note, and a segmented bar.
+ * Leaves a spacer of its own height so the page below is not covered.
+ */
+export function StepProgressBar({
+  step,
+  total,
+  note,
+  showNoteIcon = false,
+}: {
+  step: number;
+  total: number;
+  note?: ReactNode;
+  showNoteIcon?: boolean;
+}) {
+  const currentStep = Math.min(total, Math.max(0, step));
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barHeight, setBarHeight] = useState(0);
+  const [navHeight, setNavHeight] = useState(0);
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    const header = document.querySelector("header");
+    const measure = () => {
+      if (bar) setBarHeight(bar.offsetHeight);
+      setNavHeight(header ? header.getBoundingClientRect().height : 0);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (bar) observer.observe(bar);
+    if (header) observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <>
+      <div
+        ref={barRef}
+        style={{ top: navHeight }}
+        className="fixed inset-x-0 z-30 border-b border-white/10 bg-[#0B0C0C]/95 backdrop-blur"
+      >
+        <div className="site-container py-4">
+          <div className="flex items-center justify-between gap-4 text-body-sm text-muted">
+            <p>
+              Step {step} of {total}
+            </p>
+            {note ? (
+              <p className="inline-flex items-center gap-1.5">
+                {showNoteIcon ? <IconLock className="h-3.5 w-3.5" /> : null}
+                {note}
+              </p>
+            ) : null}
+          </div>
+          <div className="mt-2 flex gap-1.5" role="img" aria-label={`Step ${currentStep} of ${total}`}>
+            {Array.from({ length: total }, (_, index) => (
+              <span
+                key={index}
+                className={cn("h-1 flex-1 rounded-full", index < currentStep ? "bg-primary" : "bg-white/15")}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div aria-hidden style={{ height: barHeight }} />
+    </>
+  );
+}
+
 export function OpportunityFrame({
   step,
   backTo,
@@ -134,53 +200,13 @@ export function OpportunityFrame({
   eyebrow?: string;
   children: ReactNode;
 }) {
-  const currentStep = Math.min(OPPORTUNITY_STEPS, Math.max(0, step ?? 0));
-  const barRef = useRef<HTMLDivElement>(null);
-  const [barHeight, setBarHeight] = useState(0);
-  const [navHeight, setNavHeight] = useState(0);
-  useLayoutEffect(() => {
-    const bar = barRef.current;
-    const header = document.querySelector("header");
-    const measure = () => {
-      if (bar) setBarHeight(bar.offsetHeight);
-      setNavHeight(header ? header.getBoundingClientRect().height : 0);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    if (bar) observer.observe(bar);
-    if (header) observer.observe(header);
-    return () => observer.disconnect();
-  }, [showProgress]);
   return (
     <div>
       {showProgress ? (
-      <div
-        ref={barRef}
-        style={{ top: navHeight }}
-        className="fixed inset-x-0 z-30 border-b border-white/10 bg-[#0B0C0C]/95 backdrop-blur"
-      >
-        <div className="site-container py-4">
-          <div className="flex items-center justify-between gap-4 text-body-sm text-muted">
-            <p>
-              Step {step} of {OPPORTUNITY_STEPS}
-            </p>
-            <p className="inline-flex items-center gap-1.5">
-              <IconLock className="h-3.5 w-3.5" />
-              Saved as you go
-            </p>
-          </div>
-          <div className="mt-2 flex gap-1.5" role="img" aria-label={`Step ${currentStep} of ${OPPORTUNITY_STEPS}`}>
-            {Array.from({ length: OPPORTUNITY_STEPS }, (_, index) => (
-              <span
-                key={index}
-                className={cn("h-1 flex-1 rounded-full", index < currentStep ? "bg-primary" : "bg-white/15")}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-      ) : null}
-      <div aria-hidden style={{ height: barHeight }} />
+        <StepProgressBar step={step ?? 0} total={OPPORTUNITY_STEPS} note="Saved as you go" showNoteIcon />
+      ) : (
+        <div aria-hidden />
+      )}
       <div className="mx-auto mt-6 w-full max-w-3xl rounded-lg border border-white/15 bg-[#141414] px-6 py-8 sm:px-8 sm:py-10">{children}</div>
       {backTo || onBack || action ? (
         <NeedFooter backTo={backTo} onBack={onBack} backLabel={backLabel}>

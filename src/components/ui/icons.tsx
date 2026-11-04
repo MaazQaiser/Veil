@@ -267,6 +267,23 @@ export function IconEdit(props: IconProps) {
   );
 }
 
+export function IconTrash(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h16M10 11v6M14 11v6" />
+      <path d="M6 7l1 12a1.5 1.5 0 001.5 1.4h7A1.5 1.5 0 0017 19l1-12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
+    </Icon>
+  );
+}
+
+export function IconRefresh(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 12a8 8 0 11-2.4-5.7M20 4v4.5h-4.5" />
+    </Icon>
+  );
+}
+
 export function IconBriefcase(props: IconProps) {
   return (
     <Icon {...props}>

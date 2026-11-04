@@ -23,6 +23,7 @@ import {
   getNotices,
   openProjectHandshake,
   pushCoalescedNotice,
+  removeProjectConnections,
   sendMessage,
   type ConnectionRecord,
 } from "./vaelStore";
@@ -506,12 +507,45 @@ export function closeCxProject(projectId: string) {
   const project = getCxProject(projectId);
   if (!project) throw new Error("Project not found.");
   const at = nowIso();
-  return saveProject({
+  const saved = saveProject({
     ...project,
     status: "closed",
     closedAt: at,
     history: [...project.history, { at, kind: "closed", note: "Closed early." }],
   });
+  tellInterestedContractors(
+    project,
+    "Opportunity closed",
+    `The ${project.category || "project"} opportunity is closed to new responses. Open Handshakes stay available.`,
+    "project_closed",
+    `/districts/contractor/opportunities/${project.id}`,
+  );
+  return saved;
+}
+
+/** Tells every contractor who showed interest that an opportunity is no longer open. */
+function tellInterestedContractors(project: CxProject, title: string, body: string, kind: string, href: string) {
+  for (const row of interestsForProject(project.id).filter((item) => item.contractorInterested)) {
+    pushCoalescedNotice({ handle: row.contractorHandle, title, body, href, kind, projectId: project.id });
+  }
+}
+
+/** Removes an opportunity for good, with the interest, questions and Handshakes that belong to it. */
+export function deleteCxProject(projectId: string) {
+  const project = getCxProject(projectId);
+  if (!project) throw new Error("Project not found.");
+  tellInterestedContractors(
+    project,
+    "Opportunity removed",
+    `The ${project.category || "project"} opportunity was removed by the homeowner.`,
+    "project_deleted",
+    "/opportunities",
+  );
+  removeProjectConnections(projectId);
+  write(KEYS.projects, getCxProjects().filter((item) => item.id !== projectId));
+  write(KEYS.interests, getInterests().filter((item) => item.projectId !== projectId));
+  write(KEYS.questions, getQuestions().filter((item) => item.projectId !== projectId));
+  if (getActivePointer().draftId === projectId) write(KEYS.active, { draftId: "", email: "" });
 }
 
 export function editLiveProject(

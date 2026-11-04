@@ -14,6 +14,7 @@ import { addManualDistricts } from "@/lib/myDistricts";
 import { DOC_TYPES } from "@/lib/vaelStore";
 import { useVael } from "@/lib/vaelCore";
 import { OPPORTUNITY_PATH } from "@/lib/cxRoutes";
+import { StepProgressBar } from "@/pages/need/OpportunityChrome";
 import { JoinFooterBar, JoinHead } from "./JoinLayout";
 
 export const JOIN_CONTRACTOR_PATH = "/join/contractor-exchange";
@@ -141,9 +142,7 @@ export function JoinContractorExchangePage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <p className="mb-6 text-center text-caption font-medium uppercase tracking-[0.14em] text-[#EE8A4A]">
-        Contractor Exchange · Step {step + 1} of {STEPS.length}
-      </p>
+      <StepProgressBar step={step + 1} total={STEPS.length} note={STEPS[step]} />
 
       {step === 0 ? (
         <>
@@ -169,27 +168,32 @@ export function JoinContractorExchangePage() {
       {step === 1 ? (
         <>
           <JoinHead title="Your profile" lede="This is how homeowners see you once you are in the district." center />
-          <div className="mt-8 space-y-5 rounded-lg border border-border bg-surface p-6 sm:p-7">
-            <Field label="Display name" htmlFor="cj-name" required>
-              <Input id="cj-name" value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
-            </Field>
-            <Field label="Headline" htmlFor="cj-headline" hint="One line, like “Kitchen and bath renovations”.">
-              <Input id="cj-headline" value={form.headline} onChange={(e) => set("headline", e.target.value)} />
-            </Field>
-            <Field label="Service area" htmlFor="cj-area" required hint="The city or area you work in.">
-              <Input id="cj-area" value={form.serviceArea} onChange={(e) => set("serviceArea", e.target.value)} />
-            </Field>
-            <Field label="About" htmlFor="cj-about">
-              <Textarea id="cj-about" value={form.about} onChange={(e) => set("about", e.target.value)} />
-            </Field>
-          </div>
-          <div className="mt-6 space-y-10 rounded-lg border border-border bg-surface p-6 sm:p-7">
+          <div className="mt-8 space-y-6">
+            <section className="space-y-5 rounded-lg border border-border bg-surface p-6 sm:p-7">
+              <header>
+                <h2 className="text-h4 font-medium text-foreground">About you</h2>
+                <p className="mt-1 text-body-sm text-muted">The name, line and area homeowners see first.</p>
+              </header>
+              <Field label="Display name" htmlFor="cj-name" required>
+                <Input id="cj-name" value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
+              </Field>
+              <Field label="Headline" htmlFor="cj-headline" hint="One line, like “Kitchen and bath renovations”.">
+                <Input id="cj-headline" value={form.headline} onChange={(e) => set("headline", e.target.value)} />
+              </Field>
+              <Field label="Service area" htmlFor="cj-area" required hint="The city or area you work in.">
+                <Input id="cj-area" value={form.serviceArea} onChange={(e) => set("serviceArea", e.target.value)} />
+              </Field>
+              <Field label="About" htmlFor="cj-about">
+                <Textarea id="cj-about" value={form.about} onChange={(e) => set("about", e.target.value)} />
+              </Field>
+            </section>
             <ContractorDetailFields
+              cards
               form={form}
               update={update}
               tradeRequired={KINDS.find((item) => item.id === kind)?.needsTrade ?? true}
             />
-            <PortfolioLinkFields form={form} update={update} />
+            <PortfolioLinkFields cards form={form} update={update} />
           </div>
         </>
       ) : null}
@@ -197,94 +201,108 @@ export function JoinContractorExchangePage() {
       {step === 2 ? (
         <>
           <JoinHead title="Your projects" lede="Tell us the work you take on, so the right opportunities come to you." center />
-          <h2 className="mt-8 text-h4 font-medium text-foreground">What type of work do you do?</h2>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {RX_PROJECT_CATEGORIES.map((category) => {
-              const selected = categories.includes(category);
-              return (
-                <li key={category}>
-                  <button
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => {
-                      setCategories((prev) => (prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]));
-                      setError("");
-                    }}
-                    className={cn(
-                      "w-full rounded-lg border bg-surface px-4 py-3 text-left text-body-sm font-medium motion-safe:transition-colors hover:border-[#EE8A4A]",
-                      selected ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08] text-foreground" : "border-border text-muted",
-                    )}
-                  >
-                    {category}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <h2 className="mt-8 text-h4 font-medium text-foreground">How do you work?</h2>
-          <ul className="mt-3 space-y-3">
-            {ROLES.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  aria-pressed={role === item.id}
-                  onClick={() => {
-                    setRole(item.id);
-                    setError("");
+          <div className="mt-8 space-y-6">
+            <section className="rounded-lg border border-border bg-surface p-6 sm:p-7">
+              <header className="mb-4">
+                <h2 className="text-h4 font-medium text-foreground">What type of work do you do?</h2>
+                <p className="mt-1 text-body-sm text-muted">Pick every kind of project you take on.</p>
+              </header>
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {RX_PROJECT_CATEGORIES.map((category) => {
+                  const selected = categories.includes(category);
+                  return (
+                    <li key={category}>
+                      <button
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => {
+                          setCategories((prev) => (prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]));
+                          setError("");
+                        }}
+                        className={cn(
+                          "w-full rounded-lg border bg-surface px-4 py-3 text-left text-body-sm font-medium motion-safe:transition-colors hover:border-[#EE8A4A]",
+                          selected ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08] text-foreground" : "border-border text-muted",
+                        )}
+                      >
+                        {category}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+            <section className="rounded-lg border border-border bg-surface p-6 sm:p-7">
+              <header className="mb-4">
+                <h2 className="text-h4 font-medium text-foreground">How do you work?</h2>
+                <p className="mt-1 text-body-sm text-muted">Whole projects, one specialty, or both.</p>
+              </header>
+              <ul className="space-y-3">
+                {ROLES.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      aria-pressed={role === item.id}
+                      onClick={() => {
+                        setRole(item.id);
+                        setError("");
+                      }}
+                      className={cn(OPTION, role === item.id ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08]" : "border-border")}
+                    >
+                      <p className="text-body-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="mt-0.5 text-caption text-muted">{item.body}</p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="rounded-lg border border-border bg-surface p-6 sm:p-7">
+              <header className="mb-4">
+                <h2 className="text-h4 font-medium text-foreground">Areas you work in</h2>
+                <p className="mt-1 text-body-sm text-muted">Pick up to {CX_MAX_AREAS} towns, or whole counties. You only see projects in these places.</p>
+              </header>
+              <div className="flex gap-2">
+                <Input
+                  aria-label="Add a town or a county"
+                  placeholder="Type a town or a county…"
+                  value={areaText}
+                  disabled={areas.length >= CX_MAX_AREAS}
+                  onChange={(e) => setAreaText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addArea();
+                    }
                   }}
-                  className={cn(OPTION, role === item.id ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08]" : "border-border")}
-                >
-                  <p className="text-body-sm font-semibold text-foreground">{item.title}</p>
-                  <p className="mt-0.5 text-caption text-muted">{item.body}</p>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <h2 className="mt-8 text-h4 font-medium text-foreground">Areas you work in</h2>
-          <p className="mt-1 text-caption text-muted">
-            Pick up to {CX_MAX_AREAS} towns, or whole counties. You only see projects in these places.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Input
-              aria-label="Add a town or a county"
-              placeholder="Type a town or a county…"
-              value={areaText}
-              disabled={areas.length >= CX_MAX_AREAS}
-              onChange={(e) => setAreaText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addArea();
-                }
-              }}
-            />
-            <Button type="button" variant="outline" disabled={!areaText.trim()} onClick={addArea}>
-              Add
-            </Button>
+                />
+                <Button type="button" variant="outline" disabled={!areaText.trim()} onClick={addArea}>
+                  Add
+                </Button>
+              </div>
+              {areas.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {areas.map((area) => (
+                    <span
+                      key={area}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-caption font-medium text-accent"
+                    >
+                      {area}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${area}`}
+                        className="text-accent/70 hover:text-accent"
+                        onClick={() => setAreas(areas.filter((item) => item !== area))}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <p className="mt-2 text-caption text-muted">
+                {areas.length} of {CX_MAX_AREAS} picked.
+              </p>
+            </section>
           </div>
-          {areas.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {areas.map((area) => (
-                <span
-                  key={area}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-caption font-medium text-accent"
-                >
-                  {area}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${area}`}
-                    className="text-accent/70 hover:text-accent"
-                    onClick={() => setAreas(areas.filter((item) => item !== area))}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <p className="mt-2 text-caption text-muted">
-            {areas.length} of {CX_MAX_AREAS} picked.
-          </p>
         </>
       ) : null}
 

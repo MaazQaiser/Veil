@@ -1213,6 +1213,14 @@ export function closeConnection(connectionId: string) {
   );
 }
 
+/** Removes the Handshakes, and the messages in them, that were opened from one opportunity. */
+export function removeProjectConnections(projectId: string) {
+  const gone = new Set(getConnections().filter((item) => item.projectId === projectId).map((item) => item.id));
+  if (gone.size === 0) return;
+  write(KEYS.connections, getConnections().filter((item) => !gone.has(item.id)));
+  write(KEYS.messages, getMessages().filter((item) => !gone.has(item.connectionId)));
+}
+
 export function blockConnection(connectionId: string) {
   write(
     KEYS.connections,

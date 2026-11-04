@@ -33,7 +33,7 @@ export function Dialog({
       ref={ref}
       aria-labelledby={titleId}
       className={cn(
-        "w-[min(30rem,calc(100%-2.5rem))] rounded-xl border border-border bg-surface p-0 text-foreground shadow-md",
+        "fixed left-1/2 top-1/2 m-0 max-h-[calc(100dvh-2.5rem)] -translate-x-1/2 -translate-y-1/2 w-[min(30rem,calc(100%-2.5rem))] rounded-xl border border-border bg-surface p-0 text-foreground shadow-md",
         "backdrop:bg-black/60 backdrop:backdrop-blur-sm",
         "dark:border-white/10 dark:bg-[#141414]/95 dark:backdrop-blur-2xl dark:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)]",
         className,

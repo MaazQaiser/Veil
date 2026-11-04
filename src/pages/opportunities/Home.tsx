@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react
 import { DashboardShell } from "@/components/mt/DashboardShell";
 import { OpportunityBoard, useLiveOpportunityCount } from "@/components/opportunities/OpportunityBoard";
 import { Button, buttonClassName } from "@/components/ui/button";
+import { IconClose } from "@/components/ui/icons";
 import { Dialog } from "@/components/ui/overlays";
 import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
@@ -30,7 +31,8 @@ export function OpportunityHomePage() {
     (row) => row.district.id === "construction",
   );
   const state = useLocation().state as { joinedContractor?: boolean; newAccount?: boolean } | null;
-  const joinedNow = Boolean(state?.joinedContractor);
+  const [noticeClosed, setNoticeClosed] = useState(false);
+  const joinedNow = Boolean(state?.joinedContractor) && !noticeClosed;
   const [promptOpen, setPromptOpen] = useState(Boolean(state?.newAccount));
   const tab: "browse" | "mine" = params.get("tab") === "mine" ? "mine" : "browse";
   const publishedId = params.get("published") ?? "";
@@ -137,9 +139,20 @@ export function OpportunityHomePage() {
         tabs={tabs}
         notice={
           joinedNow ? (
-            <p className="rounded-2xl border border-success/30 bg-success/10 px-5 py-4 text-body text-success">
-              Your profile is done. You can now browse the full opportunities, show interest and post your own.
-            </p>
+            <div
+              role="status"
+              className="flex items-center justify-between gap-4 rounded-2xl border border-success/30 bg-success/10 py-4 pl-5 pr-3 text-body text-success"
+            >
+              <p>Your profile is done. You can now browse the full opportunities, show interest and post your own.</p>
+              <button
+                type="button"
+                aria-label="Dismiss"
+                onClick={() => setNoticeClosed(true)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-success/80 motion-safe:transition-colors hover:bg-success/15 hover:text-success"
+              >
+                <IconClose className="h-4 w-4" />
+              </button>
+            </div>
           ) : null
         }
         showPost={tab === "mine"}
