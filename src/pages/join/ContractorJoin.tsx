@@ -3,16 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/controls";
+import { IconBriefcase, IconDocument, IconHandshake, IconMapPin, IconUser } from "@/components/ui/icons";
 import { DocumentCard } from "@/components/vael";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { useConstruction } from "@/lib/constructionCore";
 import { subscribeConstruction, type ConstructionProfile } from "@/lib/constructionStore";
-import { ContractorDetailFields, PortfolioLinkFields, tradesOf } from "@/components/construction/ContractorDetailFields";
+import { Block, ContractorDetailFields, PortfolioLinkFields, tradesOf } from "@/components/construction/ContractorDetailFields";
 import { CX_MAX_AREAS, RX_PROJECT_CATEGORIES, getVaelance, saveVaelance, type CxProjectRole } from "@/lib/cxProjectStore";
 import { addManualDistricts } from "@/lib/myDistricts";
 import { DOC_TYPES } from "@/lib/vaelStore";
 import { useVael } from "@/lib/vaelCore";
+import { districts } from "@/lib/districts";
 import { OPPORTUNITY_PATH } from "@/lib/cxRoutes";
 import { StepProgressBar } from "@/pages/need/OpportunityChrome";
 import { JoinFooterBar, JoinHead } from "./JoinLayout";
@@ -39,7 +41,7 @@ const DOC_LABEL: Record<(typeof DOC_TYPES)[number], string> = {
   capability: "Capability statement",
 };
 
-const STEPS = ["Profile type", "Your profile", "Your projects", "Documents"] as const;
+const STEPS = ["District", "Profile type", "Your profile", "Your work", "Documents"] as const;
 
 const OPTION =
   "flex h-full w-full flex-col items-start rounded-lg border bg-surface px-5 py-4 text-left motion-safe:transition-colors motion-safe:duration-150 hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.06]";
@@ -58,6 +60,7 @@ export function JoinContractorExchangePage() {
   const mtName = vael.profile(session.handle)?.displayName;
 
   const [step, setStep] = useState(0);
+  const [districtId, setDistrictId] = useState("");
   const [kind, setKind] = useState("");
   const [form, setForm] = useState<ConstructionProfile | null>(
     start ? { ...start, displayName: start.displayName === start.handle && mtName ? mtName : start.displayName } : null,
@@ -109,15 +112,16 @@ export function JoinContractorExchangePage() {
 
   function next() {
     if (!form) return;
-    if (step === 0 && !kind) return;
-    if (step === 1) {
+    if (step === 0 && !districtId) return;
+    if (step === 1 && !kind) return;
+    if (step === 2) {
       if (!form.displayName.trim()) return setError("Enter the name you work under.");
       if (tradesOf(form).length === 0 && KINDS.find((item) => item.id === kind)?.needsTrade) {
         return setError("Choose at least one trade.");
       }
       if (!form.serviceArea.trim()) return setError("Add the city or area you work in.");
     }
-    if (step === 2) {
+    if (step === 3) {
       if (categories.length === 0) return setError("Choose at least one type of work.");
       if (!role) return setError("Choose how you work.");
     }
@@ -142,12 +146,41 @@ export function JoinContractorExchangePage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <StepProgressBar step={step + 1} total={STEPS.length} note={STEPS[step]} />
+      <StepProgressBar step={step + 1} total={STEPS.length} labels={STEPS} />
 
       {step === 0 ? (
         <>
-          <JoinHead title="Select your profile type" lede="Tell Contractor Exchange who you are. You can change this anytime." center />
+          <JoinHead title="Select your district" lede="Opportunities are posted into a district. Pick the one you work in." center />
           <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+            {districts.map((item) => {
+              const open = item.id === "construction";
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    aria-pressed={districtId === item.id}
+                    disabled={!open}
+                    onClick={() => setDistrictId(item.id)}
+                    className={cn(
+                      OPTION,
+                      districtId === item.id ? "border-[#EE8A4A] bg-[#EE8A4A]/[0.08]" : "border-border",
+                      !open && "cursor-not-allowed opacity-55 hover:border-border hover:bg-surface",
+                    )}
+                  >
+                    <p className="text-body-sm font-semibold text-foreground">{item.name}</p>
+                    <p className="mt-0.5 text-caption text-muted">{open ? item.blurb : "Opportunities open here soon."}</p>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : null}
+
+      {step === 1 ? (
+        <>
+          <JoinHead title="Select your profile type" lede="Tell Contractor Exchange who you are. You can change this anytime." center />
+          <ul className="mt-8 space-y-3">
             {KINDS.map((item) => (
               <li key={item.id}>
                 <button
@@ -165,15 +198,11 @@ export function JoinContractorExchangePage() {
         </>
       ) : null}
 
-      {step === 1 ? (
+      {step === 2 ? (
         <>
           <JoinHead title="Your profile" lede="This is how homeowners see you once you are in the district." center />
           <div className="mt-8 space-y-6">
-            <section className="space-y-5 rounded-lg border border-border bg-surface p-6 sm:p-7">
-              <header>
-                <h2 className="text-h4 font-medium text-foreground">About you</h2>
-                <p className="mt-1 text-body-sm text-muted">The name, line and area homeowners see first.</p>
-              </header>
+            <Block title="About you" note="The name, line and area homeowners see first." cards icon={IconUser}>
               <Field label="Display name" htmlFor="cj-name" required>
                 <Input id="cj-name" value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
               </Field>
@@ -186,7 +215,7 @@ export function JoinContractorExchangePage() {
               <Field label="About" htmlFor="cj-about">
                 <Textarea id="cj-about" value={form.about} onChange={(e) => set("about", e.target.value)} />
               </Field>
-            </section>
+            </Block>
             <ContractorDetailFields
               cards
               form={form}
@@ -198,15 +227,11 @@ export function JoinContractorExchangePage() {
         </>
       ) : null}
 
-      {step === 2 ? (
+      {step === 3 ? (
         <>
-          <JoinHead title="Your projects" lede="Tell us the work you take on, so the right opportunities come to you." center />
+          <JoinHead title="Your work" lede="Tell us the work you take on, so the right opportunities come to you." center />
           <div className="mt-8 space-y-6">
-            <section className="rounded-lg border border-border bg-surface p-6 sm:p-7">
-              <header className="mb-4">
-                <h2 className="text-h4 font-medium text-foreground">What type of work do you do?</h2>
-                <p className="mt-1 text-body-sm text-muted">Pick every kind of project you take on.</p>
-              </header>
+            <Block title="What type of work do you do?" note="Pick every kind of project you take on." cards icon={IconBriefcase}>
               <ul className="grid gap-2 sm:grid-cols-2">
                 {RX_PROJECT_CATEGORIES.map((category) => {
                   const selected = categories.includes(category);
@@ -230,12 +255,8 @@ export function JoinContractorExchangePage() {
                   );
                 })}
               </ul>
-            </section>
-            <section className="rounded-lg border border-border bg-surface p-6 sm:p-7">
-              <header className="mb-4">
-                <h2 className="text-h4 font-medium text-foreground">How do you work?</h2>
-                <p className="mt-1 text-body-sm text-muted">Whole projects, one specialty, or both.</p>
-              </header>
+            </Block>
+            <Block title="How do you work?" note="Whole projects, one specialty, or both." cards icon={IconHandshake}>
               <ul className="space-y-3">
                 {ROLES.map((item) => (
                   <li key={item.id}>
@@ -254,12 +275,13 @@ export function JoinContractorExchangePage() {
                   </li>
                 ))}
               </ul>
-            </section>
-            <section className="rounded-lg border border-border bg-surface p-6 sm:p-7">
-              <header className="mb-4">
-                <h2 className="text-h4 font-medium text-foreground">Areas you work in</h2>
-                <p className="mt-1 text-body-sm text-muted">Pick up to {CX_MAX_AREAS} towns, or whole counties. You only see projects in these places.</p>
-              </header>
+            </Block>
+            <Block
+              title="Areas you work in"
+              note={`Pick up to ${CX_MAX_AREAS} towns, or whole counties. You only see opportunities in these places.`}
+              cards
+              icon={IconMapPin}
+            >
               <div className="flex gap-2">
                 <Input
                   aria-label="Add a town or a county"
@@ -301,15 +323,16 @@ export function JoinContractorExchangePage() {
               <p className="mt-2 text-caption text-muted">
                 {areas.length} of {CX_MAX_AREAS} picked.
               </p>
-            </section>
+            </Block>
           </div>
         </>
       ) : null}
 
-      {step === 3 ? (
+      {step === 4 ? (
         <>
           <JoinHead title="Documents" lede="Add a license, insurance or a capability statement. You can skip this and add them later." center />
-          <div className="mt-8 space-y-4 rounded-lg border border-border bg-surface p-6 sm:p-7">
+          <div className="mt-8">
+            <Block title="Your documents" note="Licenses, insurance and capability statements. Only shared after a Handshake." cards icon={IconDocument}>
             {docs.length > 0 ? (
               <ul className="space-y-3">
                 {docs.map((doc) => (
@@ -351,6 +374,7 @@ export function JoinContractorExchangePage() {
                 }}
               />
             </Field>
+            </Block>
           </div>
         </>
       ) : null}
@@ -370,8 +394,8 @@ export function JoinContractorExchangePage() {
             Join Contractor Exchange
           </Button>
         ) : (
-          <Button type="button" size="lg" className="rounded-lg px-10" disabled={step === 0 && !kind} onClick={next}>
-            {step === 0 ? "Continue to profile" : "Continue"}
+          <Button type="button" size="lg" className="rounded-lg px-10" disabled={(step === 0 && !districtId) || (step === 1 && !kind)} onClick={next}>
+            {step === 1 ? "Continue to profile" : "Continue"}
           </Button>
         )}
       </JoinFooterBar>

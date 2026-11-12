@@ -1,7 +1,8 @@
 import { useState, type ChangeEvent, type ReactNode } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { IconBookmark, IconCalendar, IconChevronLeft, IconClock, IconClose, IconEdit, IconLock, IconMapPin, IconRefresh, IconTrash, IconWallet } from "@/components/ui/icons";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { IconBookmark, IconCalendar, IconChevronLeft, IconClose, IconEdit, IconInfo, IconLock, IconMapPin, IconRefresh, IconTrash, IconUsers, IconWallet } from "@/components/ui/icons";
 import { Dialog } from "@/components/ui/overlays";
+import { ActionIcon } from "@/components/ui/action-icon";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonClassName } from "@/components/ui/button";
@@ -50,9 +51,11 @@ export function ProjectDetailPage() {
   const { session } = useCitySession();
   const project = getCxProject(projectId);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [editing, setEditing] = useState(searchParams.get("edit") === "1");
   const [closePrompt, setClosePrompt] = useState(false);
   const [deletePrompt, setDeletePrompt] = useState(false);
+  const [interestTab, setInterestTab] = useState<"all" | "saved" | "questions">("all");
   const navigate = useNavigate();
 
   if (!project) {
@@ -100,6 +103,20 @@ export function ProjectDetailPage() {
   const location = [project.city, project.postalCode].filter(Boolean).join(" · ");
   const posted = formatDate(project.publishedAt || project.createdAt);
 
+  const endsLine = closed
+    ? `Posted ${posted} · ${project.closedAt ? `Closed ${formatDate(project.closedAt)}` : "Closed"}`
+    : `Posted ${posted} · Live until ${project.liveUntil ? formatDate(project.liveUntil) : "soon"}`;
+  const savedRespondents = orderedRespondents.filter((person) => person.interest.savedByHomeowner);
+  const interestedTitle =
+    respondents.length === 0
+      ? "No contractor has responded yet."
+      : `${respondents.length} ${respondents.length === 1 ? "contractor has" : "contractors have"} responded.`;
+  const interestTabs = [
+    { id: "all" as const, label: "All", count: respondents.length },
+    { id: "saved" as const, label: "Saved", count: saved.length },
+    { id: "questions" as const, label: "Questions", count: questions.length },
+  ];
+
   return (
     <div className="flex flex-1 flex-col">
       <Link
@@ -107,222 +124,337 @@ export function ProjectDetailPage() {
         className="mb-5 inline-flex w-fit items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
       >
         <IconChevronLeft className="h-3.5 w-3.5" />
-        Back to Your opportunities
+        Your opportunities
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <div className="min-w-0 space-y-6">
-          {editing && project.status === "live" ? (
-            <EditProjectForm project={project} onDone={() => setEditing(false)} />
+      <dl className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          ["Interested contractors", respondents.length],
+          ["Saved", saved.length],
+          ["Handshakes", handshakes.length],
+          ["Questions", questions.length],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-accent/40 bg-surface px-5 py-4">
+            <dt className="text-body-sm text-muted">{label}</dt>
+            <dd className="mt-1.5 text-[1.75rem] font-medium leading-none tabular-nums text-foreground">{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <Dialog
+        open={editing && project.status === "live"}
+        onClose={() => setEditing(false)}
+        title="Edit opportunity"
+        className="w-[min(44rem,calc(100%-2.5rem))]"
+      >
+        <EditProjectForm project={project} onDone={() => setEditing(false)} />
+      </Dialog>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_27rem] lg:items-start">
+        <div className="relative min-w-0 overflow-hidden rounded-2xl border border-border bg-surface p-5 sm:p-8">
+          {closed ? (
+            <p className="mb-6 rounded-xl border border-border bg-surface-muted/40 p-4 text-body-sm text-muted">
+              This opportunity is closed. Contractors can no longer respond, but open Handshakes stay available.
+            </p>
           ) : null}
 
-          <article className="rounded-2xl border border-border bg-surface p-5 sm:p-8">
-            <header className="flex items-start justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-4">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-accent/30 bg-accent/10 text-accent [&_svg]:h-6 [&_svg]:w-6">
-                  <CategoryMark category={project.category} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-body-sm text-muted">
-                    Your opportunity{project.firstName ? ` · ${project.firstName}` : ""}
-                  </p>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium leading-tight tracking-tight text-foreground">
-                      {project.category || "Opportunity"}
-                    </h1>
-                    <Badge tone={closed ? "default" : "live"}>{closed ? "Closed" : "Live"}</Badge>
-                    {project.status === "live" ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-caption font-medium text-foreground">
-                        <IconClock className="h-3.5 w-3.5 text-muted" />
-                        {liveDaysLeft} {liveDaysLeft === 1 ? "day" : "days"} left
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
+          {closePrompt && project.status === "live" ? (
+            <div className="mb-6 rounded-xl border border-border bg-surface-muted/40 p-4">
+              <p className="text-body font-medium text-foreground">Close this opportunity?</p>
+              <p className="mt-1 text-body-sm text-muted">Contractors will no longer be able to respond.</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setClosePrompt(false)}>
+                  Keep open
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => {
+                    closeCxProject(project.id);
+                    setClosePrompt(false);
+                    setEditing(false);
+                  }}
+                >
+                  Close opportunity
+                </Button>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                {project.status === "live" ? (
-                  <>
-                    <ActionIcon label={editing ? "Stop editing" : "Edit"} active={editing} onClick={() => setEditing((value) => !value)}>
-                      <IconEdit className="h-[18px] w-[18px]" />
-                    </ActionIcon>
-                    <ActionIcon
-                      label={fullTime ? "Already at the full 7 days" : "Renew for 7 days"}
-                      disabled={fullTime}
-                      onClick={() => extendCxProject(project.id)}
-                    >
-                      <IconRefresh className="h-[18px] w-[18px]" />
-                    </ActionIcon>
-                    <ActionIcon label="Close" onClick={() => setClosePrompt(true)}>
-                      <IconClose className="h-[18px] w-[18px]" />
-                    </ActionIcon>
-                  </>
-                ) : (
-                  <ActionIcon label="Reopen" onClick={() => extendCxProject(project.id)}>
-                    <IconRefresh className="h-[18px] w-[18px]" />
-                  </ActionIcon>
-                )}
-                <ActionIcon label="Delete" danger onClick={() => setDeletePrompt(true)}>
-                  <IconTrash className="h-[18px] w-[18px]" />
+            </div>
+          ) : null}
+
+          {project.status === "live" && project.day5Reminded ? (
+            <div className="mb-6 rounded-xl border border-accent/30 bg-accent/10 p-4">
+              <p className="text-body-sm font-medium text-foreground">This opportunity closes in 2 days.</p>
+              <Button type="button" size="sm" className="mt-3 rounded-full" onClick={() => extendCxProject(project.id)}>
+                Renew for 7 days
+              </Button>
+            </div>
+          ) : null}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-accent/15 blur-[80px]"
+        />
+        <header className="relative flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent shadow-[0_8px_24px_-10px_rgba(238,138,74,0.5)] [&_svg]:h-6 [&_svg]:w-6">
+              <CategoryMark category={project.category} />
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <h1 className="font-sans text-[clamp(1.5rem,2.6vw,2.25rem)] font-medium leading-tight tracking-tight text-foreground">
+                  {project.category || "Opportunity"}
+                </h1>
+                <Badge tone={closed ? "default" : "live"}>{closed ? "Closed" : "Live"}</Badge>
+              </div>
+              <p className="mt-1 text-body-sm text-muted">{endsLine}</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {project.status === "live" ? (
+              <>
+                <ActionIcon label={editing ? "Stop editing" : "Edit"} active={editing} onClick={() => setEditing((value) => !value)}>
+                  <IconEdit className="h-[18px] w-[18px]" />
                 </ActionIcon>
+                <ActionIcon
+                  label={fullTime ? "Already at the full 7 days" : "Renew for 7 days"}
+                  disabled={fullTime}
+                  onClick={() => extendCxProject(project.id)}
+                >
+                  <IconRefresh className="h-[18px] w-[18px]" />
+                </ActionIcon>
+                <ActionIcon label="Close" onClick={() => setClosePrompt(true)}>
+                  <IconClose className="h-[18px] w-[18px]" />
+                </ActionIcon>
+              </>
+            ) : (
+              <ActionIcon label="Reopen" onClick={() => extendCxProject(project.id)}>
+                <IconRefresh className="h-[18px] w-[18px]" />
+              </ActionIcon>
+            )}
+            <ActionIcon label="Delete" danger onClick={() => setDeletePrompt(true)}>
+              <IconTrash className="h-[18px] w-[18px]" />
+            </ActionIcon>
+          </div>
+        </header>
+
+        {closed && original.trim() !== project.description.trim() ? (
+          <div className="relative mt-6 space-y-4">
+            <div>
+              <p className="text-caption font-medium uppercase tracking-[0.1em] text-muted">Original description</p>
+              <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{original}</p>
+            </div>
+            <div>
+              <p className="text-caption font-medium uppercase tracking-[0.1em] text-muted">Current scope</p>
+              <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{project.description}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="relative mt-6 max-w-3xl whitespace-pre-wrap text-body-lg leading-relaxed text-foreground/90">
+            {project.description || "No description."}
+          </p>
+        )}
+
+        <ul className="relative mt-5 flex flex-wrap gap-2">
+          {[
+            location ? { icon: IconMapPin, text: location } : null,
+            project.timing ? { icon: IconCalendar, text: project.timing } : null,
+            project.budgetBand ? { icon: IconWallet, text: project.budgetBand } : null,
+          ]
+            .filter((chip): chip is { icon: typeof IconMapPin; text: string } => Boolean(chip))
+            .map(({ icon: Icon, text }) => (
+              <li
+                key={text}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-muted/50 px-3.5 py-1.5 text-body-sm text-foreground"
+              >
+                <Icon className="h-4 w-4 text-accent" />
+                {text}
+              </li>
+            ))}
+        </ul>
+
+        {project.photos.length > 0 ? (
+          <div className="relative mt-6 grid gap-2 overflow-hidden rounded-2xl sm:grid-cols-3">
+            <img src={project.photos[0]} alt="" className="h-56 w-full object-cover sm:col-span-2 sm:h-64" />
+            {project.photos.length > 1 ? (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:grid-rows-2">
+                {project.photos.slice(1, 3).map((src, index) => (
+                  <img key={index} src={src} alt="" className="h-28 w-full object-cover sm:h-full" />
+                ))}
               </div>
-            </header>
-
-            <ul className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-body-sm text-muted">
-              {project.timing ? (
-                <li className="inline-flex items-center gap-1.5">
-                  <IconCalendar className="h-4 w-4" />
-                  {project.timing}
-                </li>
-              ) : null}
-              {location ? (
-                <li className="inline-flex items-center gap-1.5">
-                  <IconMapPin className="h-4 w-4" />
-                  {location}
-                </li>
-              ) : null}
-              {project.budgetBand ? (
-                <li className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                  <IconWallet className="h-4 w-4 text-muted" />
-                  {project.budgetBand}
-                </li>
-              ) : null}
-            </ul>
-
-            <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-accent/50 bg-accent/30 lg:grid-cols-4">
+            ) : null}
+          </div>
+        ) : null}
+        {project.photos.length > 3 ? (
+          <ul className="relative mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {project.photos.slice(3).map((src, index) => (
+              <li key={index}>
+                <img src={src} alt="" className="h-20 w-full rounded-lg object-cover" />
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {project.video ? <video src={project.video} controls className="relative mt-4 max-h-64 w-full rounded-xl bg-black" /> : null}
+        {project.firstName || project.streetAddress || project.saveEmail || project.savePhone ? (
+          <div className="relative mt-8 border-t border-border-subtle pt-6">
+            <h2 className="flex items-center gap-2 text-body font-semibold text-foreground">
+              <IconLock className="h-4 w-4 text-accent" />
+              Private details
+            </h2>
+            <p className="mt-1 text-body-sm text-muted">Only you can see these. A contractor sees them after a Handshake opens.</p>
+            <dl className="mt-3 grid gap-x-10 sm:grid-cols-2">
               {[
-                ["Interested contractors", respondents.length],
-                ["Saved", saved.length],
-                ["Handshakes", handshakes.length],
-                ["Questions", questions.length],
-              ].map(([label, value]) => (
-                <div key={label} className="bg-surface px-5 py-4">
-                  <dt className="text-body-sm text-muted">{label}</dt>
-                  <dd className="mt-1.5 text-[1.5rem] font-medium leading-none tabular-nums text-foreground">{value}</dd>
-                </div>
-              ))}
-            </dl>
-
-            <section className="mt-8">
-              <h2 className="text-h4 font-medium text-foreground">About this project</h2>
-              {closed && original.trim() !== project.description.trim() ? (
-                <div className="mt-3 space-y-4">
-                  <div>
-                    <p className="text-caption font-medium uppercase tracking-[0.1em] text-muted">Original description</p>
-                    <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{original}</p>
-                  </div>
-                  <div>
-                    <p className="text-caption font-medium uppercase tracking-[0.1em] text-muted">Current scope</p>
-                    <p className="mt-1 whitespace-pre-wrap text-body text-foreground">{project.description}</p>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-3 whitespace-pre-wrap text-body-lg leading-relaxed text-muted">
-                  {project.description || "No description."}
-                </p>
-              )}
-              {project.photos.length > 0 ? (
-                <div className="mt-5 grid gap-2 overflow-hidden rounded-2xl sm:grid-cols-3">
-                  <img src={project.photos[0]} alt="" className="h-64 w-full object-cover sm:col-span-2 sm:h-72" />
-                  {project.photos.length > 1 ? (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:grid-rows-2">
-                      {project.photos.slice(1, 3).map((src, index) => (
-                        <img key={index} src={src} alt="" className="h-32 w-full object-cover sm:h-full" />
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {project.photos.length > 3 ? (
-                <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {project.photos.slice(3).map((src, index) => (
-                    <li key={index}>
-                      <img src={src} alt="" className="h-24 w-full rounded-lg object-cover" />
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {project.video ? <video src={project.video} controls className="mt-5 max-h-64 w-full rounded-lg" /> : null}
-            </section>
-
-            <section className="mt-8 border-t border-border-subtle pt-8">
-              <h2 className="text-h4 font-medium text-foreground">Project details</h2>
-              <p className="mt-1 text-body-sm text-muted">What contractors see on the opportunity.</p>
-              <dl className="mt-4 grid gap-x-8 sm:grid-cols-2">
-                {[
-                  ["Category", project.category || "Not listed"],
-                  ["Location", location || "Not listed"],
-                  ["Start timing", project.timing || "Not listed"],
-                  ["Budget", project.budgetBand || "Not listed"],
-                  ["Date posted", posted],
-                  closed
-                    ? ["Closed", project.closedAt ? formatDate(project.closedAt) : "Closed"]
-                    : ["Closes", project.liveUntil ? formatDate(project.liveUntil) : "Not set"],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-baseline justify-between gap-4 border-b border-border-subtle py-3 last:border-b-0 sm:[&:nth-last-child(2)]:border-b-0">
+                ["First name", project.firstName],
+                ["Street address", project.streetAddress],
+                ["Email", project.saveEmail],
+                ["Phone", project.savePhone],
+              ]
+                .filter(([, value]) => Boolean(value))
+                .map(([label, value]) => (
+                  <div key={label} className="flex items-baseline justify-between gap-4 border-b border-border-subtle py-3 sm:[&:nth-last-child(-n+2)]:border-b-0">
                     <dt className="text-body-sm text-muted">{label}</dt>
                     <dd className="min-w-0 break-words text-right text-body-sm font-medium text-foreground">{value}</dd>
                   </div>
                 ))}
-              </dl>
-            </section>
+            </dl>
+          </div>
+        ) : null}
+        </div>
 
-            {project.firstName || project.streetAddress || project.saveEmail || project.savePhone ? (
-              <section className="mt-8 rounded-xl border border-dashed border-border p-5">
-                <h2 className="flex items-center gap-2 text-body font-medium text-foreground">
-                  <IconLock className="h-4 w-4 text-accent" />
-                  Private to you
-                </h2>
-                <p className="mt-1 text-body-sm text-muted">Shared with a contractor only after a Handshake opens.</p>
-                <dl className="mt-3 grid gap-x-8 sm:grid-cols-2">
-                  {[
-                    ["Shown as", project.firstName],
-                    ["Street address", project.streetAddress],
-                    ["Email", project.saveEmail],
-                    ["Phone", project.savePhone],
-                  ]
-                    .filter(([, value]) => Boolean(value))
-                    .map(([label, value]) => (
-                      <div key={label} className="flex items-baseline justify-between gap-4 border-b border-border-subtle py-3 last:border-b-0">
-                        <dt className="text-body-sm text-muted">{label}</dt>
-                        <dd className="min-w-0 break-words text-right text-body-sm font-medium text-foreground">{value}</dd>
-                      </div>
+        <div className="min-w-0 rounded-2xl border border-border bg-surface p-5 sm:p-6">
+          {openHandshake ? (
+            <div className="mb-5 rounded-xl border border-accent/30 bg-accent/10 p-4">
+              <p className="text-body-sm font-medium text-foreground">A Handshake is open on this opportunity.</p>
+              <Link to={projectHandshakeHref(project.id, openHandshake.id)} className={buttonClassName({ className: "mt-3 w-full" })}>
+                Open Handshake
+              </Link>
+            </div>
+          ) : null}
+            <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+              <div>
+                <h2 className="text-h3 font-medium text-foreground">Responses</h2>
+                <p className="mt-1 text-body-sm text-muted">{interestedTitle}</p>
+              </div>
+              {closed ? null : (
+                <div className="w-full sm:w-60">
+                  <div className="flex items-center justify-between gap-3 text-caption text-muted">
+                    <span>Handshakes open</span>
+                    <span className="tabular-nums">
+                      <span className="font-semibold text-foreground">{handshakesOpen}</span> of {CX_MAX_OPEN_HANDSHAKES}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex gap-1.5" role="img" aria-label={`${handshakesOpen} of ${CX_MAX_OPEN_HANDSHAKES} Handshakes open`}>
+                    {Array.from({ length: CX_MAX_OPEN_HANDSHAKES }, (_, index) => (
+                      <span key={index} className={cn("h-1.5 flex-1 rounded-full", index < handshakesOpen ? "bg-accent" : "bg-foreground/15")} />
                     ))}
-                </dl>
-              </section>
-            ) : null}
+                  </div>
+                  {!canShake ? (
+                    <p className="mt-1.5 text-caption text-destructive">
+                      You have {CX_MAX_OPEN_HANDSHAKES} Handshakes open. Close one to start another.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+            </div>
 
-            <section className="mt-8 border-t border-border-subtle pt-8">
-              <h2 className="text-h4 font-medium text-foreground">Questions on this project</h2>
-              <p className="mt-1 text-body-sm text-muted">Answers belong to the project, not a private conversation.</p>
-              <div className="mt-4">
-            {questions.length === 0 ? (
-                <p className="text-body-sm text-muted">No questions yet.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {questions.map((item) => (
-                    <li key={item.id} className="rounded-xl border border-border-subtle p-4">
-                      <p className="text-body font-medium text-foreground">{item.body}</p>
-                      <p className="mt-1 text-caption text-muted">From {displayNameFor(item.fromHandle)}</p>
-                      {closed ? (
-                        <p className="mt-2 text-body-sm text-foreground">{item.answer ? `Answer: ${item.answer}` : "No answer recorded."}</p>
-                      ) : item.scopeChangeRequested && !item.scopeChangeConfirmed ? (
-                        <ScopeConfirm projectDescription={project.description} question={item} homeowner={session.handle} />
-                      ) : item.answer ? (
-                        <p className="mt-2 text-body-sm text-foreground">Answer: {item.answer}</p>
-                      ) : (
-                        <AnswerForm questionId={item.id} />
+            <div className="mt-4 flex flex-col gap-3">
+            <div role="tablist" aria-label="Responses" className="flex w-full gap-1 rounded-xl border border-border bg-surface-muted/40 p-1">
+              {interestTabs.map((item) => {
+                const on = interestTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setInterestTab(item.id)}
+                    className={cn(
+                      "inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 text-body-sm font-medium motion-safe:transition-colors",
+                      on ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground",
+                    )}
+                  >
+                    {item.label}
+                    <span
+                      className={cn(
+                        "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-caption font-semibold tabular-nums",
+                        on ? "bg-accent/20 text-accent" : "bg-surface-muted text-muted",
                       )}
-                    </li>
+                    >
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {!closed && orderedRespondents.length >= 2 ? (
+              <Link
+                to={vaelanceCompareHref(orderedRespondents[0].handle, orderedRespondents[1].handle)}
+                className="text-body-sm font-medium text-accent underline-offset-4 hover:underline"
+              >
+                Compare the top two
+              </Link>
+            ) : null}
+            </div>
+
+            {error ? <p className="mt-3 text-label text-destructive">{error}</p> : null}
+
+            <div className="mt-4 flex flex-1 flex-col">
+              {interestTab === "questions" ? (
+                questions.length === 0 ? (
+                  <EmptyPanel icon={IconInfo} title="No questions yet" body="Questions from contractors will appear here." />
+                ) : (
+                  <ul className="space-y-3">
+                    {questions.map((item) => (
+                      <li key={item.id} className="rounded-2xl border border-border bg-surface p-5">
+                        <p className="text-body font-medium text-foreground">{item.body}</p>
+                        <p className="mt-1 text-caption text-muted">From {displayNameFor(item.fromHandle)}</p>
+                        {closed ? (
+                          <p className="mt-2 text-body-sm text-foreground">{item.answer ? `Answer: ${item.answer}` : "No answer recorded."}</p>
+                        ) : item.scopeChangeRequested && !item.scopeChangeConfirmed ? (
+                          <ScopeConfirm projectDescription={project.description} question={item} homeowner={session.handle} />
+                        ) : item.answer ? (
+                          <p className="mt-2 text-body-sm text-foreground">Answer: {item.answer}</p>
+                        ) : (
+                          <AnswerForm questionId={item.id} />
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )
+              ) : (interestTab === "saved" ? savedRespondents : orderedRespondents).length === 0 ? (
+                interestTab === "saved" ? (
+                  <EmptyPanel icon={IconBookmark} title="No saved contractors" body="Bookmark a contractor to keep them here." />
+                ) : (
+                  <EmptyPanel
+                    icon={IconUsers}
+                    title="No responses yet"
+                    body={
+                      closed
+                        ? "This opportunity was closed before anyone responded."
+                        : "Contractors who do this kind of work in your area can see your opportunity. You'll be told when one responds."
+                    }
+                  />
+                )
+              ) : (
+                <ul className="grid gap-4">
+                  {(interestTab === "saved" ? savedRespondents : orderedRespondents).map((person) => (
+                    <RespondentCard
+                      key={person.handle}
+                      person={person}
+                      projectId={project.id}
+                      homeowner={session.handle}
+                      readOnly={closed}
+                      canShake={canShake}
+                      onError={setError}
+                    />
                   ))}
                 </ul>
               )}
-              </div>
-            </section>
-          </article>
+            </div>
+        </div>
+      </div>
 
-          {closed ? (
-            <>
+      {closed ? (
+        <div className="mt-6 space-y-6">
               <Panel title="Saved contractors">
                 {saved.length === 0 ? (
                   <p className="text-body-sm text-muted">None saved.</p>
@@ -355,7 +487,7 @@ export function ProjectDetailPage() {
                   </ul>
                 )}
               </Panel>
-              <Panel title="Project history">
+              <Panel title="History">
                 <ul className="space-y-2 text-body-sm text-muted">
                   {project.history.map((item) => (
                     <li key={`${item.at}-${item.kind}`} className="whitespace-pre-wrap">
@@ -364,129 +496,9 @@ export function ProjectDetailPage() {
                   ))}
                 </ul>
               </Panel>
-            </>
-          ) : null}
         </div>
+      ) : null}
 
-        <aside className="space-y-4">
-          <section className="overflow-hidden rounded-2xl border border-accent/40 bg-gradient-to-br from-accent/15 via-accent/[0.06] to-transparent p-5 sm:p-6">
-            <p className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">
-              {closed ? "Contractor responses" : "Respond"}
-            </p>
-            <h2 className="mt-2 text-h4 font-medium text-foreground">
-              {respondents.length > 0
-                ? `${respondents.length} ${respondents.length === 1 ? "contractor is" : "contractors are"} interested`
-                : closed
-                  ? "No responses"
-                  : "Waiting for contractors"}
-            </h2>
-            <p className="mt-1.5 text-body-sm text-muted">
-              {closed
-                ? "New responses are stopped while this is closed. Handshakes stay available."
-                : respondents.length > 0
-                  ? "Say you are interested to open a Handshake with a contractor."
-                  : "Matching contractors show up here. When you are both interested, the Handshake opens."}
-            </p>
-
-            {closed ? null : (
-              <div className="mt-4">
-                <div className="flex items-center justify-between gap-3 text-caption text-muted">
-                  <span>Handshakes open</span>
-                  <span className="tabular-nums text-foreground">
-                    {handshakesOpen} of {CX_MAX_OPEN_HANDSHAKES}
-                  </span>
-                </div>
-                <div className="mt-1.5 flex gap-1.5" role="img" aria-label={`${handshakesOpen} of ${CX_MAX_OPEN_HANDSHAKES} Handshakes open`}>
-                  {Array.from({ length: CX_MAX_OPEN_HANDSHAKES }, (_, index) => (
-                    <span key={index} className={cn("h-1 flex-1 rounded-full", index < handshakesOpen ? "bg-accent" : "bg-foreground/15")} />
-                  ))}
-                </div>
-                {!canShake ? (
-                  <p className="mt-2 text-caption text-destructive">
-                    You have {CX_MAX_OPEN_HANDSHAKES} Handshakes open. Close one to start another.
-                  </p>
-                ) : null}
-              </div>
-            )}
-
-            {!closed && orderedRespondents.length >= 2 ? (
-              <Link
-                to={vaelanceCompareHref(orderedRespondents[0].handle, orderedRespondents[1].handle)}
-                className={buttonClassName({ variant: "outline", className: "mt-5 w-full justify-center rounded-full bg-surface" })}
-              >
-                Compare the top two
-              </Link>
-            ) : null}
-          </section>
-
-          {error ? <p className="text-label text-destructive">{error}</p> : null}
-
-          {orderedRespondents.length > 0 ? (
-            <>
-              <h2 id="respond" className="scroll-mt-28 pt-2 text-h4 font-medium text-foreground">
-                {closed ? "Contractor responses" : "Contractors who responded"}
-              </h2>
-              <ul className="space-y-3">
-                {orderedRespondents.map((person) => (
-                  <RespondentCard
-                    key={person.handle}
-                    person={person}
-                    projectId={project.id}
-                    homeowner={session.handle}
-                    readOnly={closed}
-                    canShake={canShake}
-                    onError={setError}
-                  />
-                ))}
-              </ul>
-            </>
-          ) : (
-            <span id="respond" className="block scroll-mt-28" />
-          )}
-
-          {closePrompt && project.status === "live" ? (
-            <div className="rounded-2xl border border-border bg-surface p-5">
-              <p className="text-body font-medium text-foreground">Close this project?</p>
-              <p className="mt-1 text-body-sm text-muted">This will stop new contractors from responding to the project.</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setClosePrompt(false)}>
-                  Keep open
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => {
-                    closeCxProject(project.id);
-                    setClosePrompt(false);
-                    setEditing(false);
-                  }}
-                >
-                  Close project
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {project.status === "live" && project.day5Reminded ? (
-            <div className="rounded-2xl border border-accent/30 bg-accent/10 p-5">
-              <p className="text-body-sm font-medium text-foreground">This project will close in 2 days.</p>
-              <Button type="button" size="sm" className="mt-3 rounded-full" onClick={() => extendCxProject(project.id)}>
-                Renew for 7 days
-              </Button>
-            </div>
-          ) : null}
-
-          {openHandshake ? (
-            <div className="rounded-2xl border border-accent/30 bg-accent/10 p-5">
-              <p className="text-body-sm font-medium text-foreground">A Handshake is open on this opportunity.</p>
-              <Link to={projectHandshakeHref(project.id, openHandshake.id)} className={buttonClassName({ className: "mt-3 w-full" })}>
-                Open Handshake
-              </Link>
-            </div>
-          ) : null}
-        </aside>
-      </div>
 
       <Dialog
         open={deletePrompt}
@@ -525,48 +537,15 @@ export function ProjectDetailPage() {
   );
 }
 
-/** A round icon button that names itself in a tooltip on hover and keyboard focus. */
-function ActionIcon({
-  label,
-  onClick,
-  children,
-  danger = false,
-  active = false,
-  disabled = false,
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-  danger?: boolean;
-  active?: boolean;
-  disabled?: boolean;
-}) {
+function EmptyPanel({ icon: Icon, title, body }: { icon: typeof IconUsers; title: string; body: string }) {
   return (
-    <span className="group relative inline-flex">
-      <button
-        type="button"
-        aria-label={label}
-        aria-pressed={active || undefined}
-        disabled={disabled}
-        onClick={onClick}
-        className={cn(
-          "inline-flex h-10 w-10 items-center justify-center rounded-full border motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-          danger
-            ? "border-destructive/30 bg-destructive-muted text-destructive hover:border-destructive/60"
-            : active
-              ? "border-accent/60 bg-accent/10 text-accent"
-              : "border-border bg-surface text-foreground hover:border-foreground/30 hover:bg-surface-muted",
-        )}
-      >
-        {children}
-      </button>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-caption font-medium text-background opacity-0 shadow-md motion-safe:transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-      >
-        {label}
+    <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface/40 px-6 py-12 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent">
+        <Icon className="h-5 w-5" />
       </span>
-    </span>
+      <p className="mt-4 text-body-lg font-semibold text-foreground">{title}</p>
+      <p className="mt-1.5 max-w-md text-body-sm leading-relaxed text-muted">{body}</p>
+    </div>
   );
 }
 
@@ -611,7 +590,7 @@ function EditProjectForm({ project, onDone }: { project: CxProject; onDone: () =
 
   return (
     <form
-      className="space-y-5 rounded-2xl border border-accent/40 bg-surface p-5 sm:p-6"
+      className="max-h-[calc(100dvh-16rem)] space-y-5 overflow-y-auto pr-1"
       onSubmit={(event) => {
         event.preventDefault();
         if (!nextDescription.trim() || !nextCity.trim() || !nextPostal.trim() || !nextTiming || !nextBudget) {
@@ -632,10 +611,7 @@ function EditProjectForm({ project, onDone }: { project: CxProject; onDone: () =
         onDone();
       }}
     >
-      <div>
-        <h2 className="text-h4 font-medium text-foreground">Edit opportunity</h2>
-        <p className="mt-1 text-body-sm text-muted">Contractors who showed interest are told when the details change.</p>
-      </div>
+      <p className="text-body-sm text-muted">Contractors who showed interest are told when the details change.</p>
       <label className="block text-body-sm font-medium">
         Description
         <Textarea className="mt-1" value={nextDescription} onChange={(event) => setNextDescription(event.target.value)} />
@@ -700,7 +676,7 @@ function EditProjectForm({ project, onDone }: { project: CxProject; onDone: () =
           </ul>
         ) : null}
         {photos.length < CX_MAX_PHOTOS ? (
-          <Input className="mt-2" type="file" accept="image/*" multiple aria-label="Add photos" onChange={(event) => onFiles(event, "photo")} />
+          <Input className="mt-2 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-accent/15 file:px-3.5 file:py-1.5 file:text-body-sm file:font-medium file:text-accent text-body-sm text-muted" type="file" accept="image/*" multiple aria-label="Add photos" onChange={(event) => onFiles(event, "photo")} />
         ) : null}
       </div>
 
@@ -714,12 +690,12 @@ function EditProjectForm({ project, onDone }: { project: CxProject; onDone: () =
             </button>
           </div>
         ) : (
-          <Input className="mt-2" type="file" accept="video/*" aria-label="Add a short video" onChange={(event) => onFiles(event, "video")} />
+          <Input className="mt-2 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-accent/15 file:px-3.5 file:py-1.5 file:text-body-sm file:font-medium file:text-accent text-body-sm text-muted" type="file" accept="video/*" aria-label="Add a short video" onChange={(event) => onFiles(event, "video")} />
         )}
       </div>
 
       {error ? <p className="text-label text-destructive">{error}</p> : null}
-      <div className="flex flex-wrap gap-2">
+      <div className="sticky bottom-0 -mb-px flex flex-wrap gap-2 border-t border-border-subtle bg-[#141414] pb-1 pt-4">
         <Button type="submit" size="sm" className="rounded-full">
           Save changes
         </Button>

@@ -1,10 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CityPage, JOIN_ROUTE } from "@/components/city/CityShell";
 import { Badge } from "@/components/ui/badge";
+import {
+  DISTRICT_OPTIONS,
+  availabilityOf,
+  OPPORTUNITY_DISTRICT,
+  OpportunityFilterPanel,
+  budgetOptions,
+  countBy,
+  matchesFilters,
+  sortLocations,
+  useOpportunityFilters,
+} from "@/components/opportunities/OpportunityFilters";
 import { Container } from "@/components/ui/layout";
 import { Dialog } from "@/components/ui/overlays";
-import { IconCheck, IconChevronDown, IconClock, IconFilter, IconLock, IconMapPin, IconSearch, IconWallet } from "@/components/ui/icons";
+import { IconClock, IconLock } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { MARKETING_PROJECTS, type MarketingProject, type MarketingProjectIcon } from "@/lib/marketingProjects";
@@ -103,7 +114,7 @@ function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
       <dt className="text-caption leading-none text-muted">{label}</dt>
-      <dd className="mt-1.5 truncate text-body-sm font-medium leading-none text-foreground">{value}</dd>
+      <dd className="mt-1.5 text-body-sm font-medium leading-snug text-foreground">{value}</dd>
     </div>
   );
 }
@@ -134,7 +145,7 @@ export function OpportunityCardView(props: OpportunityCardProps) {
   const showPhoto = Boolean(image) && !broken;
   const members = photoCount && photoCount > 0 ? `${photoCount} photo${photoCount === 1 ? "" : "s"} · members only` : "Members only";
   const button =
-    "inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-accent/40 px-5 text-body-sm font-semibold leading-none text-accent motion-safe:transition-colors hover:bg-accent/10";
+    "inline-flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-full border border-accent/40 px-5 text-body-sm font-semibold leading-none text-accent motion-safe:transition-colors hover:bg-accent/10";
   return (
     <article className={cn(CARD, "group")}>
       <div className="relative h-40 w-full shrink-0 overflow-hidden bg-surface-muted">
@@ -203,21 +214,14 @@ export function OpportunityCardView(props: OpportunityCardProps) {
         ) : (
           <p className="line-clamp-2 text-body-sm leading-6 text-foreground/80">{description}</p>
         )}
-        {city || timing ? (
-          <dl className="grid grid-cols-2 gap-x-4 border-t border-border-subtle pt-4">
+        {city || timing || budget ? (
+          <dl className="grid grid-cols-[1fr_1fr_1.25fr] gap-x-3 border-t border-border-subtle pt-4">
             {city ? <Fact label="Location" value={city} /> : <span />}
-            {timing ? <Fact label="Starts" value={timing} /> : null}
+            {timing ? <Fact label="Starts" value={timing} /> : <span />}
+            {budget ? <Fact label="Budget" value={budget} /> : <span />}
           </dl>
         ) : null}
-        <div className="mt-auto flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            {budget ? (
-              <>
-                <p className="text-caption leading-none text-muted">Budget</p>
-                <p className="mt-1.5 truncate text-body font-semibold leading-none text-foreground">{budget}</p>
-              </>
-            ) : null}
-          </div>
+        <div className="mt-auto">
           {locked && lockedAction ? (
             <Link to={lockedAction.to} className={button}>
               <IconLock className="h-3.5 w-3.5" />
@@ -242,7 +246,7 @@ export function ProjectCard({
   project,
   locked,
   onDetails,
-  lockedAction = { label: "Join to view", to: JOIN_ROUTE },
+  lockedAction = { label: "Join to view", to: `${JOIN_ROUTE}?from=opportunities` },
 }: {
   project: MarketingProject;
   locked: boolean;
@@ -304,106 +308,30 @@ export function ProjectDetailsDialog({ project: open, onClose }: { project?: Mar
   );
 }
 
-const ALL_DISTRICTS = "All districts";
-const ALL_LOCATIONS = "All locations";
-const ALL_BUDGETS = "Any budget";
-
-/** A filter button that opens a short list. The page header stays a single row. */
-function FilterMenu({
-  heading,
-  icon: Icon,
-  all,
-  options,
-  value,
-  onChange,
-}: {
-  heading: string;
-  icon: typeof IconFilter;
-  all: string;
-  options: string[];
-  value: string;
-  onChange: (next: string) => void;
-}) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function onDoc(event: MouseEvent) {
-      if (!ref.current?.contains(event.target as Node)) setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
-  const filtered = value !== all;
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={menuOpen}
-        onClick={() => setMenuOpen((now) => !now)}
-        className={cn(
-          "inline-flex h-11 items-center gap-2 rounded-full border bg-surface px-5 text-body-sm font-medium motion-safe:transition-colors",
-          filtered ? "border-accent/60 text-accent" : "border-border text-foreground hover:border-foreground/30",
-        )}
-      >
-        <Icon className="h-4 w-4" />
-        {filtered ? value : heading}
-        <IconChevronDown className="h-4 w-4 text-muted" />
-      </button>
-      {menuOpen ? (
-        <div
-          role="listbox"
-          aria-label={heading}
-          className="absolute right-0 z-30 mt-2 w-60 rounded-xl border border-border bg-surface-elevated p-2 shadow-md"
-        >
-          <p className="px-3 pb-1.5 pt-1 text-caption font-medium uppercase tracking-[0.1em] text-muted">{heading}</p>
-          {[all, ...options].map((name) => (
-            <button
-              key={name}
-              type="button"
-              role="option"
-              aria-selected={name === value}
-              onClick={() => {
-                onChange(name);
-                setMenuOpen(false);
-              }}
-              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-body-sm text-foreground hover:bg-surface-muted"
-            >
-              {name}
-              {name === value ? <IconCheck className="h-4 w-4 text-accent" /> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-const LOCATIONS = Array.from(new Set(MARKETING_PROJECTS.map((project) => project.city))).sort();
-
-/** Lowest figure in a budget band, to list the bands from smallest to largest. */
-function bandFloor(band: string) {
-  if (/^under/i.test(band)) return 0;
-  return Number(band.match(/\$([\d,]+)/)?.[1].replace(/,/g, "") ?? 0);
-}
-const BUDGETS = Array.from(new Set(MARKETING_PROJECTS.map((project) => project.budget))).sort((a, b) => bandFloor(a) - bandFloor(b));
+const LOCATIONS = sortLocations(MARKETING_PROJECTS.map((project) => project.city));
+const BUDGETS = budgetOptions(MARKETING_PROJECTS.map((project) => project.budget));
+const COUNTS = {
+  districts: countBy(MARKETING_PROJECTS.map(() => OPPORTUNITY_DISTRICT)),
+  locations: countBy(MARKETING_PROJECTS.map((project) => project.city)),
+  budgets: countBy(MARKETING_PROJECTS.map((project) => project.budget)),
+  availability: countBy(MARKETING_PROJECTS.map((project) => availabilityOf(project.timing))),
+};
 
 export function WebsiteProjectsPage() {
   const { session } = useCitySession();
   const locked = !session.signedIn;
   const [openId, setOpenId] = useState<string | null>(null);
-  const [district, setDistrict] = useState<string>(ALL_DISTRICTS);
-  const [location, setLocation] = useState<string>(ALL_LOCATIONS);
-  const [budget, setBudget] = useState<string>(ALL_BUDGETS);
-  const [query, setQuery] = useState("");
+  const filters = useOpportunityFilters();
   const open = MARKETING_PROJECTS.find((project) => project.id === openId);
   // Every opportunity today is posted into Contractor Exchange, so both district views list the same cards.
-  const needle = query.trim().toLowerCase();
-  const shown = MARKETING_PROJECTS.filter(
-    (project) =>
-      (location === ALL_LOCATIONS || project.city === location) &&
-      (budget === ALL_BUDGETS || project.budget === budget) &&
-      (!needle || [project.category, project.name, project.city, project.description].some((text) => text.toLowerCase().includes(needle))),
+  const shown = MARKETING_PROJECTS.filter((project) =>
+    matchesFilters(filters, {
+      district: OPPORTUNITY_DISTRICT,
+      city: project.city,
+      budget: project.budget,
+      timing: project.timing,
+      text: [project.category, project.name, project.city, project.description],
+    }),
   );
 
   return (
@@ -415,39 +343,16 @@ export function WebsiteProjectsPage() {
       </Container>
     </div>
     <CityPage width="wide" className="pb-8 pt-3 md:pb-10 md:pt-4">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
-        <div>
-          <h1 className="font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-medium tracking-tight text-foreground">
-            Opportunities
-          </h1>
-          <p className="mt-1.5 max-w-xl text-body text-muted">Live opportunities from across THE CITY OF VAEL.</p>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
-          <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
-            <label htmlFor="opp-search" className="sr-only">
-              Search opportunities
-            </label>
-            <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input
-              id="opp-search"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search opportunities"
-              className="h-11 w-full rounded-full border border-border bg-surface pl-11 pr-4 text-body-sm text-foreground placeholder:text-quiet focus-visible:border-accent/60 focus-visible:outline-none [&::-webkit-search-cancel-button]:appearance-none"
-            />
-          </div>
-          <FilterMenu heading="District" icon={IconFilter} all={ALL_DISTRICTS} options={[DISTRICT_NAME]} value={district} onChange={setDistrict} />
-          <FilterMenu heading="Location" icon={IconMapPin} all={ALL_LOCATIONS} options={LOCATIONS} value={location} onChange={setLocation} />
-          <FilterMenu heading="Budget" icon={IconWallet} all={ALL_BUDGETS} options={BUDGETS} value={budget} onChange={setBudget} />
-        </div>
+      <div>
+        <h1 className="font-sans text-[clamp(1.75rem,3vw,2.5rem)] font-medium tracking-tight text-foreground">Opportunities</h1>
+        <p className="mt-1.5 max-w-xl text-body text-muted">Live opportunities from across THE CITY OF VAEL.</p>
       </div>
 
       {locked ? (
         <div className="mt-5 flex flex-col gap-2 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <p className="flex items-center gap-2.5 text-body-sm text-foreground">
             <IconLock className="h-4 w-4 shrink-0 text-accent" />
-            These opportunities are locked. Create an account, then make your profile to see the full projects.
+            These opportunities are locked. Create an account, then make your profile to see the full opportunities.
           </p>
           <div className="flex shrink-0 items-center gap-5 pl-6 text-body-sm sm:pl-0">
             <Link to={`${JOIN_ROUTE}?from=opportunities`} className="font-semibold text-accent underline-offset-4 hover:underline">
@@ -460,16 +365,24 @@ export function WebsiteProjectsPage() {
         </div>
       ) : null}
 
-      {shown.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-border p-8 text-center text-body-sm text-muted">
-          {query.trim() ? `No opportunities match "${query.trim()}".` : "No opportunities match these filters."}
-        </p>
-      ) : null}
-
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {shown.map((project) => (
-          <ProjectCard key={project.id} project={project} locked={locked} onDetails={() => setOpenId(project.id)} />
-        ))}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start xl:gap-8">
+        <OpportunityFilterPanel filters={filters} districts={DISTRICT_OPTIONS} locations={LOCATIONS} budgets={BUDGETS} counts={COUNTS} />
+        <div className="min-w-0">
+          <p className="mb-4 text-body-sm text-muted" aria-live="polite">
+            {shown.length} {shown.length === 1 ? "opportunity" : "opportunities"}
+          </p>
+          {shown.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border p-8 text-center text-body-sm text-muted">
+              {filters.query.trim() ? `No opportunities match "${filters.query.trim()}".` : "No opportunities match these filters."}
+            </p>
+          ) : (
+            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(21rem,1fr))]">
+              {shown.map((project) => (
+                <ProjectCard key={project.id} project={project} locked={locked} onDetails={() => setOpenId(project.id)} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <ProjectDetailsDialog project={open} onClose={() => setOpenId(null)} />
     </CityPage>

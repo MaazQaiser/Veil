@@ -1,21 +1,13 @@
 import { useState } from "react";
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { DashboardShell } from "@/components/mt/DashboardShell";
 import { OpportunityBoard, useLiveOpportunityCount } from "@/components/opportunities/OpportunityBoard";
-import { Button, buttonClassName } from "@/components/ui/button";
 import { IconClose } from "@/components/ui/icons";
-import { Dialog } from "@/components/ui/overlays";
 import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
-import { useJoinedDistricts } from "@/components/mt/DistrictsRow";
 import { projectsForHandle } from "@/lib/cxProjectStore";
-import { projectHref } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
-import { useVael } from "@/lib/vaelCore";
 import { OpportunityCard, opportunityStatus } from "@/pages/projects/List";
-
-const cardClass =
-  "block rounded-2xl border border-border bg-white p-5 shadow-[0_1px_2px_rgba(11,12,12,0.04),0_2px_10px_-4px_rgba(17,17,17,0.08)] motion-safe:transition-shadow hover:shadow-[0_1px_2px_rgba(11,12,12,0.04),0_10px_24px_-8px_rgba(17,17,17,0.14)] dark:border-white/10 dark:bg-surface dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)] dark:hover:border-white/15";
 
 /**
  * The Opportunity module. Opens on the live opportunities; "My opportunities" switches to the
@@ -25,23 +17,16 @@ export function OpportunityHomePage() {
   useCxProjects();
   const { session } = useCitySession();
   const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { handle, profile, documents } = useVael();
-  const joined = useJoinedDistricts(handle, handle ? profile(handle) : undefined, handle ? documents(handle) : []).some(
-    (row) => row.district.id === "construction",
-  );
-  const state = useLocation().state as { joinedContractor?: boolean; newAccount?: boolean } | null;
+  const state = useLocation().state as { joinedContractor?: boolean } | null;
   const [noticeClosed, setNoticeClosed] = useState(false);
   const joinedNow = Boolean(state?.joinedContractor) && !noticeClosed;
-  const [promptOpen, setPromptOpen] = useState(Boolean(state?.newAccount));
+  const [filter, setFilter] = useState<"all" | "live" | "ended">("all");
   const tab: "browse" | "mine" = params.get("tab") === "mine" ? "mine" : "browse";
-  const publishedId = params.get("published") ?? "";
   const browseCount = useLiveOpportunityCount("all");
 
   const mine = [...(session.handle ? projectsForHandle(session.handle) : [])].sort(
     (x, y) => Date.parse(y.publishedAt || y.createdAt) - Date.parse(x.publishedAt || x.createdAt),
   );
-  const justPublished = publishedId ? mine.find((item) => item.id === publishedId) : undefined;
   const counts = mine.reduce(
     (acc, item) => {
       const status = opportunityStatus(item);
@@ -80,49 +65,82 @@ export function OpportunityHomePage() {
     </div>
   );
 
+  const liveItems = mine.filter((item) => item.status === "live");
+  const endedItems = mine.filter((item) => item.status === "closed" || item.status === "expired");
+  const shownItems = filter === "live" ? liveItems : filter === "ended" ? endedItems : mine;
+  const filters = [
+    { id: "all" as const, label: "All", full: "All opportunities", count: mine.length },
+    { id: "live" as const, label: "Live", full: "Live", count: liveItems.length },
+    { id: "ended" as const, label: "Ended", full: "Ended", count: endedItems.length },
+  ];
+
   const yours =
     tab === "mine" ? (
       <>
-        {justPublished ? (
-          <div className="flex flex-col gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-body font-semibold text-foreground">Your opportunity is live.</p>
-              <p className="mt-0.5 text-body-sm text-muted">
-                {justPublished.category || "Your project"} is now visible to people who can help.
-              </p>
-            </div>
-            <Link to={projectHref(justPublished.id)} className={buttonClassName({ size: "sm", variant: "outline" })}>
-              View opportunity
-            </Link>
-          </div>
-        ) : null}
         {mine.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-            <p className="text-body font-medium text-foreground">No opportunities posted yet</p>
-            <p className="mt-1 text-body-sm text-muted">Post what you need done and people will respond here.</p>
+            <p className="text-body font-medium text-foreground">You haven't posted anything yet</p>
+            <p className="mt-1 text-body-sm text-muted">Post what you need done and contractors will respond here.</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
                 ["Active", counts.active],
                 ["Drafts", counts.drafts],
                 ["Closing soon", counts.closingSoon],
                 ["Closed", counts.closed],
               ].map(([label, value]) => (
-                <div key={label} className={cn(cardClass, "p-4")}>
-                  <p className="text-h3 font-medium tabular-nums text-foreground">{value}</p>
-                  <p className="mt-1 text-body-sm text-muted">{label}</p>
+                <div key={label} className="rounded-2xl border border-border bg-surface px-5 py-4">
+                  <dt className="text-body-sm text-muted">{label}</dt>
+                  <dd className="mt-1.5 text-[1.75rem] font-medium leading-none tabular-nums text-foreground">{value}</dd>
                 </div>
               ))}
+            </dl>
+
+            <div role="tablist" aria-label="Filter your opportunities" className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
+              {filters.map((item) => {
+                const on = filter === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setFilter(item.id)}
+                    className={cn(
+                      "inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-body-sm font-medium sm:px-4 motion-safe:transition-colors",
+                      on ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground",
+                    )}
+                  >
+                    <span className="sm:hidden">{item.label}</span>
+                    <span className="hidden sm:inline">{item.full}</span>
+                    <span
+                      className={cn(
+                        "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-caption font-semibold tabular-nums",
+                        on ? "bg-accent/20 text-accent" : "bg-surface-muted text-muted",
+                      )}
+                    >
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {mine.map((item) => (
-                <li key={item.id}>
-                  <OpportunityCard item={item} />
-                </li>
-              ))}
-            </ul>
+
+            {shownItems.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-border p-8 text-center text-body-sm text-muted">
+                {filter === "live" ? "No live opportunities right now." : "No ended opportunities yet."}
+              </p>
+            ) : (
+              <ul className="grid gap-5 sm:grid-cols-[repeat(auto-fill,minmax(17rem,20rem))]">
+                {shownItems.map((item) => (
+                  <li key={item.id}>
+                    <OpportunityCard item={item} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </>
         )}
       </>
@@ -133,8 +151,8 @@ export function OpportunityHomePage() {
   return (
     <DashboardShell sidebar={false}>
       <OpportunityBoard
-        title="Opportunities in Contractor Exchange"
-        subtitle="Live opportunities from homeowners, for members of this district."
+        title={tab === "mine" ? "Your opportunities" : "Opportunities in Contractor Exchange"}
+        subtitle={tab === "mine" ? "What you've posted, and who has responded." : "Live opportunities from homeowners, for members of this district."}
         samples="all"
         tabs={tabs}
         notice={
@@ -159,25 +177,6 @@ export function OpportunityHomePage() {
       >
         {yours}
       </OpportunityBoard>
-      <Dialog
-        open={promptOpen && !joined}
-        onClose={() => setPromptOpen(false)}
-        title="Make your profile"
-        footer={
-          <>
-            <Button type="button" variant="ghost" onClick={() => setPromptOpen(false)}>
-              Not now
-            </Button>
-            <Button type="button" onClick={() => navigate("/join/contractor-exchange")}>
-              Make my profile
-            </Button>
-          </>
-        }
-      >
-        <p className="text-body-sm text-muted">
-          Your account is ready. Make your profile to access these opportunities, see the full projects and show interest.
-        </p>
-      </Dialog>
     </DashboardShell>
   );
 }

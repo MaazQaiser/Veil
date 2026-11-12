@@ -201,6 +201,11 @@ function GoVisibleChoose() {
   const navigate = useNavigate();
 
   function choose(entry: GoVisibleEntry) {
+    // Opportunities starts with the homeowner flow. It asks for an account further along, so signed-out people go straight in.
+    if (entry === "opportunities") {
+      navigate(NEED_PATH);
+      return;
+    }
     if (!session.signedIn) {
       navigate(`${JOIN_ROUTE}?entry=${entry}`);
       return;
@@ -237,12 +242,20 @@ function GoVisibleChoose() {
                 type="button"
                 onClick={() => choose(choice.entry)}
                 className={cn(
-                  "group flex h-full w-full flex-col items-start rounded-xl border border-white/15 bg-surface p-6 text-left",
+                  "group relative flex h-full w-full flex-col items-start rounded-2xl border border-white/10 bg-gradient-to-b from-[#1A1A1A] to-[#131313] p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
                   "motion-safe:transition-all motion-safe:duration-200",
-                  "hover:-translate-y-0.5 hover:border-[#EE8A4A] hover:bg-[#EE8A4A]/[0.06]",
+                  "hover:-translate-y-1 hover:border-[#EE8A4A]/70 hover:shadow-[0_22px_50px_-24px_rgba(238,138,74,0.55)]",
                 )}
               >
-                <choice.icon className="h-6 w-6 text-[#EE8A4A]" />
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#EE8A4A]/15 text-[#EE8A4A] ring-1 ring-[#EE8A4A]/30">
+                  <choice.icon className="h-6 w-6" />
+                </span>
+                <span
+                  aria-hidden
+                  className="absolute right-6 top-6 text-[#EE8A4A] opacity-0 motion-safe:-translate-x-1 motion-safe:transition-all motion-safe:duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+                >
+                  →
+                </span>
                 <h2 className="mt-6 text-h4 font-medium text-foreground">{choice.name}</h2>
                 <p className="mt-1 text-body-sm font-medium text-foreground">{choice.line}</p>
                 <p className="mt-2 text-body-sm leading-relaxed text-muted">{choice.body}</p>

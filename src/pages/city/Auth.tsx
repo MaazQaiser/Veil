@@ -11,7 +11,7 @@ import { useCitySession } from "@/lib/citySession";
 import { findAccountByIdentity } from "@/lib/accounts";
 import { prepareDemoWorkspace } from "@/lib/demoJourney";
 import { parseGoVisibleEntry, routeForGoVisibleEntry } from "@/lib/goVisible";
-import { NEED_CONTINUE_PATH } from "@/lib/cxRoutes";
+import { NEED_REVIEW_PATH } from "@/lib/cxRoutes";
 import { signedInLanding } from "@/lib/onboarding";
 import {
   VAEL_OUT_DISPLAY_NAME,
@@ -90,12 +90,12 @@ export function SignInPage() {
     signIn(account.handle);
     navigate(
       fromProject
-        ? NEED_CONTINUE_PATH
+        ? NEED_REVIEW_PATH
         : afterSignIn || (entry ? routeForGoVisibleEntry(account.handle, entry) : signedInLanding(account.handle)),
     );
   }
 
-  if (session.signedIn && fromProject) return <Navigate to={NEED_CONTINUE_PATH} replace />;
+  if (session.signedIn && fromProject) return <Navigate to={NEED_REVIEW_PATH} replace />;
   if (session.signedIn && !intent) return <AlreadyIn />;
 
   return (

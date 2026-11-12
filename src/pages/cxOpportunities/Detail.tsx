@@ -107,17 +107,17 @@ export function OpportunityDetailPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="space-y-6">
           <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-            <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">The project</h2>
+            <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">Details</h2>
             <dl className="mt-4 grid gap-5 sm:grid-cols-2">
               <Fact label="Location">{[card.city, card.postalCode].filter(Boolean).join(" · ") || "Not listed."}</Fact>
-              <Fact label="Start timing">{card.timing || "Not listed."}</Fact>
+              <Fact label="Starts">{card.timing || "Not listed."}</Fact>
               <Fact label="Budget">{card.budgetBand || "Not listed."}</Fact>
-              <Fact label="Date posted">{card.postedAt ? formatDate(card.postedAt) : "Not listed."}</Fact>
+              <Fact label="Posted">{card.postedAt ? formatDate(card.postedAt) : "Not listed."}</Fact>
             </dl>
           </section>
 
           <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-            <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">What needs doing</h2>
+            <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">Description</h2>
             {joined ? (
               <>
                 <p className="mt-4 whitespace-pre-wrap text-body text-foreground">{card.description || "No description."}</p>
@@ -146,7 +146,7 @@ export function OpportunityDetailPage() {
 
           <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
             <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">Questions</h2>
-            <p className="mt-2 text-body-sm text-muted">Questions stay on this project. They are not a private message.</p>
+            <p className="mt-2 text-body-sm text-muted">Questions are public on this opportunity. They are not a private message.</p>
             {joined ? (
               <form
                 className="mt-4 space-y-3"
@@ -159,16 +159,16 @@ export function OpportunityDetailPage() {
                 }}
               >
                 <label htmlFor="project-question" className="sr-only">
-                  Question about this project
+                  Question about this opportunity
                 </label>
                 <Textarea
                   id="project-question"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="Ask a question about the project"
+                  placeholder="Ask a question about this opportunity"
                 />
                 <Button type="submit" variant="outline" disabled={!question.trim()}>
-                  Post on project
+                  Post question
                 </Button>
               </form>
             ) : null}
@@ -188,11 +188,11 @@ export function OpportunityDetailPage() {
         </div>
 
         <aside className="rounded-2xl border border-accent/30 bg-accent/[0.06] p-5 sm:p-6 lg:sticky lg:top-24">
-          <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">Your response</h2>
+          <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">Respond</h2>
 
           {!joined ? (
             <>
-              <p className="mt-3 text-body text-foreground">Make your profile to see the full project and show interest.</p>
+              <p className="mt-3 text-body text-foreground">Make your profile to see the full opportunity and show interest.</p>
               <Link to={JOIN_PATH} className={buttonClassName({ className: "mt-5 w-full" })}>
                 Make my profile
               </Link>
@@ -218,7 +218,7 @@ export function OpportunityDetailPage() {
                 You're interested
               </p>
               <p className="mt-1 text-body-sm text-muted">
-                The homeowner can now review your profile. If they're interested too, a Handshake opens and we'll tell you.
+                The homeowner can now see your profile. If they're interested too, a Handshake opens and you'll be told.
               </p>
             </>
           ) : reason ? (
@@ -226,17 +226,17 @@ export function OpportunityDetailPage() {
               <p className="mt-3 text-body text-foreground">This one is outside what you take on.</p>
               <p className="mt-1 text-body-sm text-muted">{reason}</p>
               <Link
-                to={`/media-technology/profile/${session.handle}`}
+                to={JOIN_PATH}
                 className={buttonClassName({ variant: "outline", className: "mt-5 w-full" })}
               >
-                Update what you take on
+                Update my profile
               </Link>
             </>
           ) : (
             <>
-              <p className="mt-3 text-body text-foreground">Interested in this project?</p>
+              <p className="mt-3 text-body text-foreground">Interested in this opportunity?</p>
               <p className="mt-1 text-body-sm text-muted">
-                The homeowner reviews your profile and decides if they're interested too. Nothing is shared until you both are.
+                The homeowner looks at your profile and decides if they're interested too. Nothing is shared until you both are.
               </p>
               <Button
                 type="button"

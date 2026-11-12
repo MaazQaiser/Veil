@@ -1,6 +1,17 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useJoinedDistricts } from "@/components/mt/DistrictsRow";
+import {
+  DISTRICT_OPTIONS,
+  availabilityOf,
+  OPPORTUNITY_DISTRICT,
+  OpportunityFilterPanel,
+  budgetOptions,
+  countBy,
+  matchesFilters,
+  sortLocations,
+  useOpportunityFilters,
+} from "@/components/opportunities/OpportunityFilters";
 import { IconLock } from "@/components/ui/icons";
 import { OpportunityCardView, ProjectCard, ProjectDetailsDialog } from "@/pages/city/Projects";
 import { useCitySession } from "@/lib/citySession";
@@ -70,7 +81,22 @@ export function OpportunityBoard({
 
   const real = liveCxProjects().sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   const sampleList = samples === "all" ? MARKETING_PROJECTS : real.length === 0 ? MARKETING_PROJECTS.slice(0, 2) : [];
-  const total = real.length + sampleList.length;
+  const filters = useOpportunityFilters();
+  const locations = sortLocations([...real.map((item) => item.city), ...sampleList.map((item) => item.city)]);
+  const budgets = budgetOptions([...real.map((item) => item.budgetBand), ...sampleList.map((item) => item.budget)]);
+  const counts = {
+    districts: countBy([...real, ...sampleList].map(() => OPPORTUNITY_DISTRICT)),
+    locations: countBy([...real.map((item) => item.city), ...sampleList.map((item) => item.city)]),
+    budgets: countBy([...real.map((item) => item.budgetBand), ...sampleList.map((item) => item.budget)]),
+    availability: countBy([...real.map((item) => availabilityOf(item.timing)), ...sampleList.map((item) => availabilityOf(item.timing))]),
+  };
+  const shownReal = real.filter((item) =>
+    matchesFilters(filters, { district: OPPORTUNITY_DISTRICT, city: item.city, budget: item.budgetBand, timing: item.timing, text: [item.category, item.firstName, item.city, item.description] }),
+  );
+  const shownSamples = sampleList.filter((item) =>
+    matchesFilters(filters, { district: OPPORTUNITY_DISTRICT, city: item.city, budget: item.budget, timing: item.timing, text: [item.category, item.name, item.city, item.description] }),
+  );
+  const total = shownReal.length + shownSamples.length;
   const start = opportunityStart("create");
   const open = MARKETING_PROJECTS.find((item) => item.id === openId);
 
@@ -106,9 +132,9 @@ export function OpportunityBoard({
               <div className="flex items-start gap-3">
                 <IconLock className="mt-1 h-4 w-4 shrink-0 text-accent" />
                 <div>
-                  <p className="text-body font-semibold text-foreground">Make your profile to access these opportunities.</p>
+                  <p className="text-body font-semibold text-foreground">Make your profile to see the full opportunities.</p>
                   <p className="mt-0.5 text-body-sm text-muted">
-                    Your account is ready. Make your profile to join the district, see the full projects and show interest. Until then you only see previews.
+                    You only see previews until your profile is done. After that you can read the details and show interest.
                   </p>
                 </div>
               </div>
@@ -121,13 +147,19 @@ export function OpportunityBoard({
             </div>
           )}
 
+          <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start xl:gap-8">
+            <OpportunityFilterPanel filters={filters} districts={DISTRICT_OPTIONS} locations={locations} budgets={budgets} counts={counts} />
+            <div className="min-w-0">
+              <p className="mb-4 text-body-sm text-muted" aria-live="polite">
+                {total} {total === 1 ? "opportunity" : "opportunities"}
+              </p>
           {total === 0 ? (
             <p className="rounded-2xl border border-dashed border-border p-8 text-center text-body-sm text-muted">
-              No live opportunities right now. New ones will show up here.
+              {filters.active > 0 ? "No opportunities match these filters." : "No live opportunities right now. New ones will show up here."}
             </p>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {real.map((item) => {
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(21rem,1fr))] gap-4">
+              {shownReal.map((item) => {
                 const own = item.handle === session.handle;
                 const standing = own ? "open" : contractorStanding(item.id, session.handle);
                 const responses = own ? respondentCount(item.id) : 0;
@@ -165,7 +197,7 @@ export function OpportunityBoard({
                 </li>
                 );
               })}
-              {sampleList.map((project) => (
+              {shownSamples.map((project) => (
                 <li key={project.id}>
                   <ProjectCard
                     project={project}
@@ -177,6 +209,8 @@ export function OpportunityBoard({
               ))}
             </ul>
           )}
+            </div>
+          </div>
           <ProjectDetailsDialog project={open} onClose={() => setOpenId(null)} />
         </>
       )}

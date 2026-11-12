@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { looksLikeEmail, looksLikePhone } from "@/lib/cxProjectStore";
-import { NEED_DESCRIBE_PATH, NEED_HOME_PATH, NEED_LOCATION_PATH, NEED_MEDIA_PATH, NEED_REVIEW_PATH, needContinueTarget } from "@/lib/cxRoutes";
+import { NEED_HOME_PATH, NEED_LOCATION_PATH, NEED_REVIEW_PATH, needContinueTarget } from "@/lib/cxRoutes";
 import { Input } from "@/components/ui/controls";
+import { IconLock, IconMessage } from "@/components/ui/icons";
 import { readNeedWork, saveNeedWork } from "@/lib/needWork";
 import { OpportunityAction, OpportunityFrame, opportunityTitleClass } from "./OpportunityChrome";
 
@@ -16,7 +17,8 @@ export function NeedSavePage() {
   const returning = new URLSearchParams(search).get("return") === "review";
 
   if (work.categories.length === 0) return <Navigate to={NEED_HOME_PATH} replace />;
-  if (!work.description.trim()) return <Navigate to={NEED_DESCRIBE_PATH} replace />;
+  if (!work.description.trim()) return <Navigate to={NEED_HOME_PATH} replace />;
+  if (!work.city.trim() || !work.timing || !work.budget) return <Navigate to={NEED_LOCATION_PATH} replace />;
 
   function continueSave() {
     if (!looksLikeEmail(email)) {
@@ -28,21 +30,23 @@ export function NeedSavePage() {
       return;
     }
     saveNeedWork({ saveEmail: email.trim(), savePhone: phone.trim() });
-    navigate(needContinueTarget(NEED_LOCATION_PATH, search));
+    navigate(needContinueTarget(NEED_REVIEW_PATH, search));
   }
 
   return (
     <OpportunityFrame
-      step={4}
+      step={3}
+      center
+      width="lg"
       category={work.categories[0]}
-      backTo={returning ? NEED_REVIEW_PATH : NEED_MEDIA_PATH}
-      action={<OpportunityAction onClick={continueSave}>Save and continue</OpportunityAction>}
+      backTo={returning ? NEED_REVIEW_PATH : NEED_LOCATION_PATH}
+      action={<OpportunityAction onClick={continueSave}>Next</OpportunityAction>}
     >
       <h1 className={opportunityTitleClass}>
-        Save your project
+        Save your opportunity
       </h1>
       <p className="mt-3 text-body leading-relaxed text-muted">
-        We’ll email you a link so you can finish on any device, and one reminder tomorrow if you don’t. No password yet.
+        We'll email you a link so you can finish on any device, and one reminder tomorrow if you don't. No password yet.
       </p>
       <label htmlFor="need-save-email" className="mt-6 block text-body font-medium text-foreground">
         Email
@@ -74,15 +78,17 @@ export function NeedSavePage() {
         }}
         className="mt-2"
       />
-      <p className="mt-2 text-body-sm text-muted">
-        A US mobile number, or + and your country code. We’ll text a code to it before your project goes live.
-      </p>
-      <p className="mt-3 inline-flex items-center gap-2 text-body-sm text-muted">
-        <span aria-hidden className="text-[#EE8A4A]">
-          ✓
-        </span>
-        Never shown to contractors.
-      </p>
+      <p className="mt-2 text-body-sm text-muted">A US mobile number, or + and your country code.</p>
+      <ul className="mt-6 space-y-2.5 rounded-xl border border-border-subtle bg-white/[0.03] p-4 text-body-sm text-muted">
+        <li className="flex items-start gap-2.5">
+          <IconLock className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+          Never shown to contractors.
+        </li>
+        <li className="flex items-start gap-2.5">
+          <IconMessage className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+          We'll text a code to your phone before your opportunity goes live.
+        </li>
+      </ul>
       {error ? <p className="mt-3 text-body-sm text-destructive">{error}</p> : null}
     </OpportunityFrame>
   );

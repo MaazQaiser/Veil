@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type SVGProps } from "react";
 import { Button } from "@/components/ui/button";
-import { IconLock } from "@/components/ui/icons";
+import { IconCheck, IconLock } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import type { RxProjectCategory } from "@/lib/cxProjectStore";
 import { NeedFooter } from "./NeedLayout";
@@ -8,7 +8,11 @@ import { NeedFooter } from "./NeedLayout";
 export const opportunityTitleClass =
   "font-sans text-[clamp(1.875rem,3.4vw,2.5rem)] font-medium leading-[1.15] tracking-[-0.025em] text-foreground";
 
-export const OPPORTUNITY_STEPS = 8;
+export const OPPORTUNITY_STEPS = 4;
+
+/** The surface every posting step sits on: a soft dark card with a faint top highlight. */
+export const WIZARD_CARD =
+  "rounded-2xl border border-white/10 bg-gradient-to-b from-[#1A1A1A] to-[#121212] px-6 py-8 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06)] sm:px-10 sm:py-10";
 
 export const TIMING_CHOICES = [
   { label: "As soon as possible", value: "ASAP" },
@@ -115,18 +119,24 @@ export function CategoryMark({ category }: { category: string }) {
   }
 }
 
+/** The step names of "Post an Opportunity", in order. */
+export const OPPORTUNITY_STEP_LABELS = ["Job", "Where and when", "Contact", "Review"] as const;
+
 /**
- * The fixed progress bar under the top nav: "Step N of M", a short note, and a segmented bar.
+ * The fixed progress bar under the top nav: where you are, a note, and one marker per step.
+ * Wide screens show a numbered track with the step names; narrow screens show a slim segmented bar.
  * Leaves a spacer of its own height so the page below is not covered.
  */
 export function StepProgressBar({
   step,
   total,
+  labels,
   note,
   showNoteIcon = false,
 }: {
   step: number;
   total: number;
+  labels?: readonly string[];
   note?: ReactNode;
   showNoteIcon?: boolean;
 }) {
@@ -146,7 +156,8 @@ export function StepProgressBar({
     if (bar) observer.observe(bar);
     if (header) observer.observe(header);
     return () => observer.disconnect();
-  }, []);
+  }, [labels]);
+  const currentLabel = labels?.[currentStep - 1];
   return (
     <>
       <div
@@ -154,19 +165,28 @@ export function StepProgressBar({
         style={{ top: navHeight }}
         className="fixed inset-x-0 z-30 border-b border-white/10 bg-[#0B0C0C]/95 backdrop-blur"
       >
-        <div className="site-container py-4">
-          <div className="flex items-center justify-between gap-4 text-body-sm text-muted">
-            <p>
-              Step {step} of {total}
+        <div className="site-container py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4 text-body-sm md:hidden">
+            <p className="text-muted">
+              Step <span className="font-semibold text-foreground">{step}</span> of {total}
+              {currentLabel ? (
+                <>
+                  <span aria-hidden className="mx-2 text-white/25">
+                    /
+                  </span>
+                  <span className="font-medium text-accent">{currentLabel}</span>
+                </>
+              ) : null}
             </p>
             {note ? (
-              <p className="inline-flex items-center gap-1.5">
+              <p className="inline-flex items-center gap-1.5 text-muted">
                 {showNoteIcon ? <IconLock className="h-3.5 w-3.5" /> : null}
                 {note}
               </p>
             ) : null}
           </div>
-          <div className="mt-2 flex gap-1.5" role="img" aria-label={`Step ${currentStep} of ${total}`}>
+
+          <div className="mt-2.5 flex gap-1.5 md:hidden" role="img" aria-label={`Step ${currentStep} of ${total}`}>
             {Array.from({ length: total }, (_, index) => (
               <span
                 key={index}
@@ -174,6 +194,47 @@ export function StepProgressBar({
               />
             ))}
           </div>
+
+          <ol className={cn("mt-1 hidden items-center md:flex", labels ? "pb-6" : "pb-1")} aria-label="Progress">
+            {Array.from({ length: total }, (_, index) => {
+              const number = index + 1;
+              const done = number < currentStep;
+              const current = number === currentStep;
+              const label = labels?.[index];
+              return (
+                <li
+                  key={number}
+                  aria-current={current ? "step" : undefined}
+                  className={cn("relative flex items-center", number < total && "flex-1")}
+                >
+                  <span
+                    className={cn(
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-caption font-semibold motion-safe:transition-colors",
+                      done && "border-accent bg-accent text-[#0B0C0C]",
+                      current && "border-accent bg-accent/15 text-accent shadow-[0_0_0_4px_rgba(238,138,74,0.14)]",
+                      !done && !current && "border-white/20 text-muted",
+                    )}
+                  >
+                    {done ? <IconCheck className="h-3.5 w-3.5" /> : number}
+                  </span>
+                  {label ? (
+                    <span
+                      className={cn(
+                        "absolute top-full mt-1.5 whitespace-nowrap text-caption",
+                        number === 1 ? "left-0" : number === total ? "right-0" : "left-3.5 -translate-x-1/2",
+                        current ? "font-semibold text-foreground" : done ? "text-muted" : "text-quiet",
+                      )}
+                    >
+                      {label}
+                    </span>
+                  ) : null}
+                  {number < total ? (
+                    <span aria-hidden className={cn("mx-2 h-px flex-1", done ? "bg-accent" : "bg-white/15")} />
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
         </div>
       </div>
       <div aria-hidden style={{ height: barHeight }} />
@@ -187,6 +248,8 @@ export function OpportunityFrame({
   onBack,
   backLabel,
   showProgress = true,
+  center = false,
+  width = "md",
   action,
   children,
 }: {
@@ -196,6 +259,10 @@ export function OpportunityFrame({
   onBack?: () => void;
   backLabel?: string;
   showProgress?: boolean;
+  /** Narrow card in the middle of the page, for short steps with one question. */
+  center?: boolean;
+  /** Card width when centred: "md" for one question, "lg" for a short form. */
+  width?: "md" | "lg";
   action?: ReactNode;
   eyebrow?: string;
   children: ReactNode;
@@ -203,11 +270,20 @@ export function OpportunityFrame({
   return (
     <div>
       {showProgress ? (
-        <StepProgressBar step={step ?? 0} total={OPPORTUNITY_STEPS} note="Saved as you go" showNoteIcon />
+        <StepProgressBar step={step ?? 0} total={OPPORTUNITY_STEPS} labels={OPPORTUNITY_STEP_LABELS} note="Saved as you go" showNoteIcon />
       ) : (
         <div aria-hidden />
       )}
-      <div className="mx-auto mt-6 w-full max-w-3xl rounded-lg border border-white/15 bg-[#141414] px-6 py-8 sm:px-8 sm:py-10">{children}</div>
+      <div className={cn(center && "flex min-h-[calc(100dvh-17rem)] items-center justify-center")}>
+        <div
+          className={cn(
+            WIZARD_CARD + " mx-auto mt-6 w-full",
+            center ? (width === "lg" ? "max-w-2xl" : "max-w-xl") : "max-w-3xl",
+          )}
+        >
+          {children}
+        </div>
+      </div>
       {backTo || onBack || action ? (
         <NeedFooter backTo={backTo} onBack={onBack} backLabel={backLabel}>
           {action}

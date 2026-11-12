@@ -116,7 +116,7 @@ function JoinShell({ wide = false, children }: { wide?: boolean; children: React
   return (
     <div
       data-surface="site-dark"
-      className="join-flow wizard-flow relative isolate flex min-h-full flex-1 flex-col bg-background text-foreground"
+      className="join-flow wizard-flow relative isolate flex min-h-full flex-auto shrink-0 flex-col bg-background text-foreground"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 right-[-12%] h-[42rem] w-[42rem] rounded-full bg-[#EE8A4A]/20 blur-[130px]" />

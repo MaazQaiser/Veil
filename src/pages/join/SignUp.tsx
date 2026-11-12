@@ -10,10 +10,11 @@ import { useCitySession } from "@/lib/citySession";
 import { seedDemoSampleContent } from "@/lib/demoJourney";
 import { parseGoVisibleEntry } from "@/lib/goVisible";
 import { ONBOARDING_PATH, patchOnboarding, startOnboarding, vaelOutPath } from "@/lib/onboarding";
-import { NEED_CONTINUE_PATH, NEED_PATH, OPPORTUNITY_PATH } from "@/lib/cxRoutes";
+import { NEED_PATH, NEED_REVIEW_PATH, OPPORTUNITY_PATH } from "@/lib/cxRoutes";
 import { PRODUCT_HOME } from "@/lib/providerJourney";
 import { readNeedWork } from "@/lib/needWork";
 import { ensureProfile, saveProfile } from "@/lib/vaelStore";
+import { JOIN_CONTRACTOR_PATH } from "./ContractorJoin";
 import { JoinHead } from "./JoinLayout";
 
 function looksLikeEmail(value: string) {
@@ -52,11 +53,12 @@ export function JoinSignUpPage() {
   const arrivedSignedIn = useRef(session.signedIn);
   const published = useRef(false);
 
+  // Already signed in when they arrive: skip the form and go to where they were heading.
   useEffect(() => {
-    if (!fromProject || !arrivedSignedIn.current || !session.handle || published.current) return;
+    if (!(fromProject || fromOpportunities) || !arrivedSignedIn.current || !session.handle || published.current) return;
     published.current = true;
-    navigate(NEED_CONTINUE_PATH, { replace: true });
-  }, [fromProject, navigate, session.handle]);
+    navigate(fromProject ? NEED_REVIEW_PATH : OPPORTUNITY_PATH, { replace: true });
+  }, [fromProject, fromOpportunities, navigate, session.handle]);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -101,11 +103,12 @@ export function JoinSignUpPage() {
     if (fromOpportunities || entry === "opportunities") patchOnboarding(account.handle, { opportunitiesOnly: true });
     signIn(account.handle);
     if (fromProject) {
-      navigate(NEED_CONTINUE_PATH, { replace: true });
+      navigate(NEED_REVIEW_PATH, { replace: true });
       return;
     }
     if (fromOpportunities) {
-      navigate(OPPORTUNITY_PATH, { replace: true, state: { newAccount: true } });
+      // Straight into the profile steps: district, profile type, profile, work, documents.
+      navigate(JOIN_CONTRACTOR_PATH, { replace: true });
       return;
     }
     if (entry === "opportunities") {
@@ -124,8 +127,10 @@ export function JoinSignUpPage() {
         title="Create an account."
         lede={
           fromProject
-            ? "To publish your project, enter your details."
-            : "Takes about a minute. We'll build the rest of your profile from there."
+            ? "To publish your opportunity, enter your details."
+            : fromOpportunities
+              ? "Create an account, then make your profile to see the full opportunities."
+              : "Takes about a minute. We'll build the rest of your profile from there."
         }
       />
       <form className="mt-10 space-y-6" onSubmit={onSubmit} noValidate>
@@ -221,7 +226,15 @@ export function JoinSignUpPage() {
       <p className="mt-4 text-center text-body-sm text-muted">
         Already have an account?{" "}
         <Link
-          to={fromProject ? "/sign-in?from=project" : entry ? `/sign-in?entry=${entry}` : "/sign-in"}
+          to={
+            fromProject
+              ? "/sign-in?from=project"
+              : fromOpportunities
+                ? "/sign-in?next=/opportunities"
+                : entry
+                  ? `/sign-in?entry=${entry}`
+                  : "/sign-in"
+          }
           className="text-foreground underline underline-offset-4"
         >
           Sign in

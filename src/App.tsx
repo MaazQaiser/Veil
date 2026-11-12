@@ -54,25 +54,13 @@ import { OpportunityHomePage } from "@/pages/opportunities/Home";
 import { NeedLayout } from "@/pages/need/NeedLayout";
 import { NeedPlacePage } from "@/pages/need/Place";
 import { NeedCategoriesPage } from "@/pages/need/Categories";
-import { NeedDescribePage } from "@/pages/need/Describe";
-import { NeedMediaPage } from "@/pages/need/Media";
 import { NeedSavePage } from "@/pages/need/Save";
 import { NeedLocationPage } from "@/pages/need/Location";
-import { NeedTimingPage } from "@/pages/need/Timing";
-import { NeedBudgetPage } from "@/pages/need/Budget";
 import { NeedReviewPage } from "@/pages/need/Review";
-import { NeedAccountPage } from "@/pages/need/Account";
-import { NeedConfirmPage } from "@/pages/need/Confirm";
-import { NeedContinuePage } from "@/pages/need/Continue";
-import { NeedVerifyPage } from "@/pages/need/Verify";
-import { NeedPublishPage } from "@/pages/need/Publish";
-import { NeedPublishedPage } from "@/pages/need/Published";
-import { NeedProjectWizardPage } from "@/pages/need/ProjectWizard";
 import { ContractorProjectsLayout } from "@/pages/projects/List";
 import { ProjectDetailPage } from "@/pages/projects/Detail";
 import { ProjectHandshakeRoomPage } from "@/pages/projects/HandshakeRoom";
 import { OpportunityDetailPage } from "@/pages/cxOpportunities/Detail";
-import { VaelanceSetupPage } from "@/pages/cxOpportunities/VaelanceSetup";
 import { VaelanceComparePage, VaelancePage } from "@/pages/cx/Vaelance";
 import { ConstructionMatchDetailPage } from "@/pages/construction/Board";
 import { ConstructionVaelPage } from "@/pages/construction/Vael";
@@ -167,28 +155,28 @@ export default function App() {
             <Route path="/districts/contractor/community" element={<DistrictCommunityPage />} />
             <Route path="/districts/contractor/opportunities" element={<Navigate to="/opportunities" replace />} />
             <Route path="/districts/contractor/opportunities/:projectId" element={<OpportunityDetailPage />} />
-            <Route path="/districts/contractor/vaelance" element={<VaelanceSetupPage />} />
+            <Route path="/districts/contractor/vaelance" element={<Navigate to="/join/contractor-exchange" replace />} />
             <Route path="/districts/contractor/residential" element={<ConstructionHomePage category="residential" />} />
             <Route path="/districts/contractor/commercial" element={<ConstructionHomePage category="commercial" />} />
             </Route>
-            <Route path="/districts/contractor/residential/start" element={<Navigate to="/need/project" replace />} />
+            <Route path="/districts/contractor/residential/start" element={<Navigate to="/need" replace />} />
             <Route path="/need" element={<NeedLayout />}>
               <Route index element={<NeedPlacePage />} />
               <Route path="home" element={<NeedCategoriesPage />} />
-              <Route path="describe" element={<NeedDescribePage />} />
-              <Route path="media" element={<NeedMediaPage />} />
+              <Route path="describe" element={<NeedStepRedirect to="/need/home" />} />
+              <Route path="media" element={<NeedStepRedirect to="/need/home" />} />
               <Route path="save" element={<NeedSavePage />} />
               <Route path="location" element={<NeedLocationPage />} />
-              <Route path="timing" element={<NeedTimingPage />} />
-              <Route path="budget" element={<NeedBudgetPage />} />
-              <Route path="account" element={<NeedAccountPage />} />
-              <Route path="confirm" element={<NeedConfirmPage />} />
-              <Route path="continue" element={<NeedContinuePage />} />
+              <Route path="timing" element={<NeedStepRedirect to="/need/location" />} />
+              <Route path="budget" element={<NeedStepRedirect to="/need/location" />} />
+              <Route path="account" element={<NeedStepRedirect to="/need/review" />} />
+              <Route path="confirm" element={<NeedStepRedirect to="/need/review" />} />
+              <Route path="continue" element={<NeedStepRedirect to="/need/review" />} />
               <Route path="review" element={<NeedReviewPage />} />
-              <Route path="verify" element={<NeedVerifyPage />} />
-              <Route path="publish" element={<NeedPublishPage />} />
-              <Route path="published/:projectId" element={<NeedPublishedPage />} />
-              <Route path="project" element={<NeedProjectWizardPage />} />
+              <Route path="verify" element={<NeedStepRedirect to="/need/review" />} />
+              <Route path="publish" element={<NeedStepRedirect to="/need/review" />} />
+              <Route path="published/:projectId" element={<Navigate to="/opportunities?tab=mine" replace />} />
+              <Route path="project" element={<NeedStepRedirect to="/need" />} />
             </Route>
             <Route path="/districts/contractor/projects" element={<ContractorProjectsLayout />}>
               <Route index element={<Navigate to="/opportunities?tab=mine" replace />} />
@@ -315,4 +303,10 @@ function LegacyProjectsRedirect() {
   const { pathname, search, hash } = useLocation();
   const next = pathname.replace(/^\/projects/, "/districts/contractor/projects");
   return <Navigate to={`${next}${search}${hash}`} replace />;
+}
+
+/** The posting steps that were merged into larger screens still resolve, and keep "return to review". */
+function NeedStepRedirect({ to }: { to: string }) {
+  const { search } = useLocation();
+  return <Navigate to={`${to}${search}`} replace />;
 }

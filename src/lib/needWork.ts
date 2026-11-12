@@ -11,6 +11,8 @@ export type NeedWork = {
   budget: string;
   saveEmail: string;
   savePhone: string;
+  /** Ticked on Review: a home project, not work subcontracted for a client. */
+  homeProject: boolean;
 };
 
 const EMPTY: NeedWork = {
@@ -24,6 +26,7 @@ const EMPTY: NeedWork = {
   budget: "",
   saveEmail: "",
   savePhone: "",
+  homeProject: false,
 };
 
 export function readNeedWork(): NeedWork {
@@ -43,10 +46,17 @@ export function readNeedWork(): NeedWork {
       budget: typeof parsed.budget === "string" ? parsed.budget : "",
       saveEmail: typeof parsed.saveEmail === "string" ? parsed.saveEmail : "",
       savePhone: typeof parsed.savePhone === "string" ? parsed.savePhone : "",
+      homeProject: parsed.homeProject === true,
     };
   } catch {
     return EMPTY;
   }
+}
+
+/** Forget what was entered in the posting steps, once it has been published. */
+export function clearNeedWork() {
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.removeItem(KEY);
 }
 
 export function saveNeedWork(patch: Partial<NeedWork>) {
