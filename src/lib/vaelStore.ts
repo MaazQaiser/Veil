@@ -1206,6 +1206,16 @@ export function declineHandshake(connectionId: string) {
   );
 }
 
+/** Opens a closed Handshake again. Blocked ones stay closed. */
+export function reopenConnection(connectionId: string) {
+  write(
+    KEYS.connections,
+    getConnections().map((item) =>
+      item.id === connectionId && !item.blocked ? { ...item, status: "connected" as const } : item,
+    ),
+  );
+}
+
 export function closeConnection(connectionId: string) {
   write(
     KEYS.connections,

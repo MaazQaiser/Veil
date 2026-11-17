@@ -28,6 +28,7 @@ import {
   homeownerInterested,
   interestsForProject,
   keepCurrentScope,
+  matchPercent,
   originalProjectDescription,
   proposedScopeText,
   questionsForProject,
@@ -43,7 +44,7 @@ import { MY_OPPORTUNITIES_PATH, projectHandshakeHref, vaelanceCompareHref, vaela
 import { useCxProjects } from "@/lib/useCxProjects";
 import { CategoryMark } from "@/pages/need/OpportunityChrome";
 import { displayNameFor } from "@/lib/cxProjectStore";
-import { getConnection, getConnections } from "@/lib/vaelStore";
+import { getConnection, getConnections, getMessages } from "@/lib/vaelStore";
 import { formatDate, relativeTime } from "@/lib/time";
 
 export function ProjectDetailPage() {
@@ -260,7 +261,7 @@ export function ProjectDetailPage() {
                   />
                 )
               ) : (
-                <ul className="grid gap-4">
+                <ul className="grid grid-cols-1 gap-4">
                   {shownList.map((person) => (
                     <RespondentCard
                       key={person.handle}
@@ -751,8 +752,14 @@ function RespondentCard({
   const blurb = person.profile?.headline || (person.profile?.trades ?? []).join(", ");
   const primary = "h-10 w-full justify-center rounded-full xl:w-auto xl:px-6";
 
+  // What this contractor has written to the homeowner in the Handshake, so it shows right on their card.
+  const theirs = connection ? getMessages(connection.id).filter((item) => item.fromHandle !== homeowner) : [];
+  const lastMessage = theirs[theirs.length - 1];
+  const unreadMessages = theirs.filter((item) => !item.readBy.includes(homeowner)).length;
+
   return (
-    <li className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4 xl:flex-row xl:items-center xl:justify-between">
+    <li className="rounded-2xl border border-border bg-surface p-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <Avatar name={name} size="md" />
         <div className="min-w-0 flex-1">
@@ -778,6 +785,9 @@ function RespondentCard({
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
             <span className="rounded-full border border-border px-2 py-0.5 font-medium text-foreground">
               {person.group === "whole" ? "Whole project" : "Specialty"}
+            </span>
+            <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-semibold text-accent">
+              {matchPercent(person.alignment)}% match
             </span>
             <span>Responded {relativeTime(person.interest.createdAt) || "just now"}</span>
           </p>
@@ -819,6 +829,26 @@ function RespondentCard({
           View profile
         </Link>
       </div>
+      </div>
+          {lastMessage && connection ? (
+        <Link
+          to={projectHandshakeHref(projectId, connection.id)}
+          className="mt-4 flex items-start gap-3 rounded-xl border border-border-subtle bg-white/[0.03] px-3 py-2.5 text-body-sm motion-safe:transition-colors hover:border-accent/40"
+        >
+          <IconMessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-foreground">
+              Sent you a message
+              {unreadMessages > 0 ? (
+                <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-[0.6875rem] font-bold text-primary-foreground">{unreadMessages} new</span>
+              ) : null}
+            </span>
+            <span className="mt-0.5 block truncate text-caption text-muted">
+              “{lastMessage.body}” · {relativeTime(lastMessage.createdAt) || "just now"}
+            </span>
+          </span>
+        </Link>
+      ) : null}
     </li>
   );
 }

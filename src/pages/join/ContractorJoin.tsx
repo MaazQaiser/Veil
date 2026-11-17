@@ -281,7 +281,7 @@ export function JoinContractorExchangePage() {
             </Block>
             <Block
               title="Areas you work in"
-              note={`Pick up to ${CX_MAX_AREAS} towns, or whole counties. You can respond to opportunities in these places.`}
+              note={`Pick up to ${CX_MAX_AREAS} towns, or whole counties. You can respond to opportunities within 25 miles of these places.`}
               cards
               icon={IconMapPin}
             >

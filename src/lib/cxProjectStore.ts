@@ -16,6 +16,7 @@ import {
 } from "./constructionStore";
 import {
   closeConnection,
+  blockConnection,
   getConnection,
   getConnections,
   getLatestListing,
@@ -24,6 +25,7 @@ import {
   openProjectHandshake,
   pushCoalescedNotice,
   removeProjectConnections,
+  reopenConnection,
   sendMessage,
   type ConnectionRecord,
 } from "./vaelStore";
@@ -39,6 +41,8 @@ const KEYS = {
   active: "vael_cx_active_v1",
   seeded: "vael_cx_vaelance_seeded_v1",
   demoProject: "vael_cx_demo_project_v1",
+  rooms: "vael_cx_rooms_v1",
+  reports: "vael_cx_reports_v1",
 } as const;
 
 export const CX_LIVE_DAYS = 7;
@@ -541,6 +545,8 @@ export function deleteCxProject(projectId: string) {
     "project_deleted",
     "/opportunities",
   );
+  const goneConnections = new Set(getConnections().filter((item) => item.projectId === projectId).map((item) => item.id));
+  write(KEYS.rooms, getRooms().filter((item) => !goneConnections.has(item.connectionId)));
   removeProjectConnections(projectId);
   write(KEYS.projects, getCxProjects().filter((item) => item.id !== projectId));
   write(KEYS.interests, getInterests().filter((item) => item.projectId !== projectId));
@@ -634,6 +640,27 @@ export function responseGroupFor(role: CxProjectRole): CxResponseGroup {
   return role === "specialty" ? "specialty" : "whole";
 }
 
+/** Towns within about 25 miles of each other. A contractor who works in one can respond to work in any of them. */
+const NEARBY_TOWNS: string[][] = [
+  [
+    "jacksonville",
+    "orange park",
+    "fleming island",
+    "middleburg",
+    "jacksonville beach",
+    "atlantic beach",
+    "neptune beach",
+    "ponte vedra",
+    "baldwin",
+    "yulee",
+    "fruit cove",
+    "julington creek",
+  ],
+  ["atlanta", "decatur", "marietta", "smyrna", "sandy springs", "roswell", "alpharetta", "dunwoody", "brookhaven", "tucker", "east point", "kennesaw"],
+];
+
+export const CX_AREA_MILES = 25;
+
 function worksInProjectLocation(project: CxProject, handle: string) {
   const profile = getCxProfile(handle);
   const listing = getActiveCxListing(handle);
@@ -644,7 +671,8 @@ function worksInProjectLocation(project: CxProject, handle: string) {
   const zip = project.postalCode.trim().toLowerCase();
   if (area.includes(city)) return true;
   if (zip && area.includes(zip.slice(0, 3))) return true;
-  return false;
+  const group = NEARBY_TOWNS.find((towns) => towns.some((town) => city.includes(town)));
+  return Boolean(group && group.some((town) => area.includes(town)));
 }
 
 /** A homeowner project does not require a role. Any chosen role can respond; the role only sets their group later. */
@@ -684,6 +712,11 @@ export function alignmentScore(project: CxProject, handle: string) {
   if ((profile?.projects?.length ?? 0) > 0) score += 1;
   if (listing) score += 1;
   return score;
+}
+
+/** The alignment score as a percentage, the way the homeowner sees it. */
+export function matchPercent(score: number) {
+  return Math.min(98, 25 + Math.round(score * 12));
 }
 
 export function eligibleContractorsFor(project: CxProject) {
@@ -778,7 +811,7 @@ export function ineligibleReason(project: CxProject, handle: string) {
   if (!project.category || !vaelance.projectCategories.includes(project.category as RxProjectCategory)) {
     return `You haven't listed ${project.category || "this kind of work"} among the projects you take on.`;
   }
-  if (!worksInProjectLocation(project, handle)) return `${project.city || "This area"} isn't one of the areas you work in.`;
+  if (!worksInProjectLocation(project, handle)) return `${project.city || "This area"} isn't within 25 miles of the areas you work in.`;
   if (!credentialsAvailable(project, handle)) return "This opportunity needs credentials your profile doesn't list yet.";
   return "";
 }
@@ -947,9 +980,15 @@ export function questionsForProject(projectId: string) {
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
 }
 
+/** Each contractor gets one question per opportunity, so questions never replace showing interest. */
+export function hasAskedQuestion(projectId: string, handle: string) {
+  return getQuestions().some((item) => item.projectId === projectId && item.fromHandle === handle);
+}
+
 export function askProjectQuestion(projectId: string, fromHandle: string, body: string) {
   const project = getCxProject(projectId);
   if (!project || project.status !== "live") throw new Error("Project is not live.");
+  if (hasAskedQuestion(projectId, fromHandle)) throw new Error("You can ask one question on each opportunity.");
   const question: CxQuestion = {
     id: id("cxq"),
     projectId,
@@ -1098,6 +1137,7 @@ export function publicProjectCard(project: CxProject) {
 
 export function revealedContacts(project: CxProject, connection: ConnectionRecord | undefined) {
   if (!connection || connection.status !== "connected" || connection.blocked) return null;
+  if (!getRoom(connection.id).contactShared) return null;
   const account = project.handle ? findAccountByHandle(project.handle) : undefined;
   const emailAccount = project.saveEmail ? findAccountByEmail(project.saveEmail) : undefined;
   return {
@@ -1106,6 +1146,131 @@ export function revealedContacts(project: CxProject, connection: ConnectionRecor
     email: account?.email || project.saveEmail,
     address: [project.streetAddress, project.city, project.postalCode].filter(Boolean).join(", "),
   };
+}
+
+export const CX_ROOM_MAX_FILES = 20;
+export const CX_ROOM_MAX_BYTES = 60 * 1024 * 1024;
+
+export type RoomFile = { id: string; name: string; size: number; by: string; at: string; data: string };
+export type RoomState = { connectionId: string; contactShared: boolean; closedBy: string; files: RoomFile[] };
+
+function getRooms(): RoomState[] {
+  return read<RoomState[]>(KEYS.rooms, []);
+}
+
+/** What the two people in a Handshake have shared and who closed it. */
+export function getRoom(connectionId: string): RoomState {
+  return getRooms().find((item) => item.connectionId === connectionId) ?? { connectionId, contactShared: false, closedBy: "", files: [] };
+}
+
+function saveRoom(room: RoomState) {
+  write(KEYS.rooms, [...getRooms().filter((item) => item.connectionId !== room.connectionId), room]);
+}
+
+function roomParty(connectionId: string, handle: string) {
+  const connection = getConnection(connectionId);
+  if (!connection || connection.source !== "project_interest") throw new Error("Handshake not found.");
+  if (connection.requesterHandle !== handle && connection.counterpartHandle !== handle) throw new Error("Handshake not found.");
+  return connection;
+}
+
+/** Only the homeowner can open up contact details. Until then neither side sees the other's. */
+export function shareContactDetails(connectionId: string, handle: string) {
+  const connection = roomParty(connectionId, handle);
+  const project = connection.projectId ? getCxProject(connection.projectId) : undefined;
+  if (!project || project.handle !== handle) throw new Error("Only the homeowner can share contact details.");
+  if (connection.status !== "connected" || connection.blocked) throw new Error("This Handshake is closed.");
+  saveRoom({ ...getRoom(connectionId), contactShared: true });
+}
+
+export function roomUsage(connectionId: string) {
+  const files = getRoom(connectionId).files;
+  return { files: files.length, bytes: files.reduce((sum, item) => sum + item.size, 0) };
+}
+
+export function addRoomFile(connectionId: string, handle: string, file: { name: string; size: number; data: string }) {
+  const connection = roomParty(connectionId, handle);
+  if (connection.status !== "connected" || connection.blocked) throw new Error("This Handshake is closed.");
+  const room = getRoom(connectionId);
+  const used = roomUsage(connectionId);
+  if (used.files >= CX_ROOM_MAX_FILES) throw new Error(`A Handshake holds up to ${CX_ROOM_MAX_FILES} files.`);
+  if (used.bytes + file.size > CX_ROOM_MAX_BYTES) throw new Error("That would go over the 60 MB limit for this Handshake.");
+  saveRoom({
+    ...room,
+    files: [...room.files, { id: id("cxf"), name: file.name, size: file.size, by: handle, at: nowIso(), data: file.data }],
+  });
+}
+
+export function removeRoomFile(connectionId: string, handle: string, fileId: string) {
+  roomParty(connectionId, handle);
+  const room = getRoom(connectionId);
+  const target = room.files.find((item) => item.id === fileId);
+  if (!target || target.by !== handle) return;
+  saveRoom({ ...room, files: room.files.filter((item) => item.id !== fileId) });
+}
+
+/** Closing records who did it. Only that person can open the Handshake again. */
+export function closeRoom(connectionId: string, handle: string) {
+  roomParty(connectionId, handle);
+  closeConnection(connectionId);
+  saveRoom({ ...getRoom(connectionId), closedBy: handle });
+}
+
+export function canReopenRoom(connectionId: string, handle: string) {
+  const connection = getConnection(connectionId);
+  return Boolean(connection && connection.status === "closed" && !connection.blocked && getRoom(connectionId).closedBy === handle);
+}
+
+export function reopenRoom(connectionId: string, handle: string) {
+  roomParty(connectionId, handle);
+  if (!canReopenRoom(connectionId, handle)) throw new Error("Only the person who closed this Handshake can reopen it.");
+  reopenConnection(connectionId);
+  saveRoom({ ...getRoom(connectionId), closedBy: "" });
+}
+
+export function blockRoom(connectionId: string, handle: string) {
+  roomParty(connectionId, handle);
+  blockConnection(connectionId);
+  saveRoom({ ...getRoom(connectionId), closedBy: handle });
+}
+
+export type CxReport = {
+  id: string;
+  kind: "person" | "project";
+  byHandle: string;
+  /** The reported person's handle, or the project id for a project report. */
+  target: string;
+  projectId: string;
+  reason: string;
+  details: string;
+  createdAt: string;
+  status: "open" | "resolved";
+};
+
+export function getReports(): CxReport[] {
+  return read<CxReport[]>(KEYS.reports, []);
+}
+
+export function hasReported(kind: CxReport["kind"], byHandle: string, target: string) {
+  return getReports().some((item) => item.kind === kind && item.byHandle === byHandle && item.target === target);
+}
+
+/** One report per person per target. The reporter is thanked, and the report waits for an admin. */
+export function fileReport(input: { kind: CxReport["kind"]; byHandle: string; target: string; projectId: string; reason: string; details?: string }) {
+  if (hasReported(input.kind, input.byHandle, input.target)) {
+    throw new Error("You've already reported this. We'll let you know once we've reviewed it.");
+  }
+  write(KEYS.reports, [
+    ...getReports(),
+    { id: id("cxr"), ...input, details: (input.details ?? "").trim(), createdAt: nowIso(), status: "open" as const },
+  ]);
+  pushCoalescedNotice({
+    handle: input.byHandle,
+    title: "Thanks for your report",
+    body: "We'll review it and let you know what we decide.",
+    kind: "report_received",
+    projectId: input.projectId,
+  });
 }
 
 export function handshakeThreadReady(connection: ConnectionRecord | undefined) {

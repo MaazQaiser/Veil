@@ -4,14 +4,18 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   IconCalendar,
+  IconCheck,
   IconChevronLeft,
   IconClock,
   IconDocument,
+  IconFlag,
   IconLock,
   IconMapPin,
   IconMessageCircle,
+  IconTrash,
   IconWallet,
 } from "@/components/ui/icons";
+import { ReportDialog } from "@/components/opportunities/ReportDialog";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/time";
 import { CategoryMark } from "@/pages/need/OpportunityChrome";
@@ -21,28 +25,48 @@ import { MessageThread } from "@/components/vael";
 import { useCitySession } from "@/lib/citySession";
 import { findAccountByHandle } from "@/lib/accounts";
 import {
+  CX_ROOM_MAX_BYTES,
+  CX_ROOM_MAX_FILES,
+  addRoomFile,
   answerProjectQuestion,
   askProjectQuestion,
+  blockRoom,
+  canReopenRoom,
   closeOtherHandshakes,
+  closeRoom,
   confirmProjectScopeChange,
   displayNameFor,
   editLiveProject,
+  fileReport,
   getCxProject,
+  getRoom,
+  hasAskedQuestion,
+  interestBetween,
   keepCurrentScope,
   openProjectHandshakesFor,
   projectThreadFor,
   proposedScopeText,
   questionsForProject,
+  removeRoomFile,
+  reopenRoom,
   revealedContacts,
+  roomUsage,
   sendHandshakeMessage,
+  shareContactDetails,
   type CxQuestion,
 } from "@/lib/cxProjectStore";
 import { MY_OPPORTUNITIES_PATH, opportunityHref, projectHref } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { useVael } from "@/lib/vaelCore";
 import { getCxProfile } from "@/lib/constructionStore";
-import { closeConnection, getConnection } from "@/lib/vaelStore";
+import { getConnection } from "@/lib/vaelStore";
 import { useEffect, useState } from "react";
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
 
 export function ProjectHandshakeRoomPage() {
   useCxProjects();
@@ -56,6 +80,9 @@ export function ProjectHandshakeRoomPage() {
   const [proceedPrompt, setProceedPrompt] = useState(false);
   const [keptOthers, setKeptOthers] = useState(false);
   const [closePrompt, setClosePrompt] = useState(false);
+  const [blockPrompt, setBlockPrompt] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [roomError, setRoomError] = useState("");
   const party =
     !!connection &&
     (connection.requesterHandle === session.handle || connection.counterpartHandle === session.handle);
@@ -100,6 +127,12 @@ export function ProjectHandshakeRoomPage() {
       : [];
 
   const isHomeowner = session.handle === project.handle;
+  const otherHandle = isHomeowner ? contractorHandle : project.handle;
+  const room = getRoom(connection.id);
+  const usage = roomUsage(connection.id);
+  const blocked = connection.blocked;
+  const reopenable = canReopenRoom(connection.id, session.handle);
+  const contractorInterest = interestBetween(project.id, contractorHandle);
   const backTo = isHomeowner ? projectHref(project.id) : opportunityHref(project.id);
   const place = [project.city, project.postalCode].filter(Boolean).join(" · ");
   const HISTORY_LABEL: Record<string, string> = {
@@ -109,7 +142,18 @@ export function ProjectHandshakeRoomPage() {
     closed: "Closed",
     scope_change: "Scope changed",
   };
-  const history = project.history.filter((item) => item.kind !== "created");
+  const timeline = [
+    ...project.history
+      .filter((item) => item.kind !== "created")
+      .map((item) => ({ key: `${item.at}-${item.kind}`, at: item.at, label: HISTORY_LABEL[item.kind] ?? item.kind, note: item.note })),
+    ...(contractorInterest
+      ? [{ key: "interest", at: contractorInterest.createdAt, label: "Interest shown", note: `${displayNameFor(contractorHandle)} showed interest.` }]
+      : []),
+    { key: "handshake", at: connection.createdAt, label: "Handshake opened", note: "You both showed interest, so this room opened." },
+    ...(!connected && room.closedBy
+      ? [{ key: "closed", at: connection.createdAt, label: blocked ? "Blocked" : "Closed", note: `${displayNameFor(room.closedBy)} ${blocked ? "blocked" : "closed"} this Handshake.` }]
+      : []),
+  ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   const tabs = [
     { id: "project" as const, label: "Project", icon: IconDocument },
     { id: "communication" as const, label: "Communication", icon: IconMessageCircle },
@@ -150,15 +194,32 @@ export function ProjectHandshakeRoomPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={connected ? "live" : "default"}>{connected ? "Connected" : "Closed"}</Badge>
+            <Badge tone={connected ? "live" : "default"}>{connected ? "Connected" : blocked ? "Blocked" : "Closed"}</Badge>
             {connected && isHomeowner && !proceedPrompt ? (
               <Button type="button" size="sm" className="rounded-full" onClick={() => (otherHandshakes.length > 0 ? setProceedPrompt(true) : setKeptOthers(true))}>
                 Proceed with {otherName}
               </Button>
             ) : null}
-            {connected && !closePrompt ? (
+            {connected && !closePrompt && !blockPrompt ? (
               <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setClosePrompt(true)}>
                 Close Handshake
+              </Button>
+            ) : null}
+            {reopenable ? (
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full"
+                onClick={() => {
+                  try {
+                    reopenRoom(connection.id, session.handle);
+                    setRoomError("");
+                  } catch (err) {
+                    setRoomError(err instanceof Error ? err.message : "Could not reopen.");
+                  }
+                }}
+              >
+                Reopen Handshake
               </Button>
             ) : null}
           </div>
@@ -167,8 +228,63 @@ export function ProjectHandshakeRoomPage() {
         <p className="relative mt-4 text-body-sm text-muted">
           {connected
             ? "A private room for the two of you. Nobody else can see it."
-            : "This Handshake is closed. The opportunity and this conversation stay on record."}
+            : blocked
+              ? "This Handshake was blocked and stays closed. The opportunity and this conversation stay on record."
+              : room.closedBy === session.handle
+                ? "You closed this Handshake. You can reopen it whenever you like."
+                : room.closedBy
+                  ? `${displayNameFor(room.closedBy)} closed this Handshake. Only they can reopen it.`
+                  : "This Handshake is closed. The opportunity and this conversation stay on record."}
         </p>
+        {roomError ? <p className="relative mt-2 text-body-sm text-destructive">{roomError}</p> : null}
+
+        <div className="relative mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border-subtle pt-4">
+          <button
+            type="button"
+            onClick={() => setReportOpen(true)}
+            className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted motion-safe:transition-colors hover:text-foreground"
+          >
+            <IconFlag className="h-4 w-4" />
+            Report {otherName}
+          </button>
+          {connected && !blockPrompt ? (
+            <button
+              type="button"
+              onClick={() => {
+                setBlockPrompt(true);
+                setClosePrompt(false);
+              }}
+              className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted motion-safe:transition-colors hover:text-destructive"
+            >
+              Block {otherName}
+            </button>
+          ) : null}
+        </div>
+
+        {connected && blockPrompt ? (
+          <div className={cn(inner, "relative mt-4 p-4")}>
+            <p className="text-body font-medium text-foreground">Block {otherName}?</p>
+            <p className="mt-1 text-body-sm text-muted">
+              This closes the Handshake for good. Neither of you can message or reopen it. The record stays.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setBlockPrompt(false)}>
+                Keep Handshake
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full"
+                onClick={() => {
+                  blockRoom(connection.id, session.handle);
+                  setBlockPrompt(false);
+                }}
+              >
+                Block {otherName}
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         {connected && isHomeowner && proceedPrompt ? (
           <div className={cn(inner, "relative mt-4 p-4")}>
@@ -222,7 +338,7 @@ export function ProjectHandshakeRoomPage() {
                 size="sm"
                 className="rounded-full"
                 onClick={() => {
-                  closeConnection(connection.id);
+                  closeRoom(connection.id, session.handle);
                   setClosePrompt(false);
                 }}
               >
@@ -313,20 +429,16 @@ export function ProjectHandshakeRoomPage() {
               <IconClock className="h-5 w-5 text-accent" />
               History
             </h2>
-            {history.length === 0 ? (
-              <p className="mt-2 text-body-sm text-muted">Nothing has changed yet.</p>
-            ) : (
-              <ol className="mt-4 space-y-4 border-l border-border-subtle pl-5">
-                {history.map((item) => (
-                  <li key={`${item.at}-${item.kind}`} className="relative">
-                    <span aria-hidden className="absolute -left-[1.6rem] top-1.5 h-2 w-2 rounded-full bg-accent" />
-                    <p className="text-body-sm font-medium text-foreground">{HISTORY_LABEL[item.kind] ?? item.kind}</p>
-                    <p className="whitespace-pre-wrap text-body-sm text-muted">{item.note}</p>
-                    <p className="mt-0.5 text-caption text-quiet">{formatDate(item.at)}</p>
-                  </li>
-                ))}
-              </ol>
-            )}
+            <ol className="mt-4 space-y-4 border-l border-border-subtle pl-5">
+              {timeline.map((item) => (
+                <li key={item.key} className="relative">
+                  <span aria-hidden className="absolute -left-[1.6rem] top-1.5 h-2 w-2 rounded-full bg-accent" />
+                  <p className="text-body-sm font-medium text-foreground">{item.label}</p>
+                  <p className="whitespace-pre-wrap text-body-sm text-muted">{item.note}</p>
+                  <p className="mt-0.5 text-caption text-quiet">{formatDate(item.at)}</p>
+                </li>
+              ))}
+            </ol>
           </section>
         </div>
       ) : null}
@@ -386,41 +498,162 @@ export function ProjectHandshakeRoomPage() {
                   </form>
                 ) : null}
               </div>
+            ) : connected ? (
+              <div className="mt-2">
+                <p className="text-body-sm text-muted">
+                  {isHomeowner
+                    ? "Your contact details stay private until you choose to share them. Once you do, you and the contractor can see each other's name, phone and email."
+                    : "The homeowner hasn't shared contact details yet. They stay private until the homeowner chooses to share them."}
+                </p>
+                {isHomeowner ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-4 rounded-full"
+                    onClick={() => {
+                      try {
+                        shareContactDetails(connection.id, session.handle);
+                        setRoomError("");
+                      } catch (err) {
+                        setRoomError(err instanceof Error ? err.message : "Could not share.");
+                      }
+                    }}
+                  >
+                    Share my contact details
+                  </Button>
+                ) : null}
+              </div>
             ) : (
-              <p className="mt-2 text-body-sm text-muted">Contact details open after mutual interest.</p>
+              <p className="mt-2 text-body-sm text-muted">Contact details are only shown while the Handshake is open.</p>
             )}
           </section>
         </div>
       ) : null}
 
       {tab === "documents" ? (
-        <section className={cn(card, "mt-6")}>
-          <h2 className="text-body-lg font-semibold text-foreground">Documents</h2>
-          <p className="mt-1 text-body-sm text-muted">Shared files and records for this Handshake only.</p>
-          {project.photos.length > 0 ? (
-            <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {project.photos.map((src, index) => (
-                <li key={index}>
-                  <img src={src} alt="" className="h-24 w-full rounded-xl object-cover" />
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <ul className="mt-4 space-y-2 text-body-sm">
-            {project.video ? <li className={cn(inner, "px-4 py-3")}>Project video</li> : null}
-            {messages
-              .filter((item) => item.attachmentName)
-              .map((item) => (
-                <li key={item.id} className={cn(inner, "px-4 py-3")}>
-                  {item.attachmentName}
-                </li>
-              ))}
-            {project.photos.length === 0 && !project.video && messages.every((item) => !item.attachmentName) ? (
-              <li className="text-muted">No files shared yet.</li>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+          <section className={card}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-body-lg font-semibold text-foreground">Shared files</h2>
+                <p className="mt-1 text-body-sm text-muted">Only you and {otherName} can see these.</p>
+              </div>
+              {connected ? (
+                <label className="inline-flex h-10 cursor-pointer items-center rounded-full bg-accent px-5 text-body-sm font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90">
+                  Add file
+                  <input
+                    type="file"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (!file) return;
+                      const save = (data: string) => {
+                        try {
+                          addRoomFile(connection.id, session.handle, { name: file.name, size: file.size, data });
+                          setRoomError("");
+                        } catch (err) {
+                          setRoomError(err instanceof Error ? err.message : "Could not add the file.");
+                        }
+                      };
+                      // Small files keep their content so they can be downloaded. Larger ones are recorded by name and size only.
+                      if (file.size > 250_000) {
+                        save("");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => save(typeof reader.result === "string" ? reader.result : "");
+                      reader.onerror = () => save("");
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+              ) : null}
+            </div>
+
+            {roomError ? <p className="mt-3 text-body-sm text-destructive">{roomError}</p> : null}
+
+            {room.files.length === 0 ? (
+              <p className="mt-5 rounded-xl border border-dashed border-border p-6 text-center text-body-sm text-muted">No files shared yet.</p>
+            ) : (
+              <ul className="mt-5 space-y-2.5">
+                {room.files.map((file) => (
+                  <li key={file.id} className={cn(inner, "flex items-center gap-3 px-4 py-3")}>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                      <IconDocument className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-body-sm font-medium text-foreground">{file.name}</p>
+                      <p className="text-caption text-muted">
+                        {formatBytes(file.size)} · {file.by === session.handle ? "You" : displayNameFor(file.by)} · {formatDate(file.at)}
+                      </p>
+                    </div>
+                    {file.data ? (
+                      <a href={file.data} download={file.name} className="text-body-sm font-medium text-accent underline-offset-4 hover:underline">
+                        Download
+                      </a>
+                    ) : (
+                      <span className="text-caption text-quiet">Not stored in this demo</span>
+                    )}
+                    {file.by === session.handle && connected ? (
+                      <button
+                        type="button"
+                        aria-label={`Remove ${file.name}`}
+                        onClick={() => removeRoomFile(connection.id, session.handle, file.id)}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted motion-safe:transition-colors hover:bg-destructive-muted hover:text-destructive"
+                      >
+                        <IconTrash className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <div className="min-w-0 space-y-6">
+            <section className={card}>
+              <h2 className="text-body-lg font-semibold text-foreground">Space used</h2>
+              <p className="mt-2 text-body-sm text-muted">
+                <span className="font-semibold text-foreground">{usage.files}</span> of {CX_ROOM_MAX_FILES} files ·{" "}
+                <span className="font-semibold text-foreground">{formatBytes(usage.bytes)}</span> of {formatBytes(CX_ROOM_MAX_BYTES)}
+              </p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-foreground/15" role="img" aria-label="Space used in this Handshake">
+                <span
+                  className="block h-full rounded-full bg-accent"
+                  style={{ width: `${Math.min(100, Math.max(usage.files / CX_ROOM_MAX_FILES, usage.bytes / CX_ROOM_MAX_BYTES) * 100)}%` }}
+                />
+              </div>
+            </section>
+
+            {project.photos.length > 0 || project.video ? (
+              <section className={card}>
+                <h2 className="text-body-lg font-semibold text-foreground">From the opportunity</h2>
+                {project.photos.length > 0 ? (
+                  <ul className="mt-4 grid grid-cols-3 gap-2">
+                    {project.photos.map((src, index) => (
+                      <li key={index}>
+                        <img src={src} alt="" className="h-20 w-full rounded-xl object-cover" />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {project.video ? <video src={project.video} controls className="mt-3 max-h-48 w-full rounded-xl bg-black" /> : null}
+              </section>
             ) : null}
-          </ul>
-        </section>
+          </div>
+        </div>
       ) : null}
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title={`Report ${otherName}`}
+        question="What happened?"
+        thanks="Thanks for your report. We'll review it and let you know what we decide."
+        reasons={["Fraud or scam", "Harassment or abusive messages", "Not who they say they are", "Something else"]}
+        onSend={(reason, details) => fileReport({ kind: "person", byHandle: session.handle, target: otherHandle, projectId: project.id, reason, details })}
+      />
     </div>
   );
 }
@@ -483,7 +716,12 @@ function ProjectQuestions({
           </ul>
         </div>
       ) : null}
-      {homeowner ? null : (
+      {homeowner ? null : hasAskedQuestion(projectId, viewer) ? (
+        <p className="flex items-center gap-2 text-body-sm text-muted">
+          <IconCheck className="h-3.5 w-3.5 text-success" />
+          You've used your one question on this opportunity.
+        </p>
+      ) : (
         <form
           className="space-y-3"
           onSubmit={(event) => {

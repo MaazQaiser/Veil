@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, type SVGProps } from "react";
+import { useState, type ReactNode, type SVGProps } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { CityPage } from "@/components/city/CityShell";
 import { useJoinedDistricts } from "@/components/mt/DistrictsRow";
@@ -18,13 +18,16 @@ import {
   IconWallet,
 } from "@/components/ui/icons";
 import { Dialog } from "@/components/ui/overlays";
+import { ReportDialog } from "@/components/opportunities/ReportDialog";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import {
   askProjectQuestion,
   contractorInterested,
   contractorStanding,
+  fileReport,
   getCxProject,
+  hasAskedQuestion,
   ineligibleReason,
   interestBetween,
   publicProjectCard,
@@ -293,7 +296,7 @@ function writeSampleQuestions(id: string, rows: QuestionRow[]) {
 }
 
 /** The public questions on an opportunity. Everyone can read them; members can ask. */
-function QuestionsCard({ items, canAsk, onAsk }: { items: QuestionRow[]; canAsk: boolean; onAsk: (body: string) => void }) {
+function QuestionsCard({ items, canAsk, asked, onAsk }: { items: QuestionRow[]; canAsk: boolean; asked: boolean; onAsk: (body: string) => void }) {
   const [draft, setDraft] = useState("");
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-6">
@@ -303,7 +306,7 @@ function QuestionsCard({ items, canAsk, onAsk }: { items: QuestionRow[]; canAsk:
           Questions
           {items.length > 0 ? <span className="rounded-full bg-accent/15 px-2 py-0.5 text-caption font-semibold text-accent">{items.length}</span> : null}
         </h2>
-        <p className="text-caption text-muted">Public, not a private message</p>
+        <p className="text-caption text-muted">Public · one question each</p>
       </div>
 
       {items.length === 0 ? (
@@ -319,7 +322,12 @@ function QuestionsCard({ items, canAsk, onAsk }: { items: QuestionRow[]; canAsk:
         </ul>
       )}
 
-      {canAsk ? (
+      {canAsk && asked ? (
+        <p className="mt-4 flex items-center gap-2 text-body-sm text-muted">
+          <IconCheck className="h-3.5 w-3.5 text-success" />
+          You've used your one question on this opportunity.
+        </p>
+      ) : canAsk ? (
         <form
           className="mt-4 flex items-start gap-2.5"
           onSubmit={(event) => {
@@ -352,69 +360,6 @@ function QuestionsCard({ items, canAsk, onAsk }: { items: QuestionRow[]; canAsk:
         </p>
       )}
     </section>
-  );
-}
-
-function ReportDialog({ id, open, onClose }: { id: string; open: boolean; onClose: () => void }) {
-  const [reason, setReason] = useState("");
-  const [sent, setSent] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setReason("");
-      setSent(false);
-    }
-  }, [open]);
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title="Report this opportunity"
-      footer={
-        sent ? (
-          <Button type="button" onClick={onClose}>
-            Close
-          </Button>
-        ) : (
-          <>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={!reason}
-              onClick={() => {
-                writeList(REPORTS_KEY, [...readList(REPORTS_KEY), `${id}: ${reason}`]);
-                setSent(true);
-              }}
-            >
-              Send report
-            </Button>
-          </>
-        )
-      }
-    >
-      {sent ? (
-        <p className="text-body text-foreground">Thanks. We'll look at this opportunity.</p>
-      ) : (
-        <fieldset className="space-y-2">
-          <legend className="mb-3 text-body-sm text-muted">What's wrong with it?</legend>
-          {REPORT_REASONS.map((item) => (
-            <label
-              key={item}
-              className={cn(
-                "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-body-sm motion-safe:transition-colors",
-                reason === item ? "border-accent/60 bg-accent/10 text-foreground" : "border-border text-muted hover:text-foreground",
-              )}
-            >
-              <input type="radio" name="report-reason" checked={reason === item} onChange={() => setReason(item)} className="accent-[#EE8A4A]" />
-              {item}
-            </label>
-          ))}
-        </fieldset>
-      )}
-    </Dialog>
   );
 }
 
@@ -666,6 +611,7 @@ export function OpportunityDetailPage() {
             <QuestionsCard
               items={project ? questions : sampleQuestions}
               canAsk={joined}
+              asked={project ? hasAskedQuestion(project.id, session.handle) : sampleQuestions.length > 0}
               onAsk={(body) => {
                 if (project) askProjectQuestion(project.id, session.handle, body);
                 else {
@@ -679,7 +625,25 @@ export function OpportunityDetailPage() {
         </div>
 
       </div>
-      <ReportDialog id={view.id} open={reporting} onClose={() => setReporting(false)} />
+      <ReportDialog
+        open={reporting}
+        onClose={() => setReporting(false)}
+        title="Report this opportunity"
+        question="What's wrong with it?"
+        thanks="Thanks for your report. We'll review it and let you know what we decide."
+        reasons={REPORT_REASONS}
+        onSend={(reason, details) => {
+          if (project) {
+            fileReport({ kind: "project", byHandle: session.handle, target: project.id, projectId: project.id, reason, details });
+            return;
+          }
+          const key = `${view.id}:${session.handle}`;
+          if (readList(REPORTS_KEY).some((item) => item.startsWith(`${key}:`))) {
+            throw new Error("You've already reported this. We'll let you know once we've reviewed it.");
+          }
+          writeList(REPORTS_KEY, [...readList(REPORTS_KEY), `${key}: ${reason}`]);
+        }}
+      />
     </DashboardShell>
   );
 }

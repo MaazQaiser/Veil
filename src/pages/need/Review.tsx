@@ -93,7 +93,7 @@ export function NeedReviewPage() {
       backTo={NEED_SAVE_PATH}
       action={
         <OpportunityAction disabled={!homeProject} onClick={publish}>
-          Publish opportunity
+          Make it visible
         </OpportunityAction>
       }
     >

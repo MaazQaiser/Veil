@@ -321,7 +321,7 @@ function ProjectDetails({ handle, mine }: { handle: string; mine: boolean }) {
         <p className="mt-3 text-caption text-muted">
           {areas.length} of {CX_MAX_AREAS} picked.
         </p>
-        <p className="mt-1 text-caption text-muted">Pick up to {CX_MAX_AREAS} towns, or whole counties. You can respond to projects in these places.</p>
+        <p className="mt-1 text-caption text-muted">Pick up to {CX_MAX_AREAS} towns, or whole counties. You can respond to projects within 25 miles of these places.</p>
         <SaveButton dirty={areasDirty} onClick={() => persist({ areas })} />
       </PickerPanel>
     </div>
