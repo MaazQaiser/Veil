@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useJoinedDistricts } from "@/components/mt/DistrictsRow";
 import {
@@ -13,10 +13,10 @@ import {
   useOpportunityFilters,
 } from "@/components/opportunities/OpportunityFilters";
 import { IconLock } from "@/components/ui/icons";
-import { OpportunityCardView, ProjectCard, ProjectDetailsDialog } from "@/pages/city/Projects";
+import { OpportunityCardView, ProjectCard } from "@/pages/city/Projects";
 import { useCitySession } from "@/lib/citySession";
-import { contractorStanding, liveCxProjects, respondentCount, type CxProject } from "@/lib/cxProjectStore";
-import { opportunityHref, opportunityStart, projectHref } from "@/lib/cxRoutes";
+import { contractorStanding, liveCxProjects, type CxProject } from "@/lib/cxProjectStore";
+import { opportunityHref, opportunityStart } from "@/lib/cxRoutes";
 import { MARKETING_PROJECTS, type MarketingProjectIcon } from "@/lib/marketingProjects";
 import { relativeTime } from "@/lib/time";
 import { useCxProjects } from "@/lib/useCxProjects";
@@ -43,7 +43,8 @@ function daysLeftFor(project: CxProject) {
 /** How many live opportunities the cards will show, so a tab can carry the count. */
 export function useLiveOpportunityCount(samples: "all" | "fallback") {
   useCxProjects();
-  const real = liveCxProjects().length;
+  const { session } = useCitySession();
+  const real = liveCxProjects().filter((item) => item.handle !== session.handle).length;
   return real + (samples === "all" ? MARKETING_PROJECTS.length : real === 0 ? 2 : 0);
 }
 
@@ -77,9 +78,11 @@ export function OpportunityBoard({
   const { handle, profile, documents } = useVael();
   const mine = handle ? profile(handle) : undefined;
   const joined = useJoinedDistricts(handle, mine, handle ? documents(handle) : []).some((row) => row.district.id === "construction");
-  const [openId, setOpenId] = useState<string | null>(null);
 
-  const real = liveCxProjects().sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  // Browse shows other people's work. Your own postings live under "Your opportunities".
+  const real = liveCxProjects()
+    .filter((item) => item.handle !== session.handle)
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   const sampleList = samples === "all" ? MARKETING_PROJECTS : real.length === 0 ? MARKETING_PROJECTS.slice(0, 2) : [];
   const filters = useOpportunityFilters();
   const locations = sortLocations([...real.map((item) => item.city), ...sampleList.map((item) => item.city)]);
@@ -98,7 +101,6 @@ export function OpportunityBoard({
   );
   const total = shownReal.length + shownSamples.length;
   const start = opportunityStart("create");
-  const open = MARKETING_PROJECTS.find((item) => item.id === openId);
 
   return (
     <>
@@ -160,9 +162,7 @@ export function OpportunityBoard({
           ) : (
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(21rem,1fr))] gap-4">
               {shownReal.map((item) => {
-                const own = item.handle === session.handle;
-                const standing = own ? "open" : contractorStanding(item.id, session.handle);
-                const responses = own ? respondentCount(item.id) : 0;
+                const standing = contractorStanding(item.id, session.handle);
                 return (
                 <li key={item.id}>
                   <OpportunityCardView
@@ -176,22 +176,16 @@ export function OpportunityBoard({
                     daysLeft={daysLeftFor(item)}
                     image={item.photos[0]}
                     photoCount={item.photos.length}
-                    locked={!joined && item.handle !== session.handle}
+                    locked={!joined}
                     lockedNote={`The description is for members of ${DISTRICT_NAME}`}
                     lockedAction={{ label: "Unlock details", to: JOIN_DISTRICT_ROUTE }}
-                    action={
-                      own
-                        ? { label: "Manage opportunity", to: projectHref(item.id) }
-                        : { label: "View opportunity", to: opportunityHref(item.id) }
-                    }
+                    action={{ label: "View opportunity", to: opportunityHref(item.id) }}
                     badge={
-                      own
-                        ? { label: responses > 0 ? `${responses} interested` : "Yours", tone: responses > 0 ? "soon" : "default" }
-                        : standing === "connected"
-                          ? { label: "Handshake open", tone: "soon" }
-                          : standing === "interested"
-                            ? { label: "Interested", tone: "soon" }
-                            : undefined
+                      standing === "connected"
+                        ? { label: "Handshake open", tone: "soon" }
+                        : standing === "interested"
+                          ? { label: "Interested", tone: "soon" }
+                          : undefined
                     }
                   />
                 </li>
@@ -202,7 +196,8 @@ export function OpportunityBoard({
                   <ProjectCard
                     project={project}
                     locked={!joined}
-                    onDetails={() => setOpenId(project.id)}
+                    onDetails={() => undefined}
+                    viewTo={opportunityHref(project.id)}
                     lockedAction={{ label: "Unlock details", to: JOIN_DISTRICT_ROUTE }}
                   />
                 </li>
@@ -211,7 +206,6 @@ export function OpportunityBoard({
           )}
             </div>
           </div>
-          <ProjectDetailsDialog project={open} onClose={() => setOpenId(null)} />
         </>
       )}
     </>

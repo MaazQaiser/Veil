@@ -19,13 +19,14 @@ import { IconClock, IconLock } from "@/components/ui/icons";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { MARKETING_PROJECTS, type MarketingProject, type MarketingProjectIcon } from "@/lib/marketingProjects";
+import { stockPhoto } from "@/lib/stockPhotos";
 
 const DISTRICT_NAME = "Contractor Exchange";
 
 const CARD =
   "flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.2),0_10px_30px_-12px_rgba(0,0,0,0.5)]";
 
-function CategoryGlyph({ icon }: { icon: MarketingProjectIcon }) {
+export function CategoryGlyph({ icon }: { icon: MarketingProjectIcon }) {
   const svg = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -142,7 +143,10 @@ export type OpportunityCardProps = {
 export function OpportunityCardView(props: OpportunityCardProps) {
   const { category, icon, meta, description, city, timing, budget, daysLeft, image, photoCount, locked, lockedNote, lockedAction, action, badge } = props;
   const [broken, setBroken] = useState(false);
-  const showPhoto = Boolean(image) && !broken;
+  const stock = image ? undefined : stockPhoto(category);
+  const photo = image ?? stock?.src;
+  const soft = Boolean(stock) && !stock?.exact;
+  const showPhoto = Boolean(photo) && !broken;
   const members = photoCount && photoCount > 0 ? `${photoCount} photo${photoCount === 1 ? "" : "s"} · members only` : "Members only";
   const button =
     "inline-flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-full border border-accent/40 px-5 text-body-sm font-semibold leading-none text-accent motion-safe:transition-colors hover:bg-accent/10";
@@ -151,12 +155,12 @@ export function OpportunityCardView(props: OpportunityCardProps) {
       <div className="relative h-40 w-full shrink-0 overflow-hidden bg-surface-muted">
         {showPhoto ? (
           <img
-            src={image}
+            src={photo}
             alt=""
             onError={() => setBroken(true)}
             className={cn(
               "h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-500",
-              locked ? "scale-110 blur-md" : "group-hover:scale-105",
+              locked ? "scale-110 blur-md" : soft ? "scale-110 blur-[5px]" : "group-hover:scale-105",
             )}
           />
         ) : (
@@ -189,6 +193,10 @@ export function OpportunityCardView(props: OpportunityCardProps) {
           <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-caption font-medium leading-none text-white backdrop-blur-sm">
             <IconLock className="h-3.5 w-3.5" />
             {members}
+          </span>
+        ) : stock && showPhoto ? (
+          <span className="absolute bottom-3 left-3 inline-flex items-center rounded-full bg-black/60 px-2.5 py-1 text-caption font-medium leading-none text-white/80 backdrop-blur-sm">
+            Sample photo
           </span>
         ) : null}
       </div>
@@ -247,11 +255,14 @@ export function ProjectCard({
   locked,
   onDetails,
   lockedAction = { label: "Join to view", to: `${JOIN_ROUTE}?from=opportunities` },
+  viewTo,
 }: {
   project: MarketingProject;
   locked: boolean;
   onDetails: () => void;
   lockedAction?: { label: string; to: string };
+  /** When set, the button opens this page instead of the details dialog. */
+  viewTo?: string;
 }) {
   return (
     <OpportunityCardView
@@ -267,7 +278,7 @@ export function ProjectCard({
       locked={locked}
       lockedNote="Description is for members only"
       lockedAction={lockedAction}
-      action={{ label: "Show details", onClick: onDetails }}
+      action={viewTo ? { label: "View opportunity", to: viewTo } : { label: "Show details", onClick: onDetails }}
     />
   );
 }

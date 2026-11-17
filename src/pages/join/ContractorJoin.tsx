@@ -5,6 +5,7 @@ import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/controls";
 import { IconBriefcase, IconDocument, IconHandshake, IconMapPin, IconUser } from "@/components/ui/icons";
 import { DocumentCard } from "@/components/vael";
+import { findAccountByHandle } from "@/lib/accounts";
 import { useCitySession } from "@/lib/citySession";
 import { cn } from "@/lib/cn";
 import { useConstruction } from "@/lib/constructionCore";
@@ -57,13 +58,15 @@ export function JoinContractorExchangePage() {
   const vael = useVael();
   const existing = getVaelance(session.handle);
   const start = cx.ensureMine();
+  const accountName = findAccountByHandle(session.handle)?.displayName;
   const mtName = vael.profile(session.handle)?.displayName;
+  const knownName = [mtName, accountName].find((name) => name && name !== session.handle);
 
   const [step, setStep] = useState(0);
   const [districtId, setDistrictId] = useState("");
   const [kind, setKind] = useState("");
   const [form, setForm] = useState<ConstructionProfile | null>(
-    start ? { ...start, displayName: start.displayName === start.handle && mtName ? mtName : start.displayName } : null,
+    start ? { ...start, displayName: start.displayName === start.handle && knownName ? knownName : start.displayName } : null,
   );
   const [categories, setCategories] = useState<string[]>(existing?.projectCategories ?? []);
   const [role, setRole] = useState<CxProjectRole | "">(existing?.projectRole ?? "");
@@ -278,7 +281,7 @@ export function JoinContractorExchangePage() {
             </Block>
             <Block
               title="Areas you work in"
-              note={`Pick up to ${CX_MAX_AREAS} towns, or whole counties. You only see opportunities in these places.`}
+              note={`Pick up to ${CX_MAX_AREAS} towns, or whole counties. You can respond to opportunities in these places.`}
               cards
               icon={IconMapPin}
             >

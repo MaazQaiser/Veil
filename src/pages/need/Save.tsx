@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { findAccountByHandle } from "@/lib/accounts";
+import { useCitySession } from "@/lib/citySession";
 import { looksLikeEmail, looksLikePhone } from "@/lib/cxProjectStore";
 import { NEED_HOME_PATH, NEED_LOCATION_PATH, NEED_REVIEW_PATH, needContinueTarget } from "@/lib/cxRoutes";
 import { Input } from "@/components/ui/controls";
@@ -10,9 +12,12 @@ import { OpportunityAction, OpportunityFrame, opportunityTitleClass } from "./Op
 export function NeedSavePage() {
   const navigate = useNavigate();
   const { search } = useLocation();
+  const { session } = useCitySession();
   const work = readNeedWork();
-  const [email, setEmail] = useState(work.saveEmail);
-  const [phone, setPhone] = useState(work.savePhone);
+  // Signed-in people already gave these when they made their account.
+  const account = session.handle ? findAccountByHandle(session.handle) : undefined;
+  const [email, setEmail] = useState(work.saveEmail || account?.email || "");
+  const [phone, setPhone] = useState(work.savePhone || account?.phone || "");
   const [error, setError] = useState("");
   const returning = new URLSearchParams(search).get("return") === "review";
 
@@ -43,10 +48,10 @@ export function NeedSavePage() {
       action={<OpportunityAction onClick={continueSave}>Next</OpportunityAction>}
     >
       <h1 className={opportunityTitleClass}>
-        Save your opportunity
+        Your contact details
       </h1>
       <p className="mt-3 text-body leading-relaxed text-muted">
-        We'll email you a link so you can finish on any device, and one reminder tomorrow if you don't. No password yet.
+        How we reach you when a contractor is interested.
       </p>
       <label htmlFor="need-save-email" className="mt-6 block text-body font-medium text-foreground">
         Email
@@ -82,11 +87,11 @@ export function NeedSavePage() {
       <ul className="mt-6 space-y-2.5 rounded-xl border border-border-subtle bg-white/[0.03] p-4 text-body-sm text-muted">
         <li className="flex items-start gap-2.5">
           <IconLock className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-          Never shown to contractors.
+          Not shown on your opportunity card.
         </li>
         <li className="flex items-start gap-2.5">
           <IconMessage className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-          We'll text a code to your phone before your opportunity goes live.
+          Shared only once a Handshake opens, when you and a contractor are both interested.
         </li>
       </ul>
       {error ? <p className="mt-3 text-body-sm text-destructive">{error}</p> : null}

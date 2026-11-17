@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/choice";
-import { IconClock, IconEdit, IconImage, IconInfo, IconMapPin, IconWallet } from "@/components/ui/icons";
+import { IconClock, IconEdit, IconImage, IconInfo, IconLock, IconMapPin, IconWallet } from "@/components/ui/icons";
 import { JOIN_ROUTE } from "@/components/city/CityShell";
 import { useCitySession } from "@/lib/citySession";
 import { CX_BUDGET_BANDS } from "@/lib/cxProjectStore";
@@ -101,7 +101,7 @@ export function NeedReviewPage() {
         Check your opportunity
       </h1>
       <p className="mt-3 text-body leading-relaxed text-muted">
-        This is what contractors will see. Tap any line to change it.
+        Contractors will see all of this except your contact details. Use Edit to change a line.
       </p>
       <div className="mt-6 overflow-hidden rounded-xl border border-border bg-white/[0.02]">
         <CheckRow
@@ -139,6 +139,12 @@ export function NeedReviewPage() {
           label="Budget"
           value={work.budget}
           to={`${NEED_LOCATION_PATH}?return=review`}
+        />
+        <CheckRow
+          icon={<IconLock className="h-5 w-5" />}
+          label="Your contact · private"
+          value={[work.saveEmail, work.savePhone].filter(Boolean).join("\n") || "Not added"}
+          to={`${NEED_SAVE_PATH}?return=review`}
         />
       </div>
       <div className="mt-4 rounded-lg border border-border bg-surface px-4 py-4 text-body-sm leading-relaxed text-muted">

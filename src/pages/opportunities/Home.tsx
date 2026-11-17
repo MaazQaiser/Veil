@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { DashboardShell } from "@/components/mt/DashboardShell";
 import { OpportunityBoard, useLiveOpportunityCount } from "@/components/opportunities/OpportunityBoard";
-import { IconClose } from "@/components/ui/icons";
+import { IconBriefcase, IconClose } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { useCitySession } from "@/lib/citySession";
-import { projectsForHandle } from "@/lib/cxProjectStore";
+import { projectsForHandle, respondentCount } from "@/lib/cxProjectStore";
+import { opportunityStart } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
 import { OpportunityCard, opportunityStatus } from "@/pages/projects/List";
 
@@ -27,6 +28,7 @@ export function OpportunityHomePage() {
   const mine = [...(session.handle ? projectsForHandle(session.handle) : [])].sort(
     (x, y) => Date.parse(y.publishedAt || y.createdAt) - Date.parse(x.publishedAt || x.createdAt),
   );
+  const interested = mine.filter((item) => item.status === "live").reduce((total, item) => total + respondentCount(item.id), 0);
   const counts = mine.reduce(
     (acc, item) => {
       const status = opportunityStatus(item);
@@ -74,20 +76,38 @@ export function OpportunityHomePage() {
     { id: "ended" as const, label: "Ended", full: "Ended", count: endedItems.length },
   ];
 
+  const start = opportunityStart("create");
+
   const yours =
     tab === "mine" ? (
       <>
         {mine.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-            <p className="text-body font-medium text-foreground">You haven't posted anything yet</p>
-            <p className="mt-1 text-body-sm text-muted">Post what you need done and contractors will respond here.</p>
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-surface px-6 py-14 text-center sm:py-20">
+            <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-accent/15 blur-3xl" />
+            <div className="relative mx-auto max-w-md">
+              <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent">
+                <IconBriefcase className="h-7 w-7" />
+              </span>
+              <h2 className="mt-6 text-h3 font-semibold text-foreground">You haven't posted anything yet</h2>
+              <p className="mt-2 text-body-sm text-muted">
+                Post what you need done. Contractors in your area can see it, and the ones who are interested will show up here.
+              </p>
+              <Link
+                to={start.to}
+                state={start.state}
+                className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-primary px-7 text-button font-semibold text-primary-foreground motion-safe:transition-opacity hover:opacity-90"
+              >
+                <span aria-hidden className="text-lg leading-none">+</span>
+                Post an Opportunity
+              </Link>
+            </div>
           </div>
         ) : (
           <>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
                 ["Active", counts.active],
-                ["Drafts", counts.drafts],
+                ["Interested", interested],
                 ["Closing soon", counts.closingSoon],
                 ["Closed", counts.closed],
               ].map(([label, value]) => (
@@ -173,7 +193,7 @@ export function OpportunityHomePage() {
             </div>
           ) : null
         }
-        showPost={tab === "mine"}
+        showPost={tab === "mine" && mine.length > 0}
       >
         {yours}
       </OpportunityBoard>

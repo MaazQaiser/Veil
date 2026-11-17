@@ -280,7 +280,7 @@ function ProjectDetails({ handle, mine }: { handle: string; mine: boolean }) {
               ))}
             </div>
           ) : null}
-          <p className="mt-3 text-caption text-muted">The kinds of homeowner project you want to see. You only see projects of these kinds.</p>
+          <p className="mt-3 text-caption text-muted">The kinds of homeowner project you want to see. You can respond to projects of these kinds.</p>
         </div>
         <SaveButton dirty={projectsDirty} onClick={() => persist({ role, categories })} />
       </PickerPanel>
@@ -321,7 +321,7 @@ function ProjectDetails({ handle, mine }: { handle: string; mine: boolean }) {
         <p className="mt-3 text-caption text-muted">
           {areas.length} of {CX_MAX_AREAS} picked.
         </p>
-        <p className="mt-1 text-caption text-muted">Pick up to {CX_MAX_AREAS} towns, or whole counties. You only see projects in these places.</p>
+        <p className="mt-1 text-caption text-muted">Pick up to {CX_MAX_AREAS} towns, or whole counties. You can respond to projects in these places.</p>
         <SaveButton dirty={areasDirty} onClick={() => persist({ areas })} />
       </PickerPanel>
     </div>

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, Navigate, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { cn } from "@/lib/cn";
+import { districts } from "@/lib/districts";
 import { useCitySession } from "@/lib/citySession";
 import {
   ONBOARDING_PATH,
@@ -156,7 +157,7 @@ export function AuthSplitScreen({ children }: { children: ReactNode }) {
 }
 
 const SIGN_UP_STATS = [
-  { value: "5", label: "Districts" },
+  { value: String(districts.length), label: "Districts" },
   { value: "847", label: "Available today" },
   { value: "18/hr", label: "Handshakes made" },
 ] as const;

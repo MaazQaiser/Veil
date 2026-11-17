@@ -1,6 +1,20 @@
 import { Link, useParams } from "react-router-dom";
 import { NeedFooter, NeedHead } from "@/pages/need/NeedLayout";
-import { IconChevronLeft } from "@/components/ui/icons";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  IconCalendar,
+  IconChevronLeft,
+  IconClock,
+  IconDocument,
+  IconLock,
+  IconMapPin,
+  IconMessageCircle,
+  IconWallet,
+} from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
+import { formatDate } from "@/lib/time";
+import { CategoryMark } from "@/pages/need/OpportunityChrome";
 import { Button, buttonClassName } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/controls";
 import { MessageThread } from "@/components/vael";
@@ -85,219 +99,328 @@ export function ProjectHandshakeRoomPage() {
       ? openProjectHandshakesFor(project.handle).filter((item) => item.id !== connection.id)
       : [];
 
+  const isHomeowner = session.handle === project.handle;
+  const backTo = isHomeowner ? projectHref(project.id) : opportunityHref(project.id);
+  const place = [project.city, project.postalCode].filter(Boolean).join(" · ");
+  const HISTORY_LABEL: Record<string, string> = {
+    published: "Published",
+    edited: "Edited",
+    extended: "Renewed",
+    closed: "Closed",
+    scope_change: "Scope changed",
+  };
+  const history = project.history.filter((item) => item.kind !== "created");
+  const tabs = [
+    { id: "project" as const, label: "Project", icon: IconDocument },
+    { id: "communication" as const, label: "Communication", icon: IconMessageCircle },
+    { id: "documents" as const, label: "Documents", icon: IconLock },
+  ];
+  const card = "rounded-2xl border border-border bg-surface p-5 sm:p-6";
+  const inner = "rounded-xl border border-border-subtle bg-white/[0.02]";
+
   return (
     <div className="flex flex-1 flex-col">
       <Link
-        to={session.handle === project.handle ? projectHref(project.id) : opportunityHref(project.id)}
-        className="mb-4 inline-flex items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
+        to={backTo}
+        className="mb-5 inline-flex w-fit items-center gap-1.5 text-body-sm font-medium text-muted hover:text-foreground"
       >
         <IconChevronLeft className="h-3.5 w-3.5" />
         Back to opportunity
       </Link>
-      <NeedHead title="Handshake" lede={`With ${otherName}. Only the two of you can see this room.`} />
-      {connected && session.handle === project.handle ? (
-        <div className="mt-6">
-          {proceedPrompt ? (
-            <div className="rounded-lg border border-border p-4">
-              <p className="text-body font-medium">Close your other Handshakes?</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    closeOtherHandshakes(project.handle, connection.id);
-                    setProceedPrompt(false);
-                  }}
-                >
-                  Close other Handshakes
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setProceedPrompt(false);
-                    setKeptOthers(true);
-                  }}
-                >
-                  Keep them open
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button type="button" variant="outline" onClick={() => (otherHandshakes.length > 0 ? setProceedPrompt(true) : setKeptOthers(true))}>
-              Proceed with {otherName}
-            </Button>
-          )}
-          {keptOthers && otherHandshakes.length > 0 ? (
-            <p className="mt-3 text-body-sm text-muted">Your other Handshakes stay open.</p>
-          ) : null}
-        </div>
-      ) : null}
-      {connected ? (
-        <div className="mt-4">
-          {closePrompt ? (
-            <div className="rounded-lg border border-border p-4">
-              <p className="text-body font-medium">Close this Handshake?</p>
-              <p className="mt-2 text-body-sm text-muted">
-                {session.handle === project.handle
-                  ? "You can close this connection if you no longer want to continue with this contractor."
-                  : "You can close this connection if you no longer want to continue with this homeowner."}
+
+      <section className={cn(card, "relative overflow-hidden")}>
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-x-6 gap-y-5">
+          <div className="flex min-w-0 items-center gap-4">
+            <Avatar name={otherName} size="lg" />
+            <div className="min-w-0">
+              <p className="text-caption font-semibold uppercase tracking-[0.14em] text-accent">Handshake</p>
+              <h1 className="mt-1 font-sans text-[clamp(1.5rem,2.6vw,2.125rem)] font-semibold leading-tight tracking-tight text-foreground">
+                {otherName}
+              </h1>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
+                <span className="inline-flex items-center gap-1.5 text-foreground">
+                  <span className="text-accent [&_svg]:h-4 [&_svg]:w-4">
+                    <CategoryMark category={project.category} />
+                  </span>
+                  {project.category || "Opportunity"}
+                </span>
+                {place ? <span>· {place}</span> : null}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => setClosePrompt(false)}>
-                  Keep Handshake
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    closeConnection(connection.id);
-                    setClosePrompt(false);
-                  }}
-                >
-                  Close Handshake
-                </Button>
-              </div>
             </div>
-          ) : (
-            <Button type="button" variant="ghost" onClick={() => setClosePrompt(true)}>
-              Close Handshake
-            </Button>
-          )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={connected ? "live" : "default"}>{connected ? "Connected" : "Closed"}</Badge>
+            {connected && isHomeowner && !proceedPrompt ? (
+              <Button type="button" size="sm" className="rounded-full" onClick={() => (otherHandshakes.length > 0 ? setProceedPrompt(true) : setKeptOthers(true))}>
+                Proceed with {otherName}
+              </Button>
+            ) : null}
+            {connected && !closePrompt ? (
+              <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setClosePrompt(true)}>
+                Close Handshake
+              </Button>
+            ) : null}
+          </div>
         </div>
-      ) : (
-        <p className="mt-4 text-body-sm text-muted">
-          This Handshake is closed. The project and this conversation stay on record.
+
+        <p className="relative mt-4 text-body-sm text-muted">
+          {connected
+            ? "A private room for the two of you. Nobody else can see it."
+            : "This Handshake is closed. The opportunity and this conversation stay on record."}
         </p>
-      )}
-      <div className="mt-6 flex flex-wrap gap-2">
-        {(["project", "communication", "documents"] as const).map((item) => (
-          <Button key={item} type="button" size="sm" variant={tab === item ? "primary" : "outline"} onClick={() => setTab(item)}>
-            {item === "project" ? "Project" : item === "communication" ? "Communication" : "Documents"}
-          </Button>
-        ))}
+
+        {connected && isHomeowner && proceedPrompt ? (
+          <div className={cn(inner, "relative mt-4 p-4")}>
+            <p className="text-body font-medium text-foreground">Close your other Handshakes?</p>
+            <p className="mt-1 text-body-sm text-muted">You can keep them open if you still want to hear from other contractors.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full"
+                onClick={() => {
+                  closeOtherHandshakes(project.handle, connection.id);
+                  setProceedPrompt(false);
+                }}
+              >
+                Close other Handshakes
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  setProceedPrompt(false);
+                  setKeptOthers(true);
+                }}
+              >
+                Keep them open
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {connected && isHomeowner && keptOthers && otherHandshakes.length > 0 ? (
+          <p className="relative mt-3 text-body-sm text-muted">Your other Handshakes stay open.</p>
+        ) : null}
+
+        {connected && closePrompt ? (
+          <div className={cn(inner, "relative mt-4 p-4")}>
+            <p className="text-body font-medium text-foreground">Close this Handshake?</p>
+            <p className="mt-1 text-body-sm text-muted">
+              {isHomeowner
+                ? "You can close this connection if you no longer want to continue with this contractor."
+                : "You can close this connection if you no longer want to continue with this homeowner."}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setClosePrompt(false)}>
+                Keep Handshake
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full"
+                onClick={() => {
+                  closeConnection(connection.id);
+                  setClosePrompt(false);
+                }}
+              >
+                Close Handshake
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <div role="tablist" aria-label="Handshake" className="mt-6 grid w-full grid-cols-3 gap-1 rounded-xl border border-border bg-surface-muted/40 p-1 sm:max-w-xl">
+        {tabs.map((item) => {
+          const on = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setTab(item.id)}
+              className={cn(
+                "inline-flex h-10 min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-2 text-body-sm font-medium motion-safe:transition-colors",
+                on ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground",
+              )}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              {item.label}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "project" ? (
-        <section className="mt-8 space-y-4">
-          <h2 className="text-h4 font-medium">Current scope</h2>
-          <p className="whitespace-pre-wrap text-body">{project.description}</p>
-          <h3 className="text-body font-medium">Confirmed clarifications</h3>
-          <ul className="space-y-2 text-body-sm text-muted">
-            {clarifications.map((item) => (
-              <li key={item.id}>
-                {item.body} — {item.answer}
-              </li>
-            ))}
-            {clarifications.length === 0 ? <li>No confirmed clarifications yet.</li> : null}
-          </ul>
-          <h3 className="text-body font-medium">Project history</h3>
-          <ul className="space-y-2 text-body-sm text-muted">
-            {project.history.map((item) => (
-              <li key={`${item.at}-${item.kind}`} className="whitespace-pre-wrap">
-                {item.kind === "scope_change" ? item.note : `${item.kind}: ${item.note}`}
-              </li>
-            ))}
-          </ul>
-          <ProjectQuestions
-            homeowner={session.handle === project.handle}
-            viewer={session.handle}
-            homeownerHandle={project.handle}
-            projectId={project.id}
-            description={project.description}
-            questions={questions}
-          />
-        </section>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+          <div className="min-w-0 space-y-6">
+            <section className={card}>
+              <h2 className="text-body-lg font-semibold text-foreground">Current scope</h2>
+              <p className="mt-2 whitespace-pre-wrap text-body leading-relaxed text-foreground/90">{project.description}</p>
+              <dl className="mt-5 grid gap-2.5 sm:grid-cols-3">
+                {[
+                  { icon: IconMapPin, label: "Location", value: place },
+                  { icon: IconCalendar, label: "Starts", value: project.timing },
+                  { icon: IconWallet, label: "Budget", value: project.budgetBand },
+                ]
+                  .filter((item) => Boolean(item.value))
+                  .map(({ icon: Icon, label, value }) => (
+                    <div key={label} className={cn(inner, "flex min-w-0 items-center gap-3 px-3.5 py-3")}>
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <dt className="text-caption leading-none text-muted">{label}</dt>
+                        <dd className="mt-1.5 break-words text-body-sm font-semibold leading-snug text-foreground">{value}</dd>
+                      </div>
+                    </div>
+                  ))}
+              </dl>
+            </section>
+
+            <section className={card}>
+              <h2 className="text-body-lg font-semibold text-foreground">Confirmed clarifications</h2>
+              {clarifications.length === 0 ? (
+                <p className="mt-2 text-body-sm text-muted">No confirmed clarifications yet.</p>
+              ) : (
+                <ul className="mt-3 space-y-2.5">
+                  {clarifications.map((item) => (
+                    <li key={item.id} className={cn(inner, "px-4 py-3 text-body-sm")}>
+                      <p className="text-foreground">{item.body}</p>
+                      <p className="mt-1.5 border-l-2 border-accent/50 pl-3 text-muted">{item.answer}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <ProjectQuestions
+              homeowner={isHomeowner}
+              viewer={session.handle}
+              homeownerHandle={project.handle}
+              projectId={project.id}
+              description={project.description}
+              questions={questions}
+            />
+          </div>
+
+          <section className={card}>
+            <h2 className="flex items-center gap-2 text-body-lg font-semibold text-foreground">
+              <IconClock className="h-5 w-5 text-accent" />
+              History
+            </h2>
+            {history.length === 0 ? (
+              <p className="mt-2 text-body-sm text-muted">Nothing has changed yet.</p>
+            ) : (
+              <ol className="mt-4 space-y-4 border-l border-border-subtle pl-5">
+                {history.map((item) => (
+                  <li key={`${item.at}-${item.kind}`} className="relative">
+                    <span aria-hidden className="absolute -left-[1.6rem] top-1.5 h-2 w-2 rounded-full bg-accent" />
+                    <p className="text-body-sm font-medium text-foreground">{HISTORY_LABEL[item.kind] ?? item.kind}</p>
+                    <p className="whitespace-pre-wrap text-body-sm text-muted">{item.note}</p>
+                    <p className="mt-0.5 text-caption text-quiet">{formatDate(item.at)}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </div>
       ) : null}
 
       {tab === "communication" ? (
-        <section className="mt-8">
-          <h2 className="text-h4 font-medium">Private messages</h2>
-          <p className="mt-2 text-body-sm text-muted">
-            This conversation stays on the {project.category} project. Only you and {otherName} can see it.
-          </p>
-          {revealed ? (
-            <div className="mb-6 rounded-lg border border-border p-4 text-body-sm">
-              <p className="font-medium text-foreground">Contact details</p>
-              <p className="mt-2 font-medium text-foreground">Homeowner</p>
-              <p>{revealed.fullName}</p>
-              {revealed.phone ? <p>{revealed.phone}</p> : null}
-              {revealed.email ? <p>{revealed.email}</p> : null}
-              <p>{revealed.address || `${project.city} / ${project.postalCode}`}</p>
-              <p className="mt-3 font-medium text-foreground">Contractor</p>
-              <p>{displayNameFor(contractorHandle)}</p>
-              {contractorAccount?.phone ? <p>{contractorAccount.phone}</p> : null}
-              {contractorAccount?.email ? <p>{contractorAccount.email}</p> : null}
-              {contractorProfile?.serviceArea || contractorProfile?.location ? (
-                <p>{contractorProfile.serviceArea || contractorProfile.location}</p>
-              ) : null}
-              {session.handle === project.handle ? (
-                <form
-                  className="mt-4 flex gap-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    editLiveProject(project.id, { streetAddress: address.trim() });
-                  }}
-                >
-                  <Input
-                    value={address}
-                    onChange={(event) => setAddress(event.target.value)}
-                    placeholder="Street address (shared only here)"
-                  />
-                  <Button type="submit" size="sm">
-                    Share address
-                  </Button>
-                </form>
-              ) : null}
-            </div>
-          ) : connected ? (
-            <p className="mb-4 text-body-sm text-muted">Contact details open after mutual interest.</p>
-          ) : null}
-          <MessageThread
-            handle={session.handle}
-            messages={messages}
-            enabled={connected}
-            readOnly={!connected}
-            placeholder={`Message ${otherName} about this project...`}
-            onSend={(body, attachmentName) => sendHandshakeMessage(connection.id, session.handle, body, attachmentName)}
-          />
-        </section>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+          <section className={card}>
+            <h2 className="text-body-lg font-semibold text-foreground">Private messages</h2>
+            <p className="mt-1 mb-5 text-body-sm text-muted">
+              This conversation stays on the {project.category} opportunity. Only you and {otherName} can see it.
+            </p>
+            <MessageThread
+              handle={session.handle}
+              messages={messages}
+              enabled={connected}
+              readOnly={!connected}
+              placeholder={`Message ${otherName} about this opportunity...`}
+              onSend={(body, attachmentName) => sendHandshakeMessage(connection.id, session.handle, body, attachmentName)}
+            />
+          </section>
+
+          <section className={card}>
+            <h2 className="flex items-center gap-2 text-body-lg font-semibold text-foreground">
+              <IconLock className="h-5 w-5 text-accent" />
+              Contact details
+            </h2>
+            {revealed ? (
+              <div className="mt-4 space-y-3 text-body-sm">
+                <div className={cn(inner, "p-4")}>
+                  <p className="text-caption font-semibold uppercase tracking-[0.1em] text-muted">Homeowner</p>
+                  <p className="mt-1.5 font-medium text-foreground">{revealed.fullName}</p>
+                  {revealed.phone ? <p className="text-muted">{revealed.phone}</p> : null}
+                  {revealed.email ? <p className="break-all text-muted">{revealed.email}</p> : null}
+                  <p className="text-muted">{revealed.address || place}</p>
+                </div>
+                <div className={cn(inner, "p-4")}>
+                  <p className="text-caption font-semibold uppercase tracking-[0.1em] text-muted">Contractor</p>
+                  <p className="mt-1.5 font-medium text-foreground">{displayNameFor(contractorHandle)}</p>
+                  {contractorAccount?.phone ? <p className="text-muted">{contractorAccount.phone}</p> : null}
+                  {contractorAccount?.email ? <p className="break-all text-muted">{contractorAccount.email}</p> : null}
+                  {contractorProfile?.serviceArea || contractorProfile?.location ? (
+                    <p className="text-muted">{contractorProfile.serviceArea || contractorProfile.location}</p>
+                  ) : null}
+                </div>
+                {isHomeowner ? (
+                  <form
+                    className="flex flex-col gap-2 sm:flex-row"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      editLiveProject(project.id, { streetAddress: address.trim() });
+                    }}
+                  >
+                    <Input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street address (shared only here)" />
+                    <Button type="submit" size="sm" className="shrink-0 rounded-full">
+                      Share address
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-body-sm text-muted">Contact details open after mutual interest.</p>
+            )}
+          </section>
+        </div>
       ) : null}
 
       {tab === "documents" ? (
-        <section className="mt-8">
-          <h2 className="text-h4 font-medium">Documents</h2>
-          <p className="mt-2 text-body-sm text-muted">Shared files and project records for this Handshake only.</p>
+        <section className={cn(card, "mt-6")}>
+          <h2 className="text-body-lg font-semibold text-foreground">Documents</h2>
+          <p className="mt-1 text-body-sm text-muted">Shared files and records for this Handshake only.</p>
           {project.photos.length > 0 ? (
-            <ul className="mt-4 grid grid-cols-3 gap-2">
+            <ul className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
               {project.photos.map((src, index) => (
                 <li key={index}>
-                  <img src={src} alt="" className="h-24 w-full rounded-md object-cover" />
+                  <img src={src} alt="" className="h-24 w-full rounded-xl object-cover" />
                 </li>
               ))}
             </ul>
           ) : null}
           <ul className="mt-4 space-y-2 text-body-sm">
-            {project.video ? <li>Project video</li> : null}
+            {project.video ? <li className={cn(inner, "px-4 py-3")}>Project video</li> : null}
             {messages
               .filter((item) => item.attachmentName)
               .map((item) => (
-                <li key={item.id}>{item.attachmentName}</li>
+                <li key={item.id} className={cn(inner, "px-4 py-3")}>
+                  {item.attachmentName}
+                </li>
               ))}
             {project.photos.length === 0 && !project.video && messages.every((item) => !item.attachmentName) ? (
-              <li>No files shared yet.</li>
+              <li className="text-muted">No files shared yet.</li>
             ) : null}
           </ul>
         </section>
       ) : null}
-
-      <Link
-        to={session.handle === project.handle ? projectHref(project.id) : opportunityHref(project.id)}
-        className="mt-10 inline-block text-body-sm font-medium text-muted hover:text-foreground"
-      >
-        ← Opportunity
-      </Link>
     </div>
   );
 }
@@ -322,9 +445,10 @@ function ProjectQuestions({
   const [body, setBody] = useState("");
 
   return (
-    <div className="space-y-4">
+    <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 sm:p-6">
+      <h2 className="text-body-lg font-semibold text-foreground">Questions about the opportunity</h2>
       {pending.map((item) => (
-        <div key={item.id} className="rounded-lg border border-border p-4">
+        <div key={item.id} className="rounded-xl border border-border-subtle bg-white/[0.02] p-4">
           <p className="text-body font-medium">{item.body}</p>
           <p className="mt-2 text-body-sm">Answer: {item.answer}</p>
           {homeowner ? (
@@ -370,15 +494,16 @@ function ProjectQuestions({
             setBody("");
           }}
         >
-          <h3 className="text-body font-medium">Ask about the project</h3>
-          <p className="text-body-sm text-muted">This stays on the project. It does not change the scope by itself.</p>
+          <h3 className="text-body font-medium">Ask about the opportunity</h3>
+          <p className="text-body-sm text-muted">This stays on the opportunity. It does not change the scope by itself.</p>
           <Textarea value={body} onChange={(event) => setBody(event.target.value)} placeholder="Are you also replacing the plumbing?" />
-          <Button type="submit" size="sm" variant="outline">
-            Post on project
+          <Button type="submit" size="sm" variant="outline" className="rounded-full">
+            Post question
           </Button>
         </form>
       )}
-    </div>
+      {questions.length === 0 && homeowner ? <p className="text-body-sm text-muted">No questions yet.</p> : null}
+    </section>
   );
 }
 
@@ -396,15 +521,15 @@ function AnswerForm({ questionId }: { questionId: string }) {
         setScope(false);
       }}
     >
-      <Textarea value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Answer on the project" />
+      <Textarea value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Your answer" />
       <label className="flex items-center gap-2 text-body-sm">
         <input type="checkbox" checked={scope} onChange={(event) => setScope(event.target.checked)} />
-        This changes the project scope
+        This changes the scope
       </label>
       {scope ? (
         <p className="text-body-sm text-muted">The project stays as it is until you confirm the updated scope.</p>
       ) : null}
-      <Button type="submit" size="sm">
+      <Button type="submit" size="sm" className="rounded-full">
         {scope ? "Review change" : "Answer"}
       </Button>
     </form>

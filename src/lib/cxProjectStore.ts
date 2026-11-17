@@ -290,8 +290,8 @@ function remindDay5(projects: CxProject[]) {
     if (project.handle) {
       pushCoalescedNotice({
         handle: project.handle,
-        title: "Your project is closing soon",
-        body: `${project.category || "Your project"} will close in 2 days. You can extend it if you still need help.`,
+        title: "Your opportunity is closing soon",
+        body: `${project.category || "Your opportunity"} will close in 2 days. You can renew it if you still need help.`,
         href: projectHref(project.id),
         kind: "project_expiring",
         projectId: project.id,
@@ -579,8 +579,8 @@ export function editLiveProject(
     for (const row of interestsForProject(project.id).filter((item) => item.contractorInterested)) {
       pushCoalescedNotice({
         handle: row.contractorHandle,
-        title: "Project updated",
-        body: `The ${project.category} project was updated. Everyone is looking at the same version.`,
+        title: "Opportunity updated",
+        body: `The ${project.category} opportunity was updated. Everyone is looking at the same version.`,
         href: `/districts/contractor/opportunities/${project.id}`,
         kind: "project_edited",
         projectId: project.id,
@@ -825,7 +825,7 @@ export function contractorInterested(projectId: string, contractorHandle: string
   pushCoalescedNotice({
     handle: project.handle,
     title: "A contractor responded",
-    body: `${displayNameFor(contractorHandle)} is interested in your ${project.category} project.`,
+    body: `${displayNameFor(contractorHandle)} is interested in your ${project.category} opportunity.`,
     href: projectHref(project.id),
     kind: "contractor_responded",
     projectId,
@@ -965,7 +965,7 @@ export function askProjectQuestion(projectId: string, fromHandle: string, body: 
   if (project.handle) {
     pushCoalescedNotice({
       handle: project.handle,
-      title: "A question on your project",
+      title: "A question on your opportunity",
       body: question.body,
       href: projectHref(projectId),
       kind: "project_question",
@@ -1040,8 +1040,8 @@ export function confirmProjectScopeChange(questionId: string, homeownerHandle: s
   for (const row of respondents) {
     pushCoalescedNotice({
       handle: row.contractorHandle,
-      title: "Project scope changed",
-      body: `The ${project.category} project was updated. Everyone is looking at the same version.`,
+      title: "Opportunity scope changed",
+      body: `The ${project.category} opportunity was updated. Everyone is looking at the same version.`,
       href: `/districts/contractor/opportunities/${project.id}`,
       kind: "scope_changed",
       projectId: project.id,

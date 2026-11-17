@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { IconClock, IconClose, IconEdit, IconImage, IconMapPin, IconRefresh, IconVideo, IconWallet } from "@/components/ui/icons";
 import { Dialog } from "@/components/ui/overlays";
+import { cn } from "@/lib/cn";
 import { projectHref } from "@/lib/cxRoutes";
 import { CX_LIVE_DAYS, closeCxProject, extendCxProject, respondentCount, type CxProject } from "@/lib/cxProjectStore";
+import { stockPhoto } from "@/lib/stockPhotos";
 import { formatDate } from "@/lib/time";
 import { CategoryMark } from "@/pages/need/OpportunityChrome";
 
@@ -52,7 +54,8 @@ export function OpportunityCard({ item }: { item: CxProject }) {
   const posted = formatDate(item.publishedAt || item.createdAt);
   const place = [item.city, item.postalCode].filter(Boolean).join(" · ");
   const open = projectHref(item.id);
-  const cover = item.photos[0];
+  const stock = item.photos[0] ? undefined : stockPhoto(item.category);
+  const cover = item.photos[0] ?? stock?.src;
   const chips = [
     place ? { icon: IconMapPin, text: place } : null,
     item.timing ? { icon: IconClock, text: item.timing } : null,
@@ -64,7 +67,14 @@ export function OpportunityCard({ item }: { item: CxProject }) {
       <div className="relative h-36">
         <Link to={open} aria-label={`View ${item.category || "opportunity"}`} className="block h-full overflow-hidden rounded-t-2xl">
           {cover ? (
-            <img src={cover} alt="" className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-500 group-hover/card:scale-105" />
+            <img
+              src={cover}
+              alt=""
+              className={cn(
+                "h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-500",
+                stock && !stock.exact ? "scale-110 blur-[5px]" : "group-hover/card:scale-105",
+              )}
+            />
           ) : (
             <div className="relative flex h-full w-full items-center justify-center bg-gradient-to-br from-accent/25 via-accent/[0.07] to-transparent">
               <div
@@ -109,6 +119,11 @@ export function OpportunityCard({ item }: { item: CxProject }) {
             </ActionIcon>
           ) : null}
         </div>
+        {stock ? (
+          <span className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center rounded-full bg-black/60 px-2.5 py-1 text-caption font-medium leading-none text-white/80 backdrop-blur-sm">
+            Sample photo
+          </span>
+        ) : null}
         {item.video || item.photos.length > 1 ? (
           <span className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-caption font-medium leading-none text-white backdrop-blur-sm">
             {item.video ? <IconVideo className="h-3.5 w-3.5" /> : <IconImage className="h-3.5 w-3.5" />}
