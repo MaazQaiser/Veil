@@ -223,15 +223,15 @@ export function AdminOverviewPage() {
           <StatCard
             icon={<IconUser />}
             tint={COLOR.members}
-            label="Profiles finished"
-            note="How many of the new members finished setting up their profile. Members can't be matched until they do."
+            label="Vaelance completed"
+            note="How many of the new members completed their Vaelance. Members can't be matched until they do."
             value={sum.members.finished}
             unit={`of ${sum.members.joined} new`}
             visual={<ProgressBar value={sum.members.finished} max={sum.members.joined} color={COLOR.members} />}
             legend={
               <Legend
                 items={[
-                  { label: "finished", value: sum.members.finished, color: COLOR.members },
+                  { label: "completed", value: sum.members.finished, color: COLOR.members },
                   { label: "not yet", value: sum.members.joined - sum.members.finished, color: MUTED },
                 ]}
               />
