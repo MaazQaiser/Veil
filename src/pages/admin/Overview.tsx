@@ -78,7 +78,7 @@ function ReportsTable({ avgResolve }: { avgResolve: string }) {
       <div className="flex items-start justify-between gap-3 border-b border-border-subtle px-5 py-4">
         <div className="min-w-0">
           <h2 className="text-body font-semibold text-foreground">
-            Reports to review <span className="ml-1 text-body-sm font-normal text-muted">{waiting.length}</span>
+            Reports overview <span className="ml-1 text-body-sm font-normal text-muted">{waiting.length}</span>
           </h2>
           <p className="mt-0.5 text-caption text-muted">{avgResolve}</p>
         </div>
@@ -356,7 +356,7 @@ export function AdminOverviewPage() {
       <section className={cn(CARD, "overflow-hidden")}>
         <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
           <div>
-            <h2 className="text-body font-semibold text-foreground">New members</h2>
+            <h2 className="text-body font-semibold text-foreground">Members overview</h2>
             <p className="mt-0.5 text-caption text-muted">
               Showing the latest {Math.min(5, data.newestMembers.length)} of {sum.members.joined} who joined {period}.
             </p>
