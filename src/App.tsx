@@ -91,6 +91,13 @@ import {
   TodayPage,
   VisibilityPage,
 } from "@/pages/city/Account";
+import { AdminLayout } from "@/pages/admin/AdminLayout";
+import { AdminOverviewPage } from "@/pages/admin/Overview";
+import { AdminReportsPage } from "@/pages/admin/Reports";
+import { AdminFoundingPage } from "@/pages/admin/Founding";
+import { AdminResourcesPage } from "@/pages/admin/Resources";
+import { AdminHelpPage } from "@/pages/admin/Help";
+import { AdminAccountsPage } from "@/pages/admin/Accounts";
 import { ExtendedVaelCheckoutPage, ExtendedVaelPage, ExtendedVaelSuccessPage } from "@/pages/city/ExtendedVael";
 
 export default function App() {
@@ -274,6 +281,15 @@ export default function App() {
               }
             />
             <Route path="*" element={<CityNotFoundPage />} />
+          </Route>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminOverviewPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="founding" element={<AdminFoundingPage />} />
+            <Route path="resources" element={<AdminResourcesPage />} />
+            <Route path="help" element={<AdminHelpPage />} />
+            <Route path="accounts" element={<AdminAccountsPage />} />
+            <Route path="*" element={<Navigate to="/admin" replace />} />
           </Route>
           <Route path="/design-system" element={<DesignSystemGallery />} />
         </Routes>

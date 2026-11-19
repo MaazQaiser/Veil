@@ -20,6 +20,7 @@ import {
   ensureVaelOutAccount,
 } from "@/lib/vaelPair";
 import { vaelSideLabel } from "@/lib/vaelCopy";
+import { ADMIN_HOME, accountSignInBlock, adminLoginCheck, adminSignIn, isAdminSignedIn } from "@/lib/adminStore";
 
 function AlreadyIn() {
   return <AuthRedirect />;
@@ -39,6 +40,8 @@ export function SignInPage() {
   const intent = params.get("intent") === "out" ? "out" : params.get("intent") === "in" ? "in" : "";
   const entry = parseGoVisibleEntry(params.get("entry"));
   const fromProject = params.get("from") === "project";
+  // Opened from the admin console: show the form even if a member is signed in on this device.
+  const adminEntry = params.get("admin") === "1";
   // Optional "go here after signing in". Same-site paths only.
   const rawNext = params.get("next") ?? "";
   const afterSignIn = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "";
@@ -65,6 +68,19 @@ export function SignInPage() {
     if (intent) prepareDemoWorkspace();
     if (intent === "out") ensureVaelOutAccount();
 
+    // The admin sign-in goes to the admin console, not the member site.
+    const adminCheck = form.password ? adminLoginCheck(form.identity, form.password) : "not_admin";
+    if (adminCheck === "ok") {
+      adminSignIn();
+      navigate(ADMIN_HOME);
+      return;
+    }
+
+    if (adminCheck === "wrong_password") {
+      setErrors({ password: "That password doesn't match." });
+      return;
+    }
+
     const next: Record<string, string> = {};
     if (!form.identity.trim()) next.identity = "Enter your email or name.";
     if (!form.password) next.password = "Enter your password.";
@@ -84,6 +100,11 @@ export function SignInPage() {
       next.password = "That password doesn't match.";
     }
 
+    if (account && !next.identity) {
+      const blocked = accountSignInBlock(account.handle);
+      if (blocked) next.identity = blocked;
+    }
+
     setErrors(next);
     if (Object.keys(next).length > 0 || !account) return;
 
@@ -95,8 +116,9 @@ export function SignInPage() {
     );
   }
 
-  if (session.signedIn && fromProject) return <Navigate to={NEED_REVIEW_PATH} replace />;
-  if (session.signedIn && !intent) return <AlreadyIn />;
+  if (isAdminSignedIn() && !intent) return <Navigate to={ADMIN_HOME} replace />;
+  if (session.signedIn && fromProject && !adminEntry) return <Navigate to={NEED_REVIEW_PATH} replace />;
+  if (session.signedIn && !intent && !adminEntry) return <AlreadyIn />;
 
   return (
     <AuthSplitScreen>

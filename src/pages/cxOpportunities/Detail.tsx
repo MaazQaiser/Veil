@@ -32,6 +32,7 @@ import {
   interestBetween,
   publicProjectCard,
   questionsForProject,
+  PROJECT_REPORT_REASONS,
 } from "@/lib/cxProjectStore";
 import { BROWSE_OPPORTUNITIES_PATH, projectHandshakeHref, projectHref } from "@/lib/cxRoutes";
 import { MARKETING_PROJECTS, type MarketingProjectIcon } from "@/lib/marketingProjects";
@@ -43,7 +44,6 @@ import { CategoryGlyph } from "@/pages/city/Projects";
 const JOIN_PATH = "/join/contractor-exchange";
 const SAMPLE_INTEREST_KEY = "vael_sample_interest_v1";
 const REPORTS_KEY = "vael_opportunity_reports_v1";
-const REPORT_REASONS = ["Not a real home project", "Contains personal details", "Looks like spam or a scam", "Something else"];
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -631,7 +631,7 @@ export function OpportunityDetailPage() {
         title="Report this opportunity"
         question="What's wrong with it?"
         thanks="Thanks for your report. We'll review it and let you know what we decide."
-        reasons={REPORT_REASONS}
+        reasons={PROJECT_REPORT_REASONS}
         onSend={(reason, details) => {
           if (project) {
             fileReport({ kind: "project", byHandle: session.handle, target: project.id, projectId: project.id, reason, details });

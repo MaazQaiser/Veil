@@ -54,6 +54,7 @@ import {
   sendHandshakeMessage,
   shareContactDetails,
   type CxQuestion,
+  PERSON_REPORT_REASONS,
 } from "@/lib/cxProjectStore";
 import { MY_OPPORTUNITIES_PATH, opportunityHref, projectHref } from "@/lib/cxRoutes";
 import { useCxProjects } from "@/lib/useCxProjects";
@@ -651,7 +652,7 @@ export function ProjectHandshakeRoomPage() {
         title={`Report ${otherName}`}
         question="What happened?"
         thanks="Thanks for your report. We'll review it and let you know what we decide."
-        reasons={["Fraud or scam", "Harassment or abusive messages", "Not who they say they are", "Something else"]}
+        reasons={PERSON_REPORT_REASONS}
         onSend={(reason, details) => fileReport({ kind: "person", byHandle: session.handle, target: otherHandle, projectId: project.id, reason, details })}
       />
     </div>

@@ -68,7 +68,7 @@ export function DropdownItem({
   );
 }
 
-export function Tooltip({ label, children }: { label: string; children: ReactNode }) {
+export function Tooltip({ label, children, align = "center" }: { label: string; children: ReactNode; /** Where the tip sits. Use "left" for an icon at the right edge of a card. */ align?: "center" | "left" }) {
   const id = useId();
   return (
     <span className="group relative inline-flex">
@@ -76,7 +76,7 @@ export function Tooltip({ label, children }: { label: string; children: ReactNod
       <span
         id={id}
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-secondary px-2 py-1 text-caption text-secondary-foreground group-hover:block group-focus-within:block"
+        className={`pointer-events-none absolute z-40 hidden whitespace-nowrap ${align === "left" ? "right-full top-1/2 mr-2 -translate-y-1/2" : "bottom-full left-1/2 mb-2 -translate-x-1/2"} rounded-md bg-secondary px-2 py-1 text-caption text-secondary-foreground group-hover:block group-focus-within:block`}
       >
         {label}
       </span>

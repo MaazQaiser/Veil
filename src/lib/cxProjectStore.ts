@@ -1234,6 +1234,10 @@ export function blockRoom(connectionId: string, handle: string) {
   saveRoom({ ...getRoom(connectionId), closedBy: handle });
 }
 
+/** The reasons a member can give, one list for reporting a person and one for an opportunity. */
+export const PERSON_REPORT_REASONS = ["Fraud or scam", "Harassment or abusive messages", "Not who they say they are", "Something else"];
+export const PROJECT_REPORT_REASONS = ["Not a real home project", "Contains personal details", "Looks like spam or a scam", "Something else"];
+
 export type CxReport = {
   id: string;
   kind: "person" | "project";
@@ -1245,10 +1249,37 @@ export type CxReport = {
   details: string;
   createdAt: string;
   status: "open" | "resolved";
+  /** True for the sample reports that make the demo admin look lived in. */
+  sample?: boolean;
+  /** Set by an admin when the report is resolved. */
+  resolution?: { action: "none" | "warn" | "deactivate"; note: string; at: string };
 };
 
 export function getReports(): CxReport[] {
   return read<CxReport[]>(KEYS.reports, []);
+}
+
+/** Marks a report resolved. The admin console decides what else happens (notices, account status). */
+export function resolveCxReport(reportId: string, resolution: { action: "none" | "warn" | "deactivate"; note: string }) {
+  write(
+    KEYS.reports,
+    getReports().map((item) =>
+      item.id === reportId ? { ...item, status: "resolved" as const, resolution: { ...resolution, at: nowIso() } } : item,
+    ),
+  );
+}
+
+/** Adds ready-made reports as they are, with no notices sent. Used only for the demo sample data. */
+export function addCxReports(reports: CxReport[]) {
+  if (reports.length === 0) return;
+  write(KEYS.reports, [...getReports(), ...reports]);
+}
+
+/** Removes the demo sample reports and keeps every real one. */
+export function removeSampleCxReports() {
+  const all = getReports();
+  const real = all.filter((item) => !item.sample);
+  if (real.length !== all.length) write(KEYS.reports, real);
 }
 
 export function hasReported(kind: CxReport["kind"], byHandle: string, target: string) {

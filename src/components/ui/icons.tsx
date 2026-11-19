@@ -147,6 +147,16 @@ export function IconUser(props: IconProps) {
   );
 }
 
+export function IconUserMinus(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="9.5" cy="8" r="3.2" />
+      <path d="M3 19c1.3-3 3.4-4.5 6.5-4.5s5.2 1.5 6.5 4.5" />
+      <path d="M17.5 9h4" />
+    </Icon>
+  );
+}
+
 export function IconHandshake(props: IconProps) {
   return (
     <Icon {...props}>
