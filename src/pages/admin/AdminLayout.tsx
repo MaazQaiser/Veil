@@ -7,12 +7,13 @@ import {
   IconGrid,
   IconLifebuoy,
   IconMoon,
+  IconShield,
   IconSun,
   IconUsers,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { ADMIN_EMAIL, ADMIN_NAME, adminOverview, adminSignOut, isAdminSignedIn } from "@/lib/adminStore";
-import { seedAdminDemo } from "@/lib/adminDemo";
+import { seedAdminDemo, seedAdminStaff } from "@/lib/adminDemo";
 import { useTheme } from "@/lib/theme";
 import { useAdmin } from "@/lib/useAdmin";
 
@@ -22,7 +23,8 @@ const NAV = [
   { to: "/admin/founding", label: "Founding", icon: IconBookmark },
   { to: "/admin/resources", label: "Resources", icon: IconDocument },
   { to: "/admin/help", label: "Help and services", icon: IconLifebuoy },
-  { to: "/admin/accounts", label: "Accounts", icon: IconUsers },
+  { to: "/admin/accounts", label: "Members", icon: IconUsers },
+  { to: "/admin/admins", label: "Admins", icon: IconShield },
 ] as const;
 
 /** The admin console. Its own shell, separate from the member site, and only open to the admin sign-in. */
@@ -30,7 +32,10 @@ export function AdminLayout() {
   useAdmin();
   // A first look at the demo should not be empty: add the sample members and activity once.
   useEffect(() => {
-    if (isAdminSignedIn()) seedAdminDemo();
+    if (isAdminSignedIn()) {
+      seedAdminDemo();
+      seedAdminStaff();
+    }
   }, []);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();

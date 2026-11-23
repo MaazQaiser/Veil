@@ -10,7 +10,9 @@ import {
   adminOverview,
   adminReports,
   personName,
+  memberPhoto,
   reportSubject,
+  subjectPhoto,
   type RangeDays,
   shortReason,
 } from "@/lib/adminStore";
@@ -113,7 +115,7 @@ function ReportsTable({ avgResolve }: { avgResolve: string }) {
                 <tr key={report.id} className="hover:bg-surface-muted/50">
                   <td className="px-5 py-3.5">
                     <span className="flex items-center gap-3">
-                      <Avatar name={reportSubject(report)} size="sm" />
+                      <Avatar name={reportSubject(report)} src={subjectPhoto(report)} size="sm" />
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-foreground">{reportSubject(report)}</span>
                         <span className="block text-caption text-muted">{report.kind === "person" ? "Person" : "Opportunity"}</span>
@@ -362,7 +364,7 @@ export function AdminOverviewPage() {
             </p>
           </div>
           <Link to="/admin/accounts" className="text-body-sm font-medium text-accent hover:underline">
-            All accounts →
+            All members →
           </Link>
         </div>
         {data.newestMembers.length === 0 ? (
@@ -384,7 +386,7 @@ export function AdminOverviewPage() {
                   <tr key={member.handle} className="hover:bg-surface-muted/50">
                     <td className="px-5 py-3.5">
                       <span className="flex items-center gap-3">
-                        <Avatar name={member.name} size="sm" />
+                        <Avatar name={member.name} src={memberPhoto(member.handle)} size="sm" />
                         <span className="min-w-0">
                           <span className="block truncate font-medium text-foreground">{member.name}</span>
                           <span className="block truncate text-caption text-muted">{member.email}</span>

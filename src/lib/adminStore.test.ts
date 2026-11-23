@@ -7,6 +7,15 @@ import {
   accountStatus,
   adminAttention,
   KNOWN_REPORT_REASONS,
+  addAdmin,
+  adminStaff,
+  deleteAdmin,
+  removeAdmin,
+  restoreAdmin,
+  RETURN_NOTE_MAX,
+  returnFoundingPlace,
+  REPORT_ABOUT,
+  reportAbout,
   shortReason,
   adminDashboard,
   foundingRows,
@@ -460,5 +469,100 @@ describe("short report reasons", () => {
 
   it("leaves an unknown reason as it was written", () => {
     expect(shortReason("A reason from the future")).toBe("A reason from the future");
+  });
+});
+
+describe("what a report is about", () => {
+  it("lists the About choices in order and puts people under Members and opportunities under Projects", () => {
+    expect(REPORT_ABOUT.map((item) => item.label)).toEqual(["Members", "Projects", "Conversations", "Files", "VAELs", "Other"]);
+    twoPeople();
+    fileReport({ kind: "person", byHandle: "holly", target: "sullean", projectId: "", reason: "Fraud or scam" });
+    expect(reportAbout(adminReports()[0])).toBe("members");
+    expect(reportAbout({ ...adminReports()[0], kind: "project" })).toBe("projects");
+  });
+});
+
+describe("returning a founding place", () => {
+  it("frees the place, tells the member without the note, and writes the audit log", () => {
+    twoPeople();
+    expect(foundingRows().map((row) => row.handle).sort()).toEqual(["holly", "sullean"]);
+    returnFoundingPlace("holly", "duplicate", "Same person as sullean, matching phone number.");
+    expect(foundingRows().map((row) => row.handle)).toEqual(["sullean"]);
+    expect(adminOverview().foundingHeld).toBe(1);
+    const notice = getNotices("holly").find((item) => item.title === "Your founding place was returned");
+    expect(notice).toBeTruthy();
+    expect(`${notice?.title} ${notice?.body}`).not.toContain("matching phone");
+    const log = getAuditLog()[0];
+    expect(log.action).toBe("Returned a founding place");
+    expect(log.detail).toContain("Duplicate or shell account");
+    expect(log.detail).toContain("matching phone number");
+  });
+
+  it("needs a note, is only for a member who holds a place, and cannot be done twice", () => {
+    twoPeople();
+    expect(() => returnFoundingPlace("holly", "other", "   ")).toThrow(/note/i);
+    expect(() => returnFoundingPlace("holly", "other", "x".repeat(RETURN_NOTE_MAX + 1))).toThrow(/characters/i);
+    expect(() => returnFoundingPlace("nobody", "other", "A reason")).toThrow(/does not hold/i);
+    returnFoundingPlace("holly", "other", "A reason");
+    expect(() => returnFoundingPlace("holly", "other", "A reason")).toThrow(/does not hold/i);
+  });
+
+  it("does not hand a returned place to the next member on its own", () => {
+    twoPeople();
+    returnFoundingPlace("holly", "other", "A reason");
+    createAccount({ email: "ana@example.com", handle: "ana", displayName: "Ana" });
+    const handles = foundingRows().map((row) => row.handle);
+    expect(handles).not.toContain("holly");
+    expect(handles).toContain("ana");
+  });
+});
+
+describe("admins", () => {
+  it("starts with the owner only, and the owner comes first", () => {
+    const staff = adminStaff();
+    expect(staff).toHaveLength(1);
+    expect(staff[0]).toMatchObject({ role: "owner", status: "active", email: ADMIN_EMAIL });
+  });
+
+  it("adds an admin by name and email, tidies them, and writes the audit log", () => {
+    const row = addAdmin("  Sara Whitfield ", "  Sara@Example.com ");
+    expect(row).toMatchObject({ name: "Sara Whitfield", email: "sara@example.com", status: "active" });
+    expect(adminStaff().map((item) => item.email)).toEqual([ADMIN_EMAIL, "sara@example.com"]);
+    expect(getAuditLog()[0]).toMatchObject({ action: "Added an admin" });
+  });
+
+  it("asks for a name and a real email, and does not add the same person twice or the owner again", () => {
+    expect(() => addAdmin("", "a@b.com")).toThrow(/name/i);
+    expect(() => addAdmin("A", "")).toThrow(/email/i);
+    expect(() => addAdmin("A", "not-an-email")).toThrow(/look right/i);
+    expect(() => addAdmin("A", ADMIN_EMAIL.toUpperCase())).toThrow(/owner/i);
+    addAdmin("Sara", "sara@example.com");
+    expect(() => addAdmin("Sara again", "SARA@example.com")).toThrow(/already/i);
+  });
+
+  it("removes an admin but keeps them listed, then restores them", () => {
+    const { id } = addAdmin("Sara", "sara@example.com");
+    removeAdmin(id);
+    expect(adminStaff().find((item) => item.id === id)?.status).toBe("removed");
+    expect(() => addAdmin("Sara", "sara@example.com")).toThrow(/restore/i);
+    restoreAdmin(id);
+    expect(adminStaff().find((item) => item.id === id)?.status).toBe("active");
+  });
+
+  it("deletes an admin for good, and never lets the owner be changed", () => {
+    const { id } = addAdmin("Sara", "sara@example.com");
+    deleteAdmin(id);
+    expect(adminStaff().map((item) => item.id)).toEqual(["owner"]);
+    expect(() => deleteAdmin(id)).toThrow(/no longer/i);
+    expect(() => removeAdmin("owner")).toThrow(/owner/i);
+    expect(() => deleteAdmin("owner")).toThrow(/owner/i);
+    // The same person can be added again afterwards.
+    expect(addAdmin("Sara", "sara@example.com").status).toBe("active");
+  });
+
+  it("lists admins oldest first", () => {
+    addAdmin("Newer", "newer@example.com", "2026-11-10T10:00:00.000Z");
+    addAdmin("Older", "older@example.com", "2026-09-10T10:00:00.000Z");
+    expect(adminStaff().slice(1).map((item) => item.name)).toEqual(["Older", "Newer"]);
   });
 });

@@ -98,6 +98,7 @@ import { AdminFoundingPage } from "@/pages/admin/Founding";
 import { AdminResourcesPage } from "@/pages/admin/Resources";
 import { AdminHelpPage } from "@/pages/admin/Help";
 import { AdminAccountsPage } from "@/pages/admin/Accounts";
+import { AdminAdminsPage } from "@/pages/admin/Admins";
 import { ExtendedVaelCheckoutPage, ExtendedVaelPage, ExtendedVaelSuccessPage } from "@/pages/city/ExtendedVael";
 
 export default function App() {
@@ -289,6 +290,7 @@ export default function App() {
             <Route path="resources" element={<AdminResourcesPage />} />
             <Route path="help" element={<AdminHelpPage />} />
             <Route path="accounts" element={<AdminAccountsPage />} />
+            <Route path="admins" element={<AdminAdminsPage />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Route>
           <Route path="/design-system" element={<DesignSystemGallery />} />

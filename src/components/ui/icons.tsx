@@ -157,6 +157,34 @@ export function IconUserMinus(props: IconProps) {
   );
 }
 
+export function IconUserCheck(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="9.5" cy="8" r="3.2" />
+      <path d="M3 19c1.3-3 3.4-4.5 6.5-4.5s5.2 1.5 6.5 4.5" />
+      <path d="M17 9.5l1.8 1.8 3.2-3.6" />
+    </Icon>
+  );
+}
+
+export function IconBlock(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M6.3 6.3l11.4 11.4" />
+    </Icon>
+  );
+}
+
+export function IconShield(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3l7 3v5.5c0 4.2-2.9 7.6-7 9.5-4.1-1.9-7-5.3-7-9.5V6l7-3z" />
+      <path d="M9 12l2.2 2.2L15.5 10" />
+    </Icon>
+  );
+}
+
 export function IconHandshake(props: IconProps) {
   return (
     <Icon {...props}>
@@ -282,6 +310,15 @@ export function IconTrash(props: IconProps) {
     <Icon {...props}>
       <path d="M4 7h16M10 11v6M14 11v6" />
       <path d="M6 7l1 12a1.5 1.5 0 001.5 1.4h7A1.5 1.5 0 0017 19l1-12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
+    </Icon>
+  );
+}
+
+export function IconReturn(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 14L4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 010 11H11" />
     </Icon>
   );
 }

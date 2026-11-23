@@ -3,19 +3,26 @@ import { useSearchParams } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/controls";
+import { IconBlock, IconUserCheck, IconUserMinus } from "@/components/ui/icons";
+import { Tooltip } from "@/components/ui/menu";
 import { Dialog } from "@/components/ui/overlays";
 import { cn } from "@/lib/cn";
-import { adminAccounts, setAccountStatus, type AdminAccount } from "@/lib/adminStore";
+import { adminAccounts, memberPhoto, setAccountStatus, type AdminAccount } from "@/lib/adminStore";
 import { formatDate } from "@/lib/time";
 import { useAdmin } from "@/lib/useAdmin";
-import { AdminPageHeader, EmptyPanel, Panel, StatusPill } from "./parts";
+import { CARD } from "./gauges";
+import { AdminPageHeader, EmptyPanel, StatusPill, TabBar } from "./parts";
 
-type Filter = "all" | "active" | "deactivated" | "blocked";
-type Pending = { account: AdminAccount; kind: "deactivate" | "block" } | null;
+type Tab = "all" | "active" | "deactivated" | "blocked";
+type Pending = { member: AdminAccount; kind: "deactivate" | "block" } | null;
 
+const ICON_BUTTON =
+  "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70";
+
+/** The Members page. The route is still /admin/accounts so existing links keep working. */
 export function AdminAccountsPage() {
   useAdmin();
-  const [filter, setFilter] = useState<Filter>("all");
+  const [tab, setTab] = useState<Tab>("all");
   const [params] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [pending, setPending] = useState<Pending>(null);
@@ -24,10 +31,11 @@ export function AdminAccountsPage() {
   const all = adminAccounts();
   const wanted = query.trim().toLowerCase();
   const rows = all.filter(
-    (account) =>
-      (filter === "all" || account.status === filter) &&
-      (!wanted || `${account.displayName} ${account.email} ${account.handle}`.toLowerCase().includes(wanted)),
+    (member) =>
+      (tab === "all" || member.status === tab) &&
+      (!wanted || `${member.displayName} ${member.email} ${member.handle}`.toLowerCase().includes(wanted)),
   );
+  const count = (status: AdminAccount["status"]) => all.filter((member) => member.status === status).length;
 
   function close() {
     setPending(null);
@@ -38,109 +46,135 @@ export function AdminAccountsPage() {
   function confirm() {
     if (!pending) return;
     try {
-      setAccountStatus(pending.account.handle, pending.kind === "block" ? "blocked" : "deactivated", reason);
+      setAccountStatus(pending.member.handle, pending.kind === "block" ? "blocked" : "deactivated", reason);
       close();
     } catch (problem) {
-      setError(problem instanceof Error ? problem.message : "Could not change this account.");
+      setError(problem instanceof Error ? problem.message : "Could not change this member.");
     }
   }
 
-  const chips: { id: Filter; label: string; count: number }[] = [
-    { id: "all", label: "All", count: all.length },
-    { id: "active", label: "Active", count: all.filter((a) => a.status === "active").length },
-    { id: "deactivated", label: "Deactivated", count: all.filter((a) => a.status === "deactivated").length },
-    { id: "blocked", label: "Blocked", count: all.filter((a) => a.status === "blocked").length },
-  ];
+  const nameOf = (member: AdminAccount) => member.displayName || member.handle;
 
   return (
     <>
       <AdminPageHeader
-        title="Accounts"
-        lede="Deactivate someone to pause their account, or block them for good. They can't sign in either way."
+        title="Members"
+        lede="Here is an overview of everyone who has joined Vael."
+        action={
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search name or email"
+            aria-label="Search members"
+            className="h-10 w-full rounded-xl border border-border bg-surface px-4 text-body-sm text-foreground placeholder:text-quiet focus-visible:border-foreground focus-visible:outline-none sm:w-64"
+          />
+        }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              aria-pressed={filter === chip.id}
-              onClick={() => setFilter(chip.id)}
-              className={cn(
-                "inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-body-sm font-medium motion-safe:transition-colors",
-                filter === chip.id ? "border-accent bg-accent/15 text-accent" : "border-border text-muted hover:text-foreground",
-              )}
-            >
-              {chip.label}
-              <span className="text-caption opacity-80">{chip.count}</span>
-            </button>
-          ))}
-        </div>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search name or email"
-          aria-label="Search accounts"
-          className="h-10 w-full rounded-full border border-border bg-surface px-4 text-body-sm text-foreground placeholder:text-quiet focus-visible:border-foreground focus-visible:outline-none sm:w-64"
-        />
-      </div>
+      <TabBar
+        label="Members"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: "all", label: "All", count: all.length },
+          { id: "active", label: "Active", count: count("active") },
+          { id: "deactivated", label: "Deactivated", count: count("deactivated") },
+          { id: "blocked", label: "Blocked", count: count("blocked") },
+        ]}
+      />
 
       {rows.length === 0 ? (
         <EmptyPanel
-          title={all.length === 0 ? "No accounts yet" : "No one matches"}
-          body={all.length === 0 ? "Accounts appear here as people sign up." : "Try another filter or search."}
+          title={all.length === 0 ? "No members yet" : "No one matches"}
+          body={all.length === 0 ? "Members appear here as people sign up." : "Try another tab or search."}
         />
       ) : (
-        <Panel bodyClassName="p-0">
-          <ul className="divide-y divide-border-subtle">
-            {rows.map((account) => (
-              <li key={account.handle} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4">
-                <Avatar name={account.displayName || account.handle} size="md" />
-                <div className="min-w-0 flex-1 basis-48">
-                  <p className="truncate text-body-sm font-semibold text-foreground">{account.displayName || account.handle}</p>
-                  <p className="truncate text-caption text-muted">
-                    {account.email} · Joined {formatDate(account.createdAt)}
-                  </p>
-                  {account.reason ? <p className="mt-0.5 truncate text-caption text-muted">Reason: {account.reason}</p> : null}
-                </div>
-                <StatusPill tone={account.status === "active" ? "done" : account.status === "blocked" ? "bad" : "warn"}>
-                  {account.status === "active" ? "Active" : account.status === "blocked" ? "Blocked" : "Deactivated"}
-                </StatusPill>
-                <div className="flex gap-2">
-                  {account.status === "active" ? (
-                    <>
-                      <Button type="button" variant="outline" size="sm" className="h-10" onClick={() => setPending({ account, kind: "deactivate" })}>
-                        Deactivate
-                      </Button>
-                      <Button type="button" variant="destructive" size="sm" className="h-10" onClick={() => setPending({ account, kind: "block" })}>
-                        Block
-                      </Button>
-                    </>
-                  ) : account.status === "deactivated" ? (
-                    <>
-                      <Button type="button" variant="outline" size="sm" className="h-10" onClick={() => setAccountStatus(account.handle, "active")}>
-                        Reactivate
-                      </Button>
-                      <Button type="button" variant="destructive" size="sm" className="h-10" onClick={() => setPending({ account, kind: "block" })}>
-                        Block
-                      </Button>
-                    </>
-                  ) : (
-                    <span className="text-caption text-muted">Blocked for good</span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        <section className={cn(CARD, "overflow-hidden")}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[44rem] text-left text-body-sm">
+              <thead>
+                <tr className="border-b border-border-subtle bg-surface-muted/30 text-caption uppercase tracking-wide text-muted">
+                  <th className="px-5 py-3 font-medium">Name</th>
+                  <th className="px-3 py-3 font-medium">Email</th>
+                  <th className="px-3 py-3 font-medium">Joined</th>
+                  <th className="px-3 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 text-right font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {rows.map((member) => (
+                  <tr key={member.handle} className="hover:bg-surface-muted/50">
+                    <td className="px-5 py-3.5">
+                      <span className="flex items-center gap-3">
+                        <Avatar name={nameOf(member)} src={memberPhoto(member.handle)} size="sm" />
+                        <span className="truncate font-medium text-foreground">{nameOf(member)}</span>
+                      </span>
+                    </td>
+                    <td className="px-3 py-3.5 text-muted">{member.email}</td>
+                    <td className="whitespace-nowrap px-3 py-3.5 text-muted">{formatDate(member.createdAt)}</td>
+                    <td className="px-3 py-3.5">
+                      <span title={member.reason ? `Reason: ${member.reason}` : undefined}>
+                        <StatusPill tone={member.status === "active" ? "done" : member.status === "blocked" ? "bad" : "warn"}>
+                          {member.status === "active" ? "Active" : member.status === "blocked" ? "Blocked" : "Deactivated"}
+                        </StatusPill>
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="flex items-center justify-end gap-2">
+                        {member.status === "blocked" ? (
+                          <span className="text-caption text-muted">Blocked for good</span>
+                        ) : (
+                          <>
+                            {member.status === "active" ? (
+                              <Tooltip label="Deactivate this member">
+                                <button
+                                  type="button"
+                                  aria-label={`Deactivate ${nameOf(member)}`}
+                                  onClick={() => setPending({ member, kind: "deactivate" })}
+                                  className={cn(ICON_BUTTON, "hover:border-foreground/40 hover:text-foreground")}
+                                >
+                                  <IconUserMinus className="h-[18px] w-[18px]" />
+                                </button>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip label="Reactivate this member">
+                                <button
+                                  type="button"
+                                  aria-label={`Reactivate ${nameOf(member)}`}
+                                  onClick={() => setAccountStatus(member.handle, "active")}
+                                  className={cn(ICON_BUTTON, "hover:border-success/50 hover:bg-success-muted hover:text-success")}
+                                >
+                                  <IconUserCheck className="h-[18px] w-[18px]" />
+                                </button>
+                              </Tooltip>
+                            )}
+                            <Tooltip label="Block this member" align="left">
+                              <button
+                                type="button"
+                                aria-label={`Block ${nameOf(member)}`}
+                                onClick={() => setPending({ member, kind: "block" })}
+                                className={cn(ICON_BUTTON, "hover:border-destructive/50 hover:bg-destructive-muted hover:text-destructive")}
+                              >
+                                <IconBlock className="h-[18px] w-[18px]" />
+                              </button>
+                            </Tooltip>
+                          </>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
 
       <Dialog
         open={Boolean(pending)}
         onClose={close}
-        title={pending?.kind === "block" ? `Block ${pending.account.displayName || pending.account.handle} for good?` : `Deactivate ${pending?.account.displayName || pending?.account.handle}?`}
+        title={pending?.kind === "block" ? `Block ${nameOf(pending.member)} for good?` : `Deactivate ${pending ? nameOf(pending.member) : ""}?`}
         footer={
           <>
             <Button type="button" variant="outline" size="sm" onClick={close}>
@@ -157,10 +191,10 @@ export function AdminAccountsPage() {
             ? "They won't be able to sign in again, and this can't be undone."
             : "They won't be able to sign in until you reactivate them."}
         </p>
-        <label htmlFor="account-reason" className="mt-4 block text-body-sm font-medium text-foreground">
+        <label htmlFor="member-reason" className="mt-4 block text-body-sm font-medium text-foreground">
           Reason (kept in the audit log)
         </label>
-        <Textarea id="account-reason" value={reason} onChange={(event) => setReason(event.target.value)} className="mt-2 min-h-[5rem]" />
+        <Textarea id="member-reason" value={reason} onChange={(event) => setReason(event.target.value)} className="mt-2 min-h-[5rem]" />
         {error ? <p className="mt-2 text-body-sm text-destructive">{error}</p> : null}
       </Dialog>
     </>

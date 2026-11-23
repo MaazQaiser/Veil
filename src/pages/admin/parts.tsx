@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { IconChevronDown } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { CARD } from "./gauges";
 
@@ -173,6 +174,25 @@ export function ChoiceCard({
       <span className="min-w-0">
         <span className="block text-body-sm font-medium text-foreground">{title}</span>
         <span className="mt-0.5 block text-caption text-muted">{hint}</span>
+      </span>
+    </label>
+  );
+}
+
+/** A small labelled drop-down for the filters that sit at the right of a page header. */
+export function FilterSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-caption font-medium text-muted">{label}</span>
+      <span className="relative block">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 appearance-none rounded-xl border border-border bg-surface pl-3.5 pr-9 text-body-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+        >
+          {children}
+        </select>
+        <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
       </span>
     </label>
   );

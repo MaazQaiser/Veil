@@ -74,6 +74,39 @@ const PEOPLE: Person[] = [
 
 const handleOf = (name: string) => name.toLowerCase().replace(/[^a-z]/g, "");
 
+/**
+ * Stock portraits (already in public/people, see public/CREDITS.md) for the sample members you see most:
+ * the people who were reported and the newest to join. Matched by gender. There are 14 portraits and 30
+ * sample members, so the rest keep their initials. A member's own photo always wins over these.
+ */
+const PHOTOS: Record<string, string> = {
+  noahpatel: "/people/p03.jpg",
+  diegocastillo: "/people/p05.jpg",
+  hassanali: "/people/p09.jpg",
+  ethanwalsh: "/people/p02.jpg",
+  tyronebanks: "/people/jlee.jpg",
+  jordanpierce: "/people/p07.jpg",
+  mateorossi: "/people/amercer.jpg",
+  amarajohnson: "/people/p10.jpg",
+  inesmoreau: "/people/p01.jpg",
+  rachelstein: "/people/p06.jpg",
+  zoemartin: "/people/p08.jpg",
+  hannahbrooks: "/people/p04.jpg",
+  chloebennett: "/people/pshah.jpg",
+  aishakhan: "/people/alexmorgan.jpg",
+};
+
+/** The stock portrait for a sample member, or nothing for anyone else. */
+export function demoPhoto(handle: string): string | undefined {
+  if (typeof localStorage === "undefined" || !PHOTOS[handle]) return undefined;
+  try {
+    const raw = localStorage.getItem(KEYS.members);
+    return raw && (JSON.parse(raw) as string[]).includes(handle) ? PHOTOS[handle] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** The same numbers every time, so the demo always looks the same. */
 function random(seed: number) {
   let a = seed >>> 0;
@@ -369,7 +402,37 @@ export function removeAdminDemo() {
       ),
     );
   }
+  writeJson(
+    STAFF_KEY,
+    readJson<{ id: string }[]>(STAFF_KEY, []).filter((item) => !item.id.startsWith("adm_demo_")),
+  );
+  localStorage.removeItem(STAFF_SEEDED);
   removeSampleCxReports();
   localStorage.removeItem(KEYS.members);
   localStorage.removeItem(KEYS.done);
+}
+
+/* ------------------------------------------------------------------ sample admins */
+
+const STAFF_SEEDED = "vael_admin_demo_staff_v1";
+const STAFF_KEY = "vael_admin_staff_v1";
+const SAMPLE_ADMINS = [
+  { name: "Sara Whitfield", email: "sara.whitfield@example.com", daysAgo: 46 },
+  { name: "Jamal Carter", email: "jamal.carter@example.com", daysAgo: 19 },
+];
+
+/** Two sample admins, once, so the Admins page shows a team and not just the owner. */
+export function seedAdminStaff(nowMs = Date.now()) {
+  if (typeof localStorage === "undefined" || localStorage.getItem(STAFF_SEEDED)) return;
+  const current = readJson<{ email: string }[]>(STAFF_KEY, []);
+  const have = new Set(current.map((item) => item.email));
+  const added = SAMPLE_ADMINS.filter((item) => !have.has(item.email)).map((item) => ({
+    id: `adm_demo_${item.email.split("@")[0].replace(/[^a-z]/g, "")}`,
+    name: item.name,
+    email: item.email,
+    addedAt: new Date(nowMs - item.daysAgo * DAY).toISOString(),
+    status: "active",
+  }));
+  writeJson(STAFF_KEY, [...current, ...added]);
+  localStorage.setItem(STAFF_SEEDED, "1");
 }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount, getAccounts } from "./accounts";
-import { adminDashboard, adminOverview, adminReports, foundingRows } from "./adminStore";
+import { adminDashboard, adminOverview, adminReports, foundingRows, memberPhoto, subjectPhoto } from "./adminStore";
 import { removeAdminDemo, seedAdminDemo } from "./adminDemo";
 import { fileReport } from "./cxProjectStore";
 
@@ -83,5 +83,22 @@ describe("sample data for the admin demo", () => {
     expect(quarter.summary.connections.opened).toBe(0);
     // And it can be added again afterwards.
     expect(seedAdminDemo().members).toBeGreaterThan(0);
+  });
+
+  it("gives sample members stock portraits, never to real members, and lets a member's own photo win", () => {
+    seedAdminDemo();
+    expect(memberPhoto("noahpatel")).toBe("/people/p03.jpg");
+    expect(memberPhoto("realone")).toBeUndefined();
+    // Nobody gets a face that was not given to them: a handle that is not a sample member has none.
+    removeAdminDemo();
+    expect(memberPhoto("noahpatel")).toBeUndefined();
+  });
+
+  it("shows the reported person's face on a person report, and none for an opportunity", () => {
+    seedAdminDemo();
+    const person = adminReports().find((report) => report.kind === "person" && memberPhoto(report.target));
+    expect(person && subjectPhoto(person)).toBeTruthy();
+    const project = adminReports().find((report) => report.kind === "project");
+    if (project) expect(subjectPhoto(project)).toBeUndefined();
   });
 });

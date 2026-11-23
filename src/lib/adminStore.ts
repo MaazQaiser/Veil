@@ -6,6 +6,7 @@
  * opens the browser tools.
  */
 import { findAccountByHandle, getAccounts, type CityAccount } from "./accounts";
+import { demoPhoto } from "./adminDemo";
 import { getCmListings } from "./commercialStore";
 import { getCxListings } from "./constructionStore";
 import {
@@ -34,6 +35,9 @@ const KEYS = {
   guides: "vael_admin_guides_v1",
   help: "vael_admin_help_v1",
   pages: "vael_admin_pages_v1",
+  returned: "vael_admin_founding_returned_v1",
+  staff: "vael_admin_staff_v1",
+  ownerSince: "vael_admin_owner_since_v1",
 } as const;
 
 type Listener = () => void;
@@ -109,6 +113,98 @@ export function getAuditLog(): AuditEntry[] {
 /** Every admin action leaves a line here, so there is always a record of who did what and when. */
 export function logAdminAction(action: string, detail: string) {
   write(KEYS.audit, [{ id: uid("aud"), at: nowIso(), action, detail }, ...getAuditLog()].slice(0, 200));
+}
+
+/* ------------------------------------------------------------------ admins */
+
+export type StaffMember = {
+  id: string;
+  name: string;
+  email: string;
+  /** When they were added. For the owner, when this admin area was first set up. */
+  addedAt: string;
+  role: "owner" | "admin";
+  /** A removed admin has lost access but is still on the list, so access can be given back. */
+  status: "active" | "removed";
+};
+
+type StoredAdmin = Omit<StaffMember, "role">;
+
+function storedAdmins() {
+  return read<StoredAdmin[]>(KEYS.staff, []);
+}
+
+/** The owner is the account that signs in here. It is always first and cannot be removed. */
+function ownerRow(): StaffMember {
+  let since = "";
+  if (typeof localStorage !== "undefined") {
+    since = localStorage.getItem(KEYS.ownerSince) ?? "";
+    if (!since) {
+      since = nowIso();
+      localStorage.setItem(KEYS.ownerSince, since);
+    }
+  }
+  return { id: "owner", name: ADMIN_NAME, email: ADMIN_EMAIL, addedAt: since || nowIso(), role: "owner", status: "active" };
+}
+
+/** Everyone who can use this area: the owner first, then the admins the owner added, oldest first. */
+export function adminStaff(): StaffMember[] {
+  const admins = [...storedAdmins()]
+    .sort((a, b) => Date.parse(a.addedAt) - Date.parse(b.addedAt))
+    .map((item): StaffMember => ({ ...item, role: "admin" }));
+  return [ownerRow(), ...admins];
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Adds another admin. They work in this area only and have no part of the member side. */
+export function addAdmin(name: string, email: string, addedAt = nowIso()) {
+  const cleanName = name.trim();
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanName) throw new Error("Enter their name.");
+  if (!cleanEmail) throw new Error("Enter their email.");
+  if (!EMAIL_PATTERN.test(cleanEmail)) throw new Error("That email does not look right.");
+  const existing = adminStaff().find((item) => item.email.toLowerCase() === cleanEmail);
+  if (existing) {
+    throw new Error(
+      existing.role === "owner"
+        ? "That is the owner's email."
+        : existing.status === "removed"
+          ? "They were removed earlier. Restore them from the list instead."
+          : "They are already an admin.",
+    );
+  }
+  const row: StoredAdmin = { id: uid("adm"), name: cleanName, email: cleanEmail, addedAt, status: "active" };
+  write(KEYS.staff, [...storedAdmins(), row]);
+  logAdminAction("Added an admin", `${cleanName} (${cleanEmail})`);
+  return row;
+}
+
+function findAdmin(id: string) {
+  const row = storedAdmins().find((item) => item.id === id);
+  if (!row) throw new Error(id === "owner" ? "The owner cannot be changed here." : "That admin is no longer on the list.");
+  return row;
+}
+
+/** Takes away an admin's access but keeps them on the list. */
+export function removeAdmin(id: string) {
+  const row = findAdmin(id);
+  write(KEYS.staff, storedAdmins().map((item) => (item.id === id ? { ...item, status: "removed" as const } : item)));
+  logAdminAction("Removed an admin", `${row.name} (${row.email})`);
+}
+
+/** Gives a removed admin their access back. */
+export function restoreAdmin(id: string) {
+  const row = findAdmin(id);
+  write(KEYS.staff, storedAdmins().map((item) => (item.id === id ? { ...item, status: "active" as const } : item)));
+  logAdminAction("Restored an admin", `${row.name} (${row.email})`);
+}
+
+/** Takes an admin off the list for good. */
+export function deleteAdmin(id: string) {
+  const row = findAdmin(id);
+  write(KEYS.staff, storedAdmins().filter((item) => item.id !== id));
+  logAdminAction("Deleted an admin for good", `${row.name} (${row.email})`);
 }
 
 /* ------------------------------------------------------------------ people */
@@ -192,6 +288,35 @@ export function adminReports() {
   return [...getReports()].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 }
 
+/** What a report can be about, in the order the About filter lists them. */
+export const REPORT_ABOUT = [
+  { id: "members", label: "Members" },
+  { id: "projects", label: "Projects" },
+  { id: "conversations", label: "Conversations" },
+  { id: "files", label: "Files" },
+  { id: "vaels", label: "VAELs" },
+  { id: "other", label: "Other" },
+] as const;
+
+export type ReportAbout = (typeof REPORT_ABOUT)[number]["id"];
+
+/** Members can report a person or an opportunity today, so those are the two that have reports. */
+export function reportAbout(report: CxReport): ReportAbout {
+  if (report.kind === "person") return "members";
+  if (report.kind === "project") return "projects";
+  return "other";
+}
+
+/** A member's own profile photo if they added one, otherwise the stock portrait given to a sample member. */
+export function memberPhoto(handle: string): string | undefined {
+  return getProfile(handle)?.avatarUrl || demoPhoto(handle);
+}
+
+/** The face for a report: the person who was reported. An opportunity has no face, so it shows initials. */
+export function subjectPhoto(report: CxReport): string | undefined {
+  return report.kind === "person" ? memberPhoto(report.target) : undefined;
+}
+
 export function resolveReport(reportId: string, action: ReportAction, note: string) {
   const report = getReports().find((item) => item.id === reportId);
   if (!report) throw new Error("That report no longer exists.");
@@ -242,7 +367,9 @@ export type FoundingRow = {
  * "completed" once the member has finished setting up their profile.
  */
 export function foundingRows(): FoundingRow[] {
+  const returned = returnedRows();
   return [...getAccounts()]
+    .filter((account) => !returned[account.handle])
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
     .slice(0, FOUNDING_CAP)
     .map((account, index) => ({
@@ -255,6 +382,39 @@ export function foundingRows(): FoundingRow[] {
       completed: onboardingComplete(account.handle),
     }))
     .reverse();
+}
+
+/* ------------------------------------------------------------------ returning a founding place */
+
+export type ReturnReason = "duplicate" | "other";
+
+export const RETURN_REASONS: { id: ReturnReason; label: string; hint: string }[] = [
+  { id: "duplicate", label: "Duplicate or shell account", hint: "A second account for the same person, or an account that is not a real member." },
+  { id: "other", label: "Another reason", hint: "Anything else that means this member should not hold a founding place." },
+];
+
+export const RETURN_NOTE_MAX = 1000;
+
+type ReturnedRow = { reason: ReturnReason; note: string; at: string };
+
+function returnedRows() {
+  return read<Record<string, ReturnedRow>>(KEYS.returned, {});
+}
+
+/**
+ * Takes a founding place back. It goes back to the pool and the member loses the free access that came
+ * with it. It is never given back on its own, and the member is told Vael returned it, never why. The
+ * reason and the private note go in the audit log, and nowhere the member can see.
+ */
+export function returnFoundingPlace(handle: string, reason: ReturnReason, note: string) {
+  const text = note.trim();
+  if (!text) throw new Error("Add a short note for the record.");
+  if (text.length > RETURN_NOTE_MAX) throw new Error(`Keep the note under ${RETURN_NOTE_MAX.toLocaleString("en-US")} characters.`);
+  if (!foundingRows().some((row) => row.handle === handle)) throw new Error("This member does not hold a founding place.");
+  write(KEYS.returned, { ...returnedRows(), [handle]: { reason, note: text, at: nowIso() } });
+  const label = RETURN_REASONS.find((item) => item.id === reason)?.label ?? "Another reason";
+  logAdminAction("Returned a founding place", `${personName(handle)} (@${handle}) · ${label} · ${text}`);
+  pushNotice(handle, "Your founding place was returned", "Vael returned your founding place, so your free access has ended. You can keep using Vael by paying for access.");
 }
 
 /* ------------------------------------------------------------------ what is on Vael */
@@ -819,7 +979,7 @@ export function adminAttention(nowMs = Date.now()): AttentionItem[] {
       tone: "urgent",
       title: repeat.length === 1 ? `${personName(first)} has been reported ${repeat[0][1]} times` : `${repeat.length} people have been reported more than once`,
       detail: repeat.length === 1 ? "Worth a closer look before it happens again." : repeat.map(([handle]) => personName(handle)).slice(0, 3).join(", "),
-      cta: "Open accounts",
+      cta: "Open members",
       to: `/admin/accounts?q=${encodeURIComponent(repeat.length === 1 ? personName(first) : "")}`,
     });
   }
