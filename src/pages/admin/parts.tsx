@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { IconChevronDown } from "@/components/ui/icons";
+import { IconChevronDown, IconChevronLeft, IconChevronRight } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { CARD } from "./gauges";
 
@@ -10,7 +10,7 @@ export function AdminPageHeader({ title, lede, action }: { title: string; lede?:
         <h1 className="text-h2 font-semibold text-foreground">{title}</h1>
         {lede ? <p className="mt-1.5 max-w-2xl text-body text-muted">{lede}</p> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="min-w-0 max-w-full">{action}</div> : null}
     </header>
   );
 }
@@ -195,5 +195,83 @@ export function FilterSelect({ label, value, onChange, children }: { label: stri
         <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
       </span>
     </label>
+  );
+}
+
+const PAGE_BUTTON =
+  "inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-body-sm font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-40";
+
+/** The strip at the foot of a table: which rows are showing, and the way to the other pages. It hides itself when everything fits on one page. */
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  onChange,
+  noun,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onChange: (page: number) => void;
+  /** What the rows are, in the plural: "reports". */
+  noun: string;
+}) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (total <= pageSize) return null;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(total, page * pageSize);
+  return (
+    <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle px-5 py-3">
+      <p className="text-body-sm text-muted">
+        Showing {from}–{to} of {total} {noun}
+      </p>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-label="Previous page"
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          className={cn(PAGE_BUTTON, "border-border text-muted hover:bg-surface-muted hover:text-foreground")}
+        >
+          <IconChevronLeft className="h-4 w-4" />
+        </button>
+        {Array.from({ length: pages }, (_, index) => index + 1).map((number) => (
+          <button
+            key={number}
+            type="button"
+            aria-label={`Page ${number}`}
+            aria-current={number === page ? "page" : undefined}
+            onClick={() => onChange(number)}
+            className={cn(
+              PAGE_BUTTON,
+              number === page
+                ? "border-accent/50 bg-accent/15 text-accent"
+                : "border-border text-muted hover:bg-surface-muted hover:text-foreground",
+            )}
+          >
+            {number}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-label="Next page"
+          disabled={page >= pages}
+          onClick={() => onChange(page + 1)}
+          className={cn(PAGE_BUTTON, "border-border text-muted hover:bg-surface-muted hover:text-foreground")}
+        >
+          <IconChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+/** One labelled fact in a read-only detail panel. */
+export function Detail({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-caption font-medium uppercase tracking-wide text-muted">{label}</dt>
+      <dd className="mt-1 text-body-sm text-foreground">{children}</dd>
+    </div>
   );
 }

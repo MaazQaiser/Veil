@@ -7,6 +7,7 @@
  */
 import { findAccountByHandle, getAccounts, type CityAccount } from "./accounts";
 import { demoPhoto } from "./adminDemo";
+import { showToast } from "./adminToast";
 import { getCmListings } from "./commercialStore";
 import { getCxListings } from "./constructionStore";
 import {
@@ -113,6 +114,11 @@ export function getAuditLog(): AuditEntry[] {
 /** Every admin action leaves a line here, so there is always a record of who did what and when. */
 export function logAdminAction(action: string, detail: string) {
   write(KEYS.audit, [{ id: uid("aud"), at: nowIso(), action, detail }, ...getAuditLog()].slice(0, 200));
+  // Every change also says so on screen. Signing in is not a change worth announcing.
+  if (action !== "Signed in") {
+    const text = detail ? `${action}: ${detail}` : action;
+    showToast(text.length > 90 ? `${text.slice(0, 87)}…` : text);
+  }
 }
 
 /* ------------------------------------------------------------------ admins */
@@ -250,7 +256,8 @@ export function setAccountStatus(handle: string, status: AccountStatus, reason =
   logAdminAction(`${label} an account`, `${personName(handle)} (@${handle})${reason.trim() ? ` · ${reason.trim()}` : ""}`);
 }
 
-export type AdminAccount = CityAccount & { status: AccountStatus; reason: string };
+/** `districtId` is "none" for a member who has not picked a district yet. */
+export type AdminAccount = CityAccount & { status: AccountStatus; reason: string; districtId: string };
 
 export function adminAccounts(): AdminAccount[] {
   return [...getAccounts()]
@@ -259,6 +266,7 @@ export function adminAccounts(): AdminAccount[] {
       ...account,
       status: accountStatus(account.handle),
       reason: statusRows()[account.handle]?.reason ?? "",
+      districtId: getActiveDistrictId(account.handle) ?? "none",
     }));
 }
 
@@ -452,6 +460,24 @@ function openedHandshakes() {
 
 export type PublishState = "draft" | "published";
 
+/** A guide is a draft, published for members, or archived: kept, but out of sight. */
+export type GuideState = PublishState | "archived";
+
+export type GuideSource = { label: string; url: string };
+
+export const GUIDE_LIMITS = { title: 120, summary: 300, body: 20000, sources: 5 } as const;
+
+export const GUIDE_TOPICS = [
+  "Contracts",
+  "Licensing and permits",
+  "Insurance",
+  "Payments and liens",
+  "Taxes and accounting",
+  "Safety",
+  "Getting started",
+  "Something else",
+] as const;
+
 export type Guide = {
   id: string;
   title: string;
@@ -459,27 +485,33 @@ export type Guide = {
   body: string;
   /** District ids this guide shows in. */
   districtIds: string[];
-  status: PublishState;
+  /** Official sources the guide rests on. Each address starts with https://. */
+  sources: GuideSource[];
+  /** One of GUIDE_TOPICS. */
+  topic: string;
+  /** Two letters, for a guide about one state. Empty for every state. */
+  state: string;
+  /** Lower numbers show first in the list. */
+  order: number;
+  status: GuideState;
   updatedAt: string;
 };
 
-const DEFAULT_GUIDES: Guide[] = [
-  {
-    id: "guide_start",
-    title: "Getting started on Vael",
-    summary: "How to make your profile, go visible and open a Handshake.",
-    body:
-      "Make your profile first, then choose a district and go visible: Vael In if you are available, Vael Out if you need someone. When you and another member both say yes, a Handshake opens and you can talk privately.",
-    districtIds: districts.map((item) => item.id),
-    status: "published",
-    updatedAt: "",
-  },
-];
+const DEFAULT_GUIDES: Guide[] = [];
 
 export function getGuides(): Guide[] {
   const saved = read<Guide[] | null>(KEYS.guides, null) ?? DEFAULT_GUIDES;
-  // Guides saved before districts were chosen apply to every district.
-  return saved.map((guide) => (guide.districtIds ? guide : { ...guide, districtIds: districts.map((item) => item.id) }));
+  // Guides saved before districts or sources existed apply to every district and have no sources.
+  return saved
+    .map((guide) => ({
+      ...guide,
+      districtIds: guide.districtIds ?? districts.map((item) => item.id),
+      sources: guide.sources ?? [],
+      topic: guide.topic ?? "",
+      state: guide.state ?? "",
+      order: guide.order ?? 0,
+    }))
+    .sort((a, b) => a.order - b.order);
 }
 
 /** Published guides that belong in a district, for the member side. */
@@ -487,12 +519,33 @@ export function publishedGuidesFor(districtId: string) {
   return getGuides().filter((item) => item.status === "published" && item.districtIds.includes(districtId));
 }
 
-export function saveGuide(input: { id?: string; title: string; summary: string; body: string; districtIds?: string[] }, status: PublishState) {
+export function isHttpsUrl(value: string) {
+  try {
+    return new URL(value.trim()).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function saveGuide(
+  input: { id?: string; title: string; summary: string; body: string; districtIds?: string[]; sources?: GuideSource[]; topic?: string; state?: string; order?: number },
+  status: GuideState,
+) {
   const title = input.title.trim();
   if (!title) throw new Error("Give the guide a title.");
+  if (title.length > GUIDE_LIMITS.title) throw new Error(`Keep the title to ${GUIDE_LIMITS.title} characters or fewer.`);
+  if (input.summary.trim().length > GUIDE_LIMITS.summary) throw new Error(`Keep the summary to ${GUIDE_LIMITS.summary} characters or fewer.`);
+  if (input.body.trim().length > GUIDE_LIMITS.body) throw new Error(`Keep the guide to ${GUIDE_LIMITS.body.toLocaleString("en-US")} characters or fewer.`);
   if (status === "published" && !input.body.trim()) throw new Error("Write the guide before you publish it.");
   const districtIds = input.districtIds ?? districts.map((item) => item.id);
   if (status === "published" && districtIds.length === 0) throw new Error("Choose at least one district for this guide.");
+  const state = (input.state ?? "").trim().toUpperCase();
+  if (state && !/^[A-Z]{2}$/.test(state)) throw new Error("Write the state as two letters, like FL, or leave it empty.");
+  const order = input.order ?? 0;
+  if (!Number.isInteger(order) || order < 0) throw new Error("Order is a whole number, 0 or more.");
+  const sources = (input.sources ?? []).filter((source) => source.url.trim() || source.label.trim());
+  if (sources.length > GUIDE_LIMITS.sources) throw new Error(`Add up to ${GUIDE_LIMITS.sources} sources.`);
+  if (sources.some((source) => !isHttpsUrl(source.url))) throw new Error("Each source needs a full address starting with https://");
   const guides = getGuides();
   const existing = input.id ? guides.find((item) => item.id === input.id) : undefined;
   const next: Guide = {
@@ -501,19 +554,24 @@ export function saveGuide(input: { id?: string; title: string; summary: string; 
     summary: input.summary.trim(),
     body: input.body.trim(),
     districtIds,
+    sources: sources.map((source) => ({ label: source.label.trim() || source.url.trim(), url: source.url.trim() })),
+    topic: input.topic ?? existing?.topic ?? "",
+    state,
+    order,
     status,
     updatedAt: nowIso(),
   };
   write(KEYS.guides, existing ? guides.map((item) => (item.id === next.id ? next : item)) : [next, ...guides]);
-  logAdminAction(status === "published" ? "Published a guide" : "Saved a guide as draft", title);
+  logAdminAction(status === "published" ? "Published a guide" : status === "archived" ? "Saved an archived guide" : "Saved a guide as draft", title);
   return next;
 }
 
-export function setGuideStatus(id: string, status: PublishState) {
+export function setGuideStatus(id: string, status: GuideState) {
   const guide = getGuides().find((item) => item.id === id);
   if (!guide) return;
+  if (status === "published" && !guide.body.trim()) throw new Error("Write the guide before you publish it.");
   write(KEYS.guides, getGuides().map((item) => (item.id === id ? { ...item, status, updatedAt: nowIso() } : item)));
-  logAdminAction(status === "published" ? "Published a guide" : "Unpublished a guide", guide.title);
+  logAdminAction(status === "published" ? "Published a guide" : status === "archived" ? "Archived a guide" : "Unpublished a guide", guide.title);
 }
 
 export function deleteGuide(id: string) {
@@ -523,18 +581,71 @@ export function deleteGuide(id: string) {
   logAdminAction("Deleted a guide", guide.title);
 }
 
+const GUIDES_SEEDED = "vael_admin_demo_guides_v1";
+
+/** Three short sample guides, once, so every tab of the Guides table has something in it. Ids start with guide_demo_ so they can be taken out again. */
+export function seedAdminGuides(nowMs = Date.now()) {
+  if (typeof localStorage === "undefined" || localStorage.getItem(GUIDES_SEEDED)) return;
+  const day = 86400000;
+  const sample = (n: number, status: GuideState, daysAgo: number): Guide => ({
+    id: `guide_demo_${n}`,
+    title: `Testing ${n}`,
+    summary: "A test guide.",
+    body: "Test guide.",
+    districtIds: districts.map((item) => item.id),
+    sources: [],
+    topic: "Contracts",
+    state: "",
+    order: 0,
+    status,
+    updatedAt: new Date(nowMs - daysAgo * day).toISOString(),
+  });
+  const current = getGuides();
+  write(KEYS.guides, [sample(1, "published", 14), sample(2, "draft", 6), sample(3, "archived", 25), ...current.filter((item) => !item.id.startsWith("guide_demo_"))]);
+  localStorage.setItem(GUIDES_SEEDED, "1");
+}
+
 /* ------------------------------------------------------------------ help and services */
 
 export const HELP_KINDS = ["Official resource", "Partner service", "Community help"] as const;
 export type HelpKind = (typeof HELP_KINDS)[number];
 
 export const HELP_PLACEMENTS = [
-  { id: "district_help", label: "District help page" },
-  { id: "project_room", label: "Inside the Handshake room (optional services)" },
+  { id: "district_help", label: "On the district's Help page (anyone, signed out included)" },
+  { id: "project_room", label: "In open project rooms (both parties, under Optional Services)" },
 ] as const;
 export type HelpPlacement = (typeof HELP_PLACEMENTS)[number]["id"];
 
 export const HELP_MAX_LINKS = 3;
+
+export const HELP_LIMITS = { title: 120, summary: 300, availability: 200 } as const;
+
+export const HELP_CATEGORIES = [
+  "Builder's risk and project insurance",
+  "Licensing and permits",
+  "Contracts and legal help",
+  "Accounting and bookkeeping",
+  "Financing and payments",
+  "Supplies and materials",
+  "Equipment and rentals",
+  "Safety and training",
+  "Something else",
+] as const;
+
+const DAY_MS = 86400000;
+
+/** The moment a listing stops showing: the end of its review day, in UTC. Empty means it never expires. */
+export function helpExpiresAt(reviewBy: string): number | null {
+  const start = Date.parse(`${reviewBy}T00:00:00Z`);
+  return Number.isFinite(start) ? start + DAY_MS : null;
+}
+
+/** One year from today, as a date the listing form can show. */
+export function defaultReviewBy(nowMs = Date.now()) {
+  const date = new Date(nowMs);
+  date.setUTCFullYear(date.getUTCFullYear() + 1);
+  return date.toISOString().slice(0, 10);
+}
 
 export type HelpLink = { label: string; url: string };
 
@@ -543,15 +654,25 @@ export type HelpListing = {
   title: string;
   kind: HelpKind;
   summary: string;
+  /** One of HELP_CATEGORIES. */
+  category: string;
   coverage: "nationwide" | "state";
   state: string;
+  /** When they are available, in their own words. */
+  availability: string;
   links: HelpLink[];
   placements: HelpPlacement[];
   /** District ids this listing shows in. */
   districtIds: string[];
+  /** The day to check the facts again, as YYYY-MM-DD. After it the listing stops showing to members. */
+  reviewBy: string;
   status: PublishState;
   updatedAt: string;
 };
+
+/** What the form gives when it saves. The newer fields can be left out. */
+export type HelpInput = Omit<HelpListing, "id" | "status" | "updatedAt" | "category" | "availability" | "reviewBy"> &
+  Partial<Pick<HelpListing, "category" | "availability" | "reviewBy">> & { id?: string };
 
 export const HELP_DISTRICTS = districts.map((item) => ({ id: item.id, name: item.name }));
 
@@ -561,18 +682,23 @@ const DEFAULT_HELP: HelpListing[] = [
     title: "Legal, accounting and financing basics",
     kind: "Official resource",
     summary: "Where to get set up properly: contracts, bookkeeping and how to finance bigger jobs.",
+    category: "Contracts and legal help",
     coverage: "nationwide",
     state: "",
+    availability: "",
     links: [],
     placements: ["district_help"],
     districtIds: districts.map((item) => item.id),
+    reviewBy: "",
     status: "published",
     updatedAt: "",
   },
 ];
 
 export function getHelpListings(): HelpListing[] {
-  return read<HelpListing[] | null>(KEYS.help, null) ?? DEFAULT_HELP;
+  const saved = read<HelpListing[] | null>(KEYS.help, null) ?? DEFAULT_HELP;
+  // Listings saved before categories, availability and review dates existed have none of them.
+  return saved.map((item) => ({ ...item, category: item.category ?? "", availability: item.availability ?? "", reviewBy: item.reviewBy ?? "" }));
 }
 
 export function isHttpUrl(value: string) {
@@ -584,8 +710,12 @@ export function isHttpUrl(value: string) {
   }
 }
 
-export function validateHelp(input: Omit<HelpListing, "id" | "status" | "updatedAt">, status: PublishState) {
-  if (!input.title.trim()) return "Give the service a title.";
+export function validateHelp(input: HelpInput, status: PublishState) {
+  if (!input.title.trim()) return "Give the listing a name.";
+  if (input.title.trim().length > HELP_LIMITS.title) return `Keep the name to ${HELP_LIMITS.title} characters or fewer.`;
+  if (input.summary.trim().length > HELP_LIMITS.summary) return `Keep the description to ${HELP_LIMITS.summary} characters or fewer.`;
+  if ((input.availability ?? "").trim().length > HELP_LIMITS.availability) return `Keep "when they're available" to ${HELP_LIMITS.availability} characters or fewer.`;
+  if (input.reviewBy && helpExpiresAt(input.reviewBy) === null) return "Choose a real review date.";
   if (status === "published") {
     if (!input.summary.trim()) return "Add a short description before you publish.";
     if (input.districtIds.length === 0) return "Choose at least one district.";
@@ -594,14 +724,11 @@ export function validateHelp(input: Omit<HelpListing, "id" | "status" | "updated
   if (input.coverage === "state" && !input.state.trim()) return "Add the state, or choose nationwide.";
   const links = input.links.filter((link) => link.url.trim() || link.label.trim());
   if (links.length > HELP_MAX_LINKS) return `Add up to ${HELP_MAX_LINKS} links.`;
-  if (links.some((link) => !isHttpUrl(link.url))) return "Each link needs a full address starting with https://";
+  if (links.some((link) => !isHttpsUrl(link.url))) return "Each link needs a full address starting with https://";
   return "";
 }
 
-export function saveHelpListing(
-  input: Omit<HelpListing, "id" | "status" | "updatedAt"> & { id?: string },
-  status: PublishState,
-) {
+export function saveHelpListing(input: HelpInput, status: PublishState) {
   const problem = validateHelp(input, status);
   if (problem) throw new Error(problem);
   const all = getHelpListings();
@@ -611,13 +738,16 @@ export function saveHelpListing(
     id: existing?.id ?? uid("help"),
     title: input.title.trim(),
     summary: input.summary.trim(),
+    category: input.category ?? existing?.category ?? "",
+    availability: (input.availability ?? existing?.availability ?? "").trim(),
+    reviewBy: input.reviewBy ?? existing?.reviewBy ?? "",
     state: input.coverage === "state" ? input.state.trim() : "",
     links: input.links.filter((link) => link.url.trim()).map((link) => ({ label: link.label.trim() || link.url.trim(), url: link.url.trim() })),
     status,
     updatedAt: nowIso(),
   };
   write(KEYS.help, existing ? all.map((item) => (item.id === next.id ? next : item)) : [next, ...all]);
-  logAdminAction(status === "published" ? "Published a service" : "Saved a service as draft", next.title);
+  logAdminAction(status === "published" ? "Published a listing" : "Saved a listing as draft", next.title);
   return next;
 }
 
@@ -625,36 +755,53 @@ export function setHelpStatus(id: string, status: PublishState) {
   const item = getHelpListings().find((row) => row.id === id);
   if (!item) return;
   write(KEYS.help, getHelpListings().map((row) => (row.id === id ? { ...row, status, updatedAt: nowIso() } : row)));
-  logAdminAction(status === "published" ? "Published a service" : "Unpublished a service", item.title);
+  logAdminAction(status === "published" ? "Published a listing" : "Unpublished a listing", item.title);
 }
 
 export function deleteHelpListing(id: string) {
   const item = getHelpListings().find((row) => row.id === id);
   if (!item) return;
   write(KEYS.help, getHelpListings().filter((row) => row.id !== id));
-  logAdminAction("Deleted a service", item.title);
+  logAdminAction("Deleted a listing", item.title);
 }
 
 /** Published listings that belong in a place, for the member side. */
-export function publishedHelpFor(districtId: string, placement: HelpPlacement) {
-  return getHelpListings().filter(
-    (item) => item.status === "published" && item.placements.includes(placement) && item.districtIds.includes(districtId),
-  );
+export function publishedHelpFor(districtId: string, placement: HelpPlacement, nowMs = Date.now()) {
+  return getHelpListings().filter((item) => {
+    const expires = item.reviewBy ? helpExpiresAt(item.reviewBy) : null;
+    return item.status === "published" && item.placements.includes(placement) && item.districtIds.includes(districtId) && (expires === null || nowMs < expires);
+  });
 }
 
 /* ------------------------------------------------------------------ page settings */
 
-export type PageCopy = { welcome: string; disclaimer: string };
+/** Who can open the page: everyone, even without an account, or only signed-in members. */
+export type PageAudience = "everyone" | "members";
+
+export const PAGE_AUDIENCES: { id: PageAudience; label: string }[] = [
+  { id: "everyone", label: "Everyone, even without an account" },
+  { id: "members", label: "Signed-in members only" },
+];
+
+export const PAGE_TEXT_MAX = 1000;
+
+export type PageCopy = { title: string; welcome: string; disclaimer: string; audience: PageAudience };
+
+export const PAGE_TITLE_MAX = 80;
 export type PageSettings = { resources: PageCopy; help: PageCopy };
 
 const DEFAULT_PAGES: PageSettings = {
   resources: {
+    title: "Resources",
     welcome: "Guides from the Vael team to help you get the most out of Vael.",
     disclaimer: "Guides are general information, not legal, financial or professional advice.",
+    audience: "everyone",
   },
   help: {
+    title: "Help and services",
     welcome: "Trusted help and services for the work around the work.",
     disclaimer: "Vael lists these services for convenience and doesn't guarantee or endorse them.",
+    audience: "everyone",
   },
 };
 
@@ -666,9 +813,21 @@ export function getPageSettings(): PageSettings {
   };
 }
 
-export function savePageSettings(page: keyof PageSettings, copy: PageCopy) {
-  write(KEYS.pages, { ...getPageSettings(), [page]: { welcome: copy.welcome.trim(), disclaimer: copy.disclaimer.trim() } });
-  logAdminAction(`Changed the ${page === "resources" ? "Resources" : "Help and services"} page text`, "Welcome text and disclaimer");
+export function savePageSettings(page: keyof PageSettings, copy: Omit<PageCopy, "audience" | "title"> & { audience?: PageAudience; title?: string }) {
+  const welcome = copy.welcome.trim();
+  const disclaimer = copy.disclaimer.trim();
+  if (welcome.length > PAGE_TEXT_MAX || disclaimer.length > PAGE_TEXT_MAX) {
+    throw new Error(`Keep each text to ${PAGE_TEXT_MAX.toLocaleString("en-US")} characters or fewer.`);
+  }
+  const title = (copy.title ?? getPageSettings()[page].title).trim() || DEFAULT_PAGES[page].title;
+  if (title.length > PAGE_TITLE_MAX) throw new Error(`Keep the page title to ${PAGE_TITLE_MAX} characters or fewer.`);
+  // The disclaimer is what keeps listed providers from reading as endorsed, so it stays while any listing is live.
+  if (page === "help" && !disclaimer && getHelpListings().some((item) => item.status === "published")) {
+    throw new Error("The disclaimer can't be removed while a listing is published.");
+  }
+  const audience = copy.audience ?? getPageSettings()[page].audience;
+  write(KEYS.pages, { ...getPageSettings(), [page]: { title, welcome, disclaimer, audience } });
+  logAdminAction(`Changed the ${page === "resources" ? "Resources" : "Help and services"} page settings`, "Page text and who can read it");
 }
 
 /* ------------------------------------------------------------------ overview */
@@ -677,7 +836,15 @@ export function adminOverview() {
   const reports = getReports();
   const accounts = adminAccounts();
   const founding = foundingRows();
+  const returned = returnedRows();
+  const staff = adminStaff();
   return {
+    // Members past the founding places, who are waiting for one to come free. Returned members are not counted: they were taken off the list on purpose.
+    waitingForFounding: accounts.filter((item) => !returned[item.handle]).length - founding.length,
+    deactivatedMembers: accounts.filter((item) => item.status === "deactivated").length,
+    blockedMembers: accounts.filter((item) => item.status === "blocked").length,
+    staffActive: staff.filter((item) => item.status === "active").length,
+    staffRemoved: staff.filter((item) => item.status === "removed").length,
     reportsWaiting: reports.filter((item) => item.status === "open").length,
     reportsResolved: reports.filter((item) => item.status === "resolved").length,
     foundingHeld: founding.length,

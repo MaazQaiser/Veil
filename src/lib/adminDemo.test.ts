@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount, getAccounts } from "./accounts";
-import { adminDashboard, adminOverview, adminReports, foundingRows, memberPhoto, subjectPhoto } from "./adminStore";
+import { adminDashboard, adminOverview, adminReports, foundingRows, getGuides, memberPhoto, saveGuide, seedAdminGuides, subjectPhoto } from "./adminStore";
 import { removeAdminDemo, seedAdminDemo } from "./adminDemo";
 import { fileReport } from "./cxProjectStore";
 
@@ -100,5 +100,17 @@ describe("sample data for the admin demo", () => {
     expect(person && subjectPhoto(person)).toBeTruthy();
     const project = adminReports().find((report) => report.kind === "project");
     if (project) expect(subjectPhoto(project)).toBeUndefined();
+  });
+
+  it("adds three short sample guides once, one in each state, and takes them out with the rest", () => {
+    const own = saveGuide({ title: "Mine", summary: "", body: "x" }, "draft");
+    seedAdminGuides();
+    seedAdminGuides();
+    const demo = getGuides().filter((guide) => guide.id.startsWith("guide_demo_"));
+    expect(demo.map((guide) => guide.status).sort()).toEqual(["archived", "draft", "published"]);
+    expect(getGuides().some((guide) => guide.id === own.id)).toBe(true);
+    removeAdminDemo();
+    expect(getGuides().filter((guide) => guide.id.startsWith("guide_demo_"))).toHaveLength(0);
+    expect(getGuides().some((guide) => guide.id === own.id)).toBe(true);
   });
 });

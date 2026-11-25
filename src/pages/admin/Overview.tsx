@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
 import { Tooltip } from "@/components/ui/menu";
-import { IconBookmark, IconEye, IconFlag, IconHandshake, IconUser, IconUserMinus, IconUsers } from "@/components/ui/icons";
+import { IconBookmark, IconEye, IconFlag, IconHandshake, IconShield, IconUser, IconUserCheck, IconUserMinus, IconUsers } from "@/components/ui/icons";
 import {
   FOUNDING_CAP,
   adminAttention,
@@ -21,7 +21,7 @@ import { formatDate, relativeTime } from "@/lib/time";
 import { useAdmin } from "@/lib/useAdmin";
 import { DeactivateDialog } from "./DeactivateDialog";
 import { AdminPageHeader, StatusPill } from "./parts";
-import { COLOR, ChartCard, StackedColumns, Donut, GroupedBars, LineTrend, RangeSwitch } from "./charts";
+import { CHART, COLOR, ChartCard, StackedColumns, Donut, GroupedBars, LineTrend, RangeSwitch } from "./charts";
 import { CARD, DeltaChip, Legend, ProgressBar, Sparkline, StatCard } from "./gauges";
 
 const RANGES: { id: RangeDays; label: string }[] = [
@@ -289,6 +289,82 @@ export function AdminOverviewPage() {
                 items={[
                   { label: "open", value: sum.connections.stillOpen, color: COLOR.connections },
                   { label: "closed", value: sum.connections.ended, color: MUTED },
+                ]}
+              />
+            }
+          />
+        </div>
+
+        {/* How things stand right now, so these ignore the period above. */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            icon={<IconUserCheck />}
+            tint={COLOR.members}
+            label="Active members"
+            note="Members who can sign in right now, whatever the period."
+            value={stats.activeMembers}
+            unit={`of ${stats.totalMembers}`}
+            to="/admin/accounts"
+            visual={<ProgressBar value={stats.activeMembers} max={stats.totalMembers} color={COLOR.members} />}
+            legend={
+              <Legend
+                items={[
+                  { label: "active", value: stats.activeMembers, color: COLOR.members },
+                  { label: "not active", value: stats.totalMembers - stats.activeMembers, color: MUTED },
+                ]}
+              />
+            }
+          />
+          <StatCard
+            icon={<IconUserMinus />}
+            tint={COLOR.members}
+            label="Deactivated"
+            note="Members you have switched off. They can't sign in until you reactivate them."
+            value={stats.deactivatedMembers}
+            unit={`of ${stats.totalMembers}`}
+            to="/admin/accounts"
+            visual={<ProgressBar value={stats.deactivatedMembers} max={stats.totalMembers} color={COLOR.members} />}
+            legend={
+              <Legend
+                items={[
+                  { label: "deactivated", value: stats.deactivatedMembers, color: COLOR.members },
+                  { label: "blocked", value: stats.blockedMembers, color: MUTED },
+                ]}
+              />
+            }
+          />
+          <StatCard
+            icon={<IconBookmark />}
+            tint={COLOR.founding}
+            label="Waiting list"
+            note={`Members who joined after the first ${FOUNDING_CAP} and are waiting for a Founding place to come free.`}
+            value={stats.waitingForFounding}
+            unit="waiting"
+            to="/admin/founding"
+            visual={<ProgressBar value={stats.waitingForFounding} max={stats.totalMembers} color={COLOR.founding} />}
+            legend={
+              <Legend
+                items={[
+                  { label: "waiting", value: stats.waitingForFounding, color: COLOR.founding },
+                  { label: "hold a place", value: stats.foundingHeld, color: MUTED },
+                ]}
+              />
+            }
+          />
+          <StatCard
+            icon={<IconShield />}
+            tint={CHART.sand}
+            label="Staff accounts"
+            note="The people who can sign in to this admin area, you included."
+            value={stats.staffActive}
+            unit="admins"
+            to="/admin/admins"
+            visual={<ProgressBar value={stats.staffActive} max={stats.staffActive + stats.staffRemoved} color={CHART.sand} />}
+            legend={
+              <Legend
+                items={[
+                  { label: "active", value: stats.staffActive, color: CHART.sand },
+                  { label: "removed", value: stats.staffRemoved, color: MUTED },
                 ]}
               />
             }

@@ -200,6 +200,7 @@ function AddAdminSheet({ open, onClose }: { open: boolean; onClose: () => void }
     <SideSheet
       open={open}
       onClose={close}
+      dirty={name.trim() !== "" || email.trim() !== ""}
       title="Add an admin"
       footer={
         <>

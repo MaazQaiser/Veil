@@ -407,6 +407,10 @@ export function removeAdminDemo() {
     readJson<{ id: string }[]>(STAFF_KEY, []).filter((item) => !item.id.startsWith("adm_demo_")),
   );
   localStorage.removeItem(STAFF_SEEDED);
+  // Sample guides go too. If guides were never saved there is nothing to take out.
+  const savedGuides = readJson<{ id: string }[] | null>("vael_admin_guides_v1", null);
+  if (savedGuides) writeJson("vael_admin_guides_v1", savedGuides.filter((item) => !item.id.startsWith("guide_demo_")));
+  localStorage.removeItem("vael_admin_demo_guides_v1");
   removeSampleCxReports();
   localStorage.removeItem(KEYS.members);
   localStorage.removeItem(KEYS.done);

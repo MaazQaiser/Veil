@@ -9,7 +9,7 @@ import { REPORT_ABOUT, REPORT_ACTIONS, adminReports, personName, reportAbout, re
 import type { CxReport } from "@/lib/cxProjectStore";
 import { useAdmin } from "@/lib/useAdmin";
 import { CARD } from "./gauges";
-import { AdminPageHeader, ChoiceCard, EmptyPanel, FilterSelect, StatusPill, TabBar, whenText } from "./parts";
+import { AdminPageHeader, ChoiceCard, EmptyPanel, FilterSelect, Pagination, StatusPill, TabBar, whenText } from "./parts";
 import { SideSheet } from "./SideSheet";
 
 const OUTCOME: Record<ReportAction, string> = {
@@ -17,6 +17,9 @@ const OUTCOME: Record<ReportAction, string> = {
   none: "No action needed",
   deactivate: "Deactivated their account",
 };
+
+/** How many reports show on one page. */
+const PAGE_SIZE = 8;
 
 type Tab = "all" | "waiting" | "resolved";
 type About = "everything" | ReportAbout;
@@ -34,6 +37,7 @@ export function AdminReportsPage() {
   // The report shown in the side panel. It stays set while the panel slides out, so it does not go blank on the way.
   const [selectedId, setSelectedId] = useState("");
   const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Jumping in from the Overview opens that report straight away.
   useEffect(() => {
@@ -57,6 +61,12 @@ export function AdminReportsPage() {
     .filter((item) => (tab === "all" ? true : tab === "waiting" ? item.status === "open" : item.status === "resolved"))
     .filter((item) => about === "everything" || reportAbout(item) === about)
     .sort((a, b) => (Date.parse(a.createdAt) - Date.parse(b.createdAt)) * (order === "oldest" ? 1 : -1));
+
+  // A new tab or filter starts again from the first page, and a page that no longer exists falls back to the last one.
+  useEffect(() => setPage(1), [tab, about, order]);
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const current = Math.min(page, pageCount);
+  const pageRows = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
 
   const selected = all.find((item) => item.id === selectedId);
   const filtered = about !== "everything";
@@ -138,7 +148,7 @@ export function AdminReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">
-                {rows.map((report) => {
+                {pageRows.map((report) => {
                   const waiting = report.status === "open";
                   const isSelected = open && selectedId === report.id;
                   return (
@@ -179,6 +189,7 @@ export function AdminReportsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={current} pageSize={PAGE_SIZE} total={rows.length} onChange={setPage} noun="reports" />
         </section>
       )}
 
@@ -215,6 +226,7 @@ function ReportSheet({ report, open, onClose }: { report: CxReport; open: boolea
     <SideSheet
       open={open}
       onClose={onClose}
+      dirty={waiting && note.trim() !== ""}
       title={reportSubject(report)}
       footer={
         waiting ? (

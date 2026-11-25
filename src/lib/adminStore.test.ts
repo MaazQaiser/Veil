@@ -29,12 +29,15 @@ import {
   adminSignOut,
   getAuditLog,
   getGuides,
+  publishedGuidesFor,
+  defaultReviewBy,
   getHelpListings,
   getPageSettings,
   isAdminSignedIn,
   publishedHelpFor,
   resolveReport,
   saveGuide,
+  setGuideStatus,
   saveHelpListing,
   savePageSettings,
   setAccountStatus,
@@ -176,6 +179,13 @@ describe("resources and help", () => {
     savePageSettings("resources", { welcome: "Hello", disclaimer: "Careful" });
     expect(getPageSettings().resources.welcome).toBe("Hello");
     expect(getPageSettings().help.welcome.length).toBeGreaterThan(0);
+    // Who can read it starts as everyone, is kept once chosen, and the texts have a limit.
+    expect(getPageSettings().resources.audience).toBe("everyone");
+    savePageSettings("resources", { welcome: "Hello", disclaimer: "Careful", audience: "members" });
+    expect(getPageSettings().resources.audience).toBe("members");
+    savePageSettings("resources", { welcome: "Hi", disclaimer: "Careful" });
+    expect(getPageSettings().resources.audience).toBe("members");
+    expect(() => savePageSettings("resources", { welcome: "x".repeat(1001), disclaimer: "" })).toThrow(/1,000/);
   });
 });
 
@@ -336,6 +346,53 @@ describe("the whole of Vael, not one district", () => {
     expect(rows.length).toBe(2);
     expect(rows[rows.length - 1].place).toBe(1); // newest first, so place 1 is last
     expect(rows.every((row) => typeof row.district === "string")).toBe(true);
+  });
+
+  it("the help page has a title, and its disclaimer cannot go while a listing is published", () => {
+    expect(getPageSettings().help.title).toBe("Help and services");
+    savePageSettings("help", { welcome: "Hi", disclaimer: "Not an endorsement.", title: "Project Help & Protection" });
+    expect(getPageSettings().help.title).toBe("Project Help & Protection");
+    expect(() => savePageSettings("help", { welcome: "Hi", disclaimer: "  ", title: "x".repeat(81) })).toThrow(/80/);
+    // The starting data has a published listing, so an empty disclaimer is refused.
+    expect(() => savePageSettings("help", { welcome: "Hi", disclaimer: "" })).toThrow(/disclaimer/);
+    // The Resources page has no such rule.
+    expect(() => savePageSettings("resources", { welcome: "Hi", disclaimer: "" })).not.toThrow();
+  });
+
+  it("guides take official https sources, can be archived, and have size limits", () => {
+    expect(() => saveGuide({ title: "T", summary: "", body: "x", sources: [{ label: "Site", url: "http://example.com" }] }, "draft")).toThrow(/https/);
+    expect(() => saveGuide({ title: "T".repeat(121), summary: "", body: "x" }, "draft")).toThrow(/120/);
+    expect(() => saveGuide({ title: "T", summary: "s".repeat(301), body: "x" }, "draft")).toThrow(/300/);
+    const guide = saveGuide({ title: "T", summary: "", body: "x", sources: [{ label: "", url: "https://example.com/a" }, { label: "", url: "" }] }, "published");
+    expect(guide.sources).toEqual([{ label: "https://example.com/a", url: "https://example.com/a" }]);
+    setGuideStatus(guide.id, "archived");
+    expect(getGuides().find((item) => item.id === guide.id)?.status).toBe("archived");
+    expect(publishedGuidesFor("construction").some((item) => item.id === guide.id)).toBe(false);
+    setGuideStatus(guide.id, "published");
+    expect(publishedGuidesFor("construction").some((item) => item.id === guide.id)).toBe(true);
+  });
+
+  it("a listing hides itself after its review day, and keeps the new fields", () => {
+    const listing = saveHelpListing(
+      { title: "Acme", summary: "Insurance.", kind: "Partner service", coverage: "nationwide", state: "", links: [], placements: ["district_help"], districtIds: ["construction"], category: "Licensing and permits", availability: "Mon to Fri", reviewBy: "2027-11-25" },
+      "published",
+    );
+    expect(getHelpListings().find((item) => item.id === listing.id)).toMatchObject({ category: "Licensing and permits", availability: "Mon to Fri", reviewBy: "2027-11-25" });
+    const lastMoment = Date.parse("2027-11-25T23:59:59Z");
+    expect(publishedHelpFor("construction", "district_help", lastMoment).some((item) => item.id === listing.id)).toBe(true);
+    expect(publishedHelpFor("construction", "district_help", lastMoment + 2000).some((item) => item.id === listing.id)).toBe(false);
+    expect(defaultReviewBy(Date.parse("2026-11-25T10:00:00Z"))).toBe("2027-11-25");
+    expect(validateHelp({ title: "Acme", summary: "x", kind: "Partner service", coverage: "nationwide", state: "", links: [], placements: ["district_help"], districtIds: ["construction"], reviewBy: "not a date" }, "draft")).toMatch(/date/);
+  });
+
+  it("guides keep a topic, a two-letter state and an order, and list by order", () => {
+    expect(() => saveGuide({ title: "T", summary: "", body: "x", state: "Florida" }, "draft")).toThrow(/two letters/);
+    expect(() => saveGuide({ title: "T", summary: "", body: "x", order: -1 }, "draft")).toThrow(/Order/);
+    saveGuide({ title: "Second", summary: "", body: "x", order: 2, topic: "Contracts", state: "fl" }, "draft");
+    saveGuide({ title: "First", summary: "", body: "x", order: 1 }, "draft");
+    const list = getGuides().filter((guide) => ["First", "Second"].includes(guide.title));
+    expect(list.map((guide) => guide.title)).toEqual(["First", "Second"]);
+    expect(list[1]).toMatchObject({ topic: "Contracts", state: "FL", order: 2 });
   });
 
   it("a guide can be limited to some districts, and a published one needs at least one", () => {

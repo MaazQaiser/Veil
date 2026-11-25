@@ -1,21 +1,22 @@
 import { useEffect } from "react";
-import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   IconBookmark,
   IconDocument,
   IconFlag,
   IconGrid,
   IconLifebuoy,
-  IconMoon,
   IconShield,
-  IconSun,
   IconUsers,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
-import { ADMIN_EMAIL, ADMIN_NAME, adminOverview, adminSignOut, isAdminSignedIn } from "@/lib/adminStore";
+import { adminOverview, seedAdminGuides, adminSignOut, isAdminSignedIn } from "@/lib/adminStore";
 import { seedAdminDemo, seedAdminStaff } from "@/lib/adminDemo";
+import { Toast } from "@/components/ui/feedback";
+import { dismissToast, useToasts } from "@/lib/adminToast";
 import { useTheme } from "@/lib/theme";
 import { useAdmin } from "@/lib/useAdmin";
+import { AdminTopBar } from "./TopBar";
 
 const NAV = [
   { to: "/admin", label: "Overview", icon: IconGrid, end: true },
@@ -35,10 +36,18 @@ export function AdminLayout() {
     if (isAdminSignedIn()) {
       seedAdminDemo();
       seedAdminStaff();
+      seedAdminGuides();
     }
   }, []);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const toasts = useToasts();
+  // The browser tab says which admin page this is, so several tabs can be told apart and a screen reader announces the page.
+  useEffect(() => {
+    const page = NAV.find((item) => ("end" in item && item.end ? pathname === item.to : pathname.startsWith(item.to)));
+    document.title = `${page?.label ?? "Admin"} · Admin · The City of Vael`;
+  }, [pathname]);
   if (!isAdminSignedIn()) return <Navigate to="/sign-in?admin=1" replace />;
   const waiting = adminOverview().reportsWaiting;
 
@@ -83,39 +92,16 @@ export function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t border-border-subtle p-4">
-          <p className="truncate text-body-sm font-medium text-foreground">{ADMIN_NAME}</p>
-          <p className="truncate text-caption text-muted">{ADMIN_EMAIL}</p>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={signOut}
-              className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-border text-body-sm font-medium text-foreground hover:bg-surface-muted"
-            >
-              Sign out
-            </button>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Switch to light" : "Switch to dark"}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted hover:bg-surface-muted hover:text-foreground"
-            >
-              {theme === "dark" ? <IconSun className="h-4 w-4" /> : <IconMoon className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
       </aside>
 
       <div className="relative min-w-0 flex-1">
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(70%_100%_at_25%_0%,rgba(238,138,74,0.09),transparent)]" />
         <div className="sticky top-0 z-20 border-b border-border-subtle bg-background/90 backdrop-blur lg:hidden">
-          <div className="flex items-center justify-between gap-3 px-4 pt-3">
-            <p className="text-caption font-semibold uppercase tracking-[0.16em]">
-              The City of Vael <span className="ml-1.5 rounded-full bg-accent/15 px-2 py-0.5 text-accent">Admin</span>
-            </p>
-            <button type="button" onClick={signOut} className="text-body-sm font-medium text-accent">
-              Sign out
-            </button>
+          <p className="px-4 pt-3 text-caption font-semibold uppercase tracking-[0.16em]">
+            The City of Vael <span className="ml-1.5 rounded-full bg-accent/15 px-2 py-0.5 text-accent">Admin</span>
+          </p>
+          <div className="px-4 pt-3">
+            <AdminTopBar theme={theme} onToggleTheme={toggleTheme} onSignOut={signOut} />
           </div>
           <nav aria-label="Admin" className="flex gap-1 overflow-x-auto px-3 py-2">
             {NAV.map((item) => (
@@ -136,10 +122,24 @@ export function AdminLayout() {
             ))}
           </nav>
         </div>
-        <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-8 lg:px-10 lg:py-10">
+        <div className="sticky top-0 z-20 hidden border-b border-border-subtle bg-background/90 py-3 backdrop-blur lg:block">
+          <div className="mx-auto max-w-6xl px-10">
+            <AdminTopBar theme={theme} onToggleTheme={toggleTheme} onSignOut={signOut} />
+          </div>
+        </div>
+        <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-8 lg:px-10 lg:py-8">
           <Outlet />
         </main>
       </div>
+      {toasts.length > 0 ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex flex-col items-center gap-2 px-4">
+          {toasts.map((item) => (
+            <div key={item.id} className="pointer-events-auto w-full max-w-md">
+              <Toast tone="success" title={item.message} onDismiss={() => dismissToast(item.id)} />
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

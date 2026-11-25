@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,12 @@ import { IconBlock, IconUserCheck, IconUserMinus } from "@/components/ui/icons";
 import { Tooltip } from "@/components/ui/menu";
 import { Dialog } from "@/components/ui/overlays";
 import { cn } from "@/lib/cn";
+import { districts } from "@/lib/districts";
 import { adminAccounts, memberPhoto, setAccountStatus, type AdminAccount } from "@/lib/adminStore";
 import { formatDate } from "@/lib/time";
 import { useAdmin } from "@/lib/useAdmin";
 import { CARD } from "./gauges";
-import { AdminPageHeader, EmptyPanel, StatusPill, TabBar } from "./parts";
+import { AdminPageHeader, EmptyPanel, FilterSelect, StatusPill, TabBar } from "./parts";
 
 type Tab = "all" | "active" | "deactivated" | "blocked";
 type Pending = { member: AdminAccount; kind: "deactivate" | "block" } | null;
@@ -25,6 +26,10 @@ export function AdminAccountsPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [params] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
+  // The search in the top bar sends its words here in the address, so the list follows it.
+  const urlQuery = params.get("q") ?? "";
+  useEffect(() => setQuery(urlQuery), [urlQuery]);
+  const [district, setDistrict] = useState("all");
   const [pending, setPending] = useState<Pending>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
@@ -33,6 +38,7 @@ export function AdminAccountsPage() {
   const rows = all.filter(
     (member) =>
       (tab === "all" || member.status === tab) &&
+      (district === "all" || member.districtId === district) &&
       (!wanted || `${member.displayName} ${member.email} ${member.handle}`.toLowerCase().includes(wanted)),
   );
   const count = (status: AdminAccount["status"]) => all.filter((member) => member.status === status).length;
@@ -61,14 +67,35 @@ export function AdminAccountsPage() {
         title="Members"
         lede="Here is an overview of everyone who has joined Vael."
         action={
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name or email"
-            aria-label="Search members"
-            className="h-10 w-full rounded-xl border border-border bg-surface px-4 text-body-sm text-foreground placeholder:text-quiet focus-visible:border-foreground focus-visible:outline-none sm:w-64"
-          />
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="block">
+              <span className="mb-1 block text-caption font-medium text-muted">Search</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Name or email"
+                aria-label="Search members"
+                className="h-10 w-full rounded-xl border border-border bg-surface px-4 text-body-sm text-foreground placeholder:text-quiet focus-visible:border-foreground focus-visible:outline-none sm:w-52"
+              />
+            </label>
+            <FilterSelect label="District" value={district} onChange={setDistrict}>
+              <option value="all">All districts</option>
+              {districts.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+              <option value="none">No district yet</option>
+            </FilterSelect>
+            {/* The same choice as the tabs below, so the two always agree. */}
+            <FilterSelect label="Status" value={tab} onChange={(value) => setTab(value as Tab)}>
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="deactivated">Deactivated</option>
+              <option value="blocked">Blocked</option>
+            </FilterSelect>
+          </div>
         }
       />
 
@@ -87,7 +114,7 @@ export function AdminAccountsPage() {
       {rows.length === 0 ? (
         <EmptyPanel
           title={all.length === 0 ? "No members yet" : "No one matches"}
-          body={all.length === 0 ? "Members appear here as people sign up." : "Try another tab or search."}
+          body={all.length === 0 ? "Members appear here as people sign up." : "Try another tab, district or search."}
         />
       ) : (
         <section className={cn(CARD, "overflow-hidden")}>

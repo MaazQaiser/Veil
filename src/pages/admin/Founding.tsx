@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -17,10 +17,13 @@ import {
 } from "@/lib/adminStore";
 import { formatDate } from "@/lib/time";
 import { useAdmin } from "@/lib/useAdmin";
-import { AdminPageHeader, ChoiceCard, EmptyPanel, FilterSelect, Panel, StatTile, StatusPill, TabBar } from "./parts";
+import { AdminPageHeader, ChoiceCard, EmptyPanel, FilterSelect, Pagination, Panel, StatTile, StatusPill, TabBar } from "./parts";
 import { SideSheet } from "./SideSheet";
 
 type Tab = "all" | "held" | "completed";
+
+/** How many places show on one page. */
+const PAGE_SIZE = 8;
 
 const COLUMNS = "md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_8rem_3.5rem]";
 
@@ -31,12 +34,18 @@ export function AdminFoundingPage() {
   // The place being returned. It stays set while the panel slides out, so the panel does not go blank on the way.
   const [returning, setReturning] = useState<FoundingRow | null>(null);
   const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const rows = foundingRows();
   const completed = rows.filter((row) => row.completed).length;
   // Place 1 is the first member to join, so oldest first reads as 1, 2, 3 and newest first counts back down.
   const shown = rows
     .filter((row) => (tab === "all" ? true : tab === "completed" ? row.completed : !row.completed))
     .sort((a, b) => (a.place - b.place) * (order === "oldest" ? 1 : -1));
+
+  // A new tab or order starts again from the first page, and a page that no longer exists falls back to the last one.
+  useEffect(() => setPage(1), [tab, order]);
+  const current = Math.min(page, Math.max(1, Math.ceil(shown.length / PAGE_SIZE)));
+  const pageRows = shown.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
 
   function startReturn(row: FoundingRow) {
     setReturning(row);
@@ -94,7 +103,7 @@ export function AdminFoundingPage() {
             <span className="text-right">Action</span>
           </div>
           <ul className="divide-y divide-border-subtle">
-            {shown.map((row) => (
+            {pageRows.map((row) => (
               <li key={row.handle} className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 gap-y-1 px-5 py-4 ${COLUMNS}`}>
                 <span className="flex min-w-0 items-center gap-3">
                   <Avatar name={row.name} src={memberPhoto(row.handle)} size="sm" />
@@ -123,6 +132,7 @@ export function AdminFoundingPage() {
               </li>
             ))}
           </ul>
+          <Pagination page={current} pageSize={PAGE_SIZE} total={shown.length} onChange={setPage} noun="places" />
         </Panel>
       )}
 
@@ -151,6 +161,7 @@ function ReturnSheet({ row, open, onClose }: { row: FoundingRow; open: boolean; 
     <SideSheet
       open={open}
       onClose={onClose}
+      dirty={note.trim() !== ""}
       title="Return this founding place?"
       footer={
         <>
