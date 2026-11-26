@@ -225,15 +225,15 @@ export function AdminResourcesPage() {
 
   const dirty = mode === "edit" && Boolean(editing) && JSON.stringify(editing) !== initial;
 
-  /** Archives a guide straight from the table. It is kept, and Unarchive brings it back. */
+  /** Archives a guide straight from the table, or brings an archived one back as a draft. */
   function archiveRow(guide: Guide) {
-    setGuideStatus(guide.id, "archived");
+    setGuideStatus(guide.id, guide.status === "archived" ? "draft" : "archived");
   }
 
-  /** Archives the guide that is open to read, without opening the form. It is kept, and Unarchive brings it back. */
+  /** Archives the guide that is open to read, or brings an archived one back, without opening the form. */
   function archiveOpened() {
     if (!editing?.id) return;
-    run(() => setGuideStatus(editing.id as string, "archived"));
+    run(() => setGuideStatus(editing.id as string, editing.status === "archived" ? "draft" : "archived"));
   }
 
   function startEdit() {
@@ -385,21 +385,19 @@ export function AdminResourcesPage() {
                       <td className="whitespace-nowrap px-3 py-3.5 text-muted">{guide.updatedAt ? formatDate(guide.updatedAt) : "—"}</td>
                       <td className="px-5 py-3.5">
                         <span className="flex items-center justify-end gap-2">
-                          {guide.status !== "archived" ? (
-                            <Tooltip label="Archive">
-                              <button
-                                type="button"
-                                aria-label={`Archive ${guide.title}`}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  archiveRow(guide);
-                                }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted motion-safe:transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                              >
-                                <IconArchive className="h-[18px] w-[18px]" />
-                              </button>
-                            </Tooltip>
-                          ) : null}
+                          <Tooltip label={guide.status === "archived" ? "Unarchive" : "Archive"}>
+                            <button
+                              type="button"
+                              aria-label={`${guide.status === "archived" ? "Unarchive" : "Archive"} ${guide.title}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                archiveRow(guide);
+                              }}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted motion-safe:transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                            >
+                              <IconArchive className="h-[18px] w-[18px]" />
+                            </button>
+                          </Tooltip>
                           <Tooltip label="Delete" align="left">
                             <button
                               type="button"
@@ -451,18 +449,16 @@ export function AdminResourcesPage() {
                   <IconTrash className="h-4 w-4" />
                 </button>
               </Tooltip>
-              {editing.status !== "archived" ? (
-                <Tooltip label="Archive">
-                  <button
-                    type="button"
-                    aria-label="Archive this guide"
-                    onClick={archiveOpened}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                  >
-                    <IconArchive className="h-4 w-4" />
-                  </button>
-                </Tooltip>
-              ) : null}
+              <Tooltip label={editing.status === "archived" ? "Unarchive" : "Archive"}>
+                <button
+                  type="button"
+                  aria-label={editing.status === "archived" ? "Unarchive this guide" : "Archive this guide"}
+                  onClick={archiveOpened}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                >
+                  <IconArchive className="h-4 w-4" />
+                </button>
+              </Tooltip>
               <Tooltip label="Edit">
                 <button
                   type="button"

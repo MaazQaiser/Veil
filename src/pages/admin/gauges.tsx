@@ -71,22 +71,16 @@ export function Legend({ items }: { items: { label: string; value: number; color
  * How this period compares with the one just before it, as a small badge. The full sentence is on
  * hover. With nothing before it there is nothing to compare, so no badge is shown.
  */
-export function DeltaChip({ value, previous, word, lowerIsBetter }: { value: number; previous: number; word: string; lowerIsBetter?: boolean }) {
+export function DeltaChip({ value, previous, word }: { value: number; previous: number; word: string }) {
   if (previous === 0) return null;
   const pct = Math.round(((value - previous) / previous) * 100);
-  const up = pct > 0;
-  const flat = pct === 0;
-  const good = flat ? null : lowerIsBetter ? !up : up;
   return (
     <span
       title={`${previous} in the ${word} before`}
-      className={cn(
-        "inline-flex h-6 cursor-default items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold tabular-nums",
-        good === null ? "bg-surface-muted text-muted" : good ? "bg-success-muted text-success" : "bg-destructive-muted text-destructive",
-      )}
+      className="inline-flex h-6 cursor-default items-center gap-1 rounded-full bg-surface-muted px-2.5 text-[11px] font-semibold tabular-nums text-muted"
     >
       <span aria-hidden className="text-[9px]">
-        {flat ? "–" : up ? "▲" : "▼"}
+        {pct === 0 ? "–" : pct > 0 ? "▲" : "▼"}
       </span>
       {Math.abs(pct)}%
     </span>

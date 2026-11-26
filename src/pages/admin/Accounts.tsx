@@ -8,11 +8,12 @@ import { Tooltip } from "@/components/ui/menu";
 import { Dialog } from "@/components/ui/overlays";
 import { cn } from "@/lib/cn";
 import { districts } from "@/lib/districts";
-import { adminAccounts, memberPhoto, setAccountStatus, type AdminAccount } from "@/lib/adminStore";
+import { adminAccounts, memberPhoto, memberVaels, setAccountStatus, type AdminAccount, type MemberVael } from "@/lib/adminStore";
 import { formatDate } from "@/lib/time";
 import { useAdmin } from "@/lib/useAdmin";
 import { CARD } from "./gauges";
-import { AdminPageHeader, EmptyPanel, FilterSelect, StatusPill, TabBar } from "./parts";
+import { AdminPageHeader, Detail, EmptyPanel, FilterSelect, StatusPill, TabBar } from "./parts";
+import { SideSheet } from "./SideSheet";
 
 type Tab = "all" | "active" | "deactivated" | "blocked";
 type Pending = { member: AdminAccount; kind: "deactivate" | "block" } | null;
@@ -33,6 +34,9 @@ export function AdminAccountsPage() {
   const [pending, setPending] = useState<Pending>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  // The member shown in the side panel. It stays set while the panel slides out, so the panel does not go blank on the way.
+  const [viewing, setViewing] = useState("");
+  const [sheetOpen, setSheetOpen] = useState(false);
   const all = adminAccounts();
   const wanted = query.trim().toLowerCase();
   const rows = all.filter(
@@ -60,6 +64,12 @@ export function AdminAccountsPage() {
   }
 
   const nameOf = (member: AdminAccount) => member.displayName || member.handle;
+  const viewed = all.find((member) => member.handle === viewing);
+
+  function show(handle: string) {
+    setViewing(handle);
+    setSheetOpen(true);
+  }
 
   return (
     <>
@@ -131,7 +141,20 @@ export function AdminAccountsPage() {
               </thead>
               <tbody className="divide-y divide-border-subtle">
                 {rows.map((member) => (
-                  <tr key={member.handle} className="hover:bg-surface-muted/50">
+                  <tr
+                    key={member.handle}
+                    tabIndex={0}
+                    onClick={() => show(member.handle)}
+                    onKeyDown={(event) => {
+                      // Only the row itself: Enter on one of its buttons does that button's job.
+                      if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        show(member.handle);
+                      }
+                    }}
+                    aria-label={`Open ${nameOf(member)}`}
+                    className="cursor-pointer motion-safe:transition-colors hover:bg-surface-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70"
+                  >
                     <td className="px-5 py-3.5">
                       <span className="flex items-center gap-3">
                         <Avatar name={nameOf(member)} src={memberPhoto(member.handle)} size="sm" />
@@ -147,7 +170,7 @@ export function AdminAccountsPage() {
                         </StatusPill>
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5" onClick={(event) => event.stopPropagation()}>
                       <span className="flex items-center justify-end gap-2">
                         {member.status === "blocked" ? (
                           <span className="text-caption text-muted">Blocked for good</span>
@@ -198,6 +221,10 @@ export function AdminAccountsPage() {
         </section>
       )}
 
+      <SideSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Member details">
+        {viewed ? <MemberDetails member={viewed} name={nameOf(viewed)} /> : null}
+      </SideSheet>
+
       <Dialog
         open={Boolean(pending)}
         onClose={close}
@@ -225,5 +252,58 @@ export function AdminAccountsPage() {
         {error ? <p className="mt-2 text-body-sm text-destructive">{error}</p> : null}
       </Dialog>
     </>
+  );
+}
+
+const VAEL_STATUS: Record<MemberVael["status"], { label: string; tone: "done" | "waiting" | "muted" }> = {
+  live: { label: "Live", tone: "waiting" },
+  matched: { label: "Matched", tone: "done" },
+  expired: { label: "Expired", tone: "muted" },
+};
+
+/** Who the member is, and every Vael In and Vael Out they have made. */
+function MemberDetails({ member, name }: { member: AdminAccount; name: string }) {
+  const vaels = memberVaels(member.handle);
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Avatar name={name} src={memberPhoto(member.handle)} size="lg" />
+        <div className="min-w-0">
+          <p className="truncate text-body-lg font-semibold text-foreground">{name}</p>
+          <p className="truncate text-body-sm text-muted">{member.email}</p>
+          <div className="mt-2">
+            <StatusPill tone={member.status === "active" ? "done" : member.status === "blocked" ? "bad" : "warn"}>
+              {member.status === "active" ? "Active" : member.status === "blocked" ? "Blocked" : "Deactivated"}
+            </StatusPill>
+          </div>
+        </div>
+      </div>
+
+      <dl>
+        <Detail label="Joined">{formatDate(member.createdAt)}</Detail>
+      </dl>
+
+      <section className="rounded-2xl border border-border-subtle bg-surface-muted/40 p-5">
+        <h3 className="text-caption font-semibold uppercase tracking-wide text-muted">{name}&rsquo;s Vaels</h3>
+        {vaels.length === 0 ? (
+          <p className="mt-3 text-body-sm text-muted">No Vaels yet.</p>
+        ) : (
+          <ul className="mt-1 divide-y divide-border-subtle">
+            {vaels.map((vael) => (
+              <li key={vael.id} className="flex items-start justify-between gap-3 py-3 last:pb-0">
+                <div className="min-w-0">
+                  <p className="text-body-sm font-medium text-foreground">{vael.title}</p>
+                  <p className="mt-0.5 text-caption text-muted">
+                    {vael.side === "in" ? "VAEL IN" : "VAEL OUT"} · posted {formatDate(vael.createdAt)} ·{" "}
+                    {Date.parse(vael.expiresAt) > Date.now() ? "ends" : "ended"} {formatDate(vael.expiresAt)}
+                  </p>
+                </div>
+                <StatusPill tone={VAEL_STATUS[vael.status].tone}>{VAEL_STATUS[vael.status].label}</StatusPill>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

@@ -221,6 +221,11 @@ export function personName(handle: string) {
   return account?.displayName || getProfile(handle)?.displayName || poster?.firstName || (handle ? `@${handle}` : "Unknown");
 }
 
+/** A member's email, or nothing for someone with no account. */
+export function personEmail(handle: string) {
+  return findAccountByHandle(handle)?.email ?? "";
+}
+
 /* ------------------------------------------------------------------ accounts */
 
 export type AccountStatus = "active" | "deactivated" | "blocked";
@@ -451,6 +456,51 @@ function systemListings(): SystemListing[] {
 
 const isVisibleNow = (item: SystemListing, nowMs: number) => Date.parse(item.expiresAt) > nowMs && Date.parse(item.createdAt) <= nowMs;
 
+export type MemberVael = {
+  id: string;
+  /** The trade, service or discipline the member listed. */
+  title: string;
+  side: "in" | "out";
+  status: "live" | "matched" | "expired";
+  createdAt: string;
+  expiresAt: string;
+};
+
+/**
+ * One member's Vael Ins and Vael Outs in every district, newest first. A Vael counts as matched when a
+ * Handshake opened from it, or for that member in the same district while it was visible.
+ */
+export function memberVaels(handle: string, nowMs = Date.now()): MemberVael[] {
+  const opened = openedHandshakes().filter((item) => item.requesterHandle === handle || item.counterpartHandle === handle);
+  type Row = { id: string; handle: string; side: "in" | "out"; createdAt: string; expiresAt: string };
+  const take = <T extends Row>(district: string, list: T[], title: (item: T) => string): MemberVael[] =>
+    list
+      .filter((item) => item.handle === handle)
+      .map((item) => {
+        const matched = opened.some(
+          (connection) =>
+            connectionDistrict(connection) === district &&
+            (connection.listingId === item.id || (connection.createdAt >= item.createdAt && connection.createdAt <= item.expiresAt)),
+        );
+        const live = Date.parse(item.expiresAt) > nowMs && Date.parse(item.createdAt) <= nowMs;
+        return {
+          id: item.id,
+          title: title(item) || "Vael",
+          side: item.side,
+          status: matched ? "matched" : live ? "live" : "expired",
+          createdAt: item.createdAt,
+          expiresAt: item.expiresAt,
+        };
+      });
+  return [
+    ...take("media-technology", getListings(), (item) => item.discipline),
+    ...take("construction", getCxListings(), (item) => item.trade),
+    ...take("trucking", getTxListings(), (item) => item.equipment),
+    ...take("residential", getRxListings(), (item) => item.service),
+    ...take("commercial", getCmListings(), (item) => item.capability),
+  ].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+}
+
 /** Handshakes that opened, in any district and from any source (board match, request or opportunity). */
 function openedHandshakes() {
   return getConnections().filter((item) => item.status === "connected" || item.status === "closed");
@@ -571,7 +621,7 @@ export function setGuideStatus(id: string, status: GuideState) {
   if (!guide) return;
   if (status === "published" && !guide.body.trim()) throw new Error("Write the guide before you publish it.");
   write(KEYS.guides, getGuides().map((item) => (item.id === id ? { ...item, status, updatedAt: nowIso() } : item)));
-  logAdminAction(status === "published" ? "Published a guide" : status === "archived" ? "Archived a guide" : "Unpublished a guide", guide.title);
+  logAdminAction(status === "published" ? "Published a guide" : status === "archived" ? "Archived a guide" : guide.status === "archived" ? "Unarchived a guide" : "Unpublished a guide", guide.title);
 }
 
 export function deleteGuide(id: string) {

@@ -15,6 +15,7 @@ import {
   type FoundingRow,
   type ReturnReason,
 } from "@/lib/adminStore";
+import { districts } from "@/lib/districts";
 import { formatDate } from "@/lib/time";
 import { useAdmin } from "@/lib/useAdmin";
 import { AdminPageHeader, ChoiceCard, EmptyPanel, FilterSelect, Pagination, Panel, StatTile, StatusPill, TabBar } from "./parts";
@@ -35,15 +36,19 @@ export function AdminFoundingPage() {
   const [returning, setReturning] = useState<FoundingRow | null>(null);
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [district, setDistrict] = useState("all");
   const rows = foundingRows();
   const completed = rows.filter((row) => row.completed).length;
+  // The district filter narrows the tabs and their counts too. The three cards above stay about the whole of Vael.
+  const inDistrict = rows.filter((row) => district === "all" || row.district === district);
+  const completedHere = inDistrict.filter((row) => row.completed).length;
   // Place 1 is the first member to join, so oldest first reads as 1, 2, 3 and newest first counts back down.
-  const shown = rows
+  const shown = inDistrict
     .filter((row) => (tab === "all" ? true : tab === "completed" ? row.completed : !row.completed))
     .sort((a, b) => (a.place - b.place) * (order === "oldest" ? 1 : -1));
 
-  // A new tab or order starts again from the first page, and a page that no longer exists falls back to the last one.
-  useEffect(() => setPage(1), [tab, order]);
+  // A new tab, district or order starts again from the first page, and a page that no longer exists falls back to the last one.
+  useEffect(() => setPage(1), [tab, district, order]);
   const current = Math.min(page, Math.max(1, Math.ceil(shown.length / PAGE_SIZE)));
   const pageRows = shown.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
 
@@ -58,10 +63,21 @@ export function AdminFoundingPage() {
         title="Founding"
         lede="Here is an overview of the members who hold a founding place."
         action={
-          <FilterSelect label="Order" value={order} onChange={(value) => setOrder(value as "oldest" | "newest")}>
-            <option value="oldest">Oldest first</option>
-            <option value="newest">Newest first</option>
-          </FilterSelect>
+          <div className="flex flex-wrap items-end gap-3">
+            <FilterSelect label="District" value={district} onChange={setDistrict}>
+              <option value="all">All districts</option>
+              {districts.map((item) => (
+                <option key={item.id} value={item.name}>
+                  {item.name}
+                </option>
+              ))}
+              <option value="No district yet">No district yet</option>
+            </FilterSelect>
+            <FilterSelect label="Order" value={order} onChange={(value) => setOrder(value as "oldest" | "newest")}>
+              <option value="oldest">Oldest first</option>
+              <option value="newest">Newest first</option>
+            </FilterSelect>
+          </div>
         }
       />
 
@@ -76,19 +92,23 @@ export function AdminFoundingPage() {
         value={tab}
         onChange={setTab}
         tabs={[
-          { id: "all", label: "All", count: rows.length },
-          { id: "held", label: "Held", count: rows.length - completed },
-          { id: "completed", label: "Completed", count: completed },
+          { id: "all", label: "All", count: inDistrict.length },
+          { id: "held", label: "Held", count: inDistrict.length - completedHere },
+          { id: "completed", label: "Completed", count: completedHere },
         ]}
       />
 
       {shown.length === 0 ? (
         <EmptyPanel
-          title={rows.length === 0 ? "No founding places held yet" : tab === "held" ? "No places are just held" : "No completed places yet"}
+          title={
+            rows.length === 0 ? "No founding places held yet" : inDistrict.length === 0 ? "No founding places in this district" : tab === "held" ? "No places are just held" : "No completed places yet"
+          }
           body={
             rows.length === 0
               ? "The first people to join Vael show up here."
-              : tab === "held"
+              : inDistrict.length === 0
+                ? "Choose another district, or All districts."
+                : tab === "held"
                 ? "Every member with a founding place has finished their profile."
                 : "A place is completed once the member has finished their profile."
           }

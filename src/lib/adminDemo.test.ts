@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAccount, getAccounts } from "./accounts";
-import { adminDashboard, adminOverview, adminReports, foundingRows, getGuides, memberPhoto, saveGuide, seedAdminGuides, subjectPhoto } from "./adminStore";
+import { adminDashboard, adminOverview, adminReports, foundingRows, getGuides, memberPhoto, memberVaels, saveGuide, seedAdminGuides, subjectPhoto } from "./adminStore";
 import { removeAdminDemo, seedAdminDemo } from "./adminDemo";
 import { fileReport } from "./cxProjectStore";
 
@@ -112,5 +112,22 @@ describe("sample data for the admin demo", () => {
     removeAdminDemo();
     expect(getGuides().filter((guide) => guide.id.startsWith("guide_demo_"))).toHaveLength(0);
     expect(getGuides().some((guide) => guide.id === own.id)).toBe(true);
+  });
+
+  it("lists a member's Vaels newest first, with what happened to each", () => {
+    seedAdminDemo();
+    const withVaels = getAccounts()
+      .map((account) => memberVaels(account.handle))
+      .filter((list) => list.length > 0);
+    expect(withVaels.length).toBeGreaterThan(10);
+    const all = withVaels.flat();
+    expect(all.some((vael) => vael.status === "matched")).toBe(true);
+    expect(all.some((vael) => vael.status === "expired")).toBe(true);
+    expect(all.every((vael) => vael.title.length > 0)).toBe(true);
+    for (const list of withVaels) {
+      const times = list.map((vael) => Date.parse(vael.createdAt));
+      expect(times).toEqual([...times].sort((a, b) => b - a));
+    }
+    expect(memberVaels("realone")).toEqual([]);
   });
 });

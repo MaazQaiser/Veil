@@ -616,7 +616,6 @@ export function AdminHelpPage() {
             <Field
               label="Review by"
               htmlFor="help-review"
-              className="max-w-xs"
               hint={
                 <>
                   Check the facts again by then. Shown through this day in UTC.

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/controls";
 import { cn } from "@/lib/cn";
-import { REPORT_ABOUT, REPORT_ACTIONS, adminReports, personName, reportAbout, reportSubject, reportedHandle, resolveReport, subjectPhoto, type ReportAction, type ReportAbout } from "@/lib/adminStore";
+import { REPORT_ABOUT, REPORT_ACTIONS, adminReports, personEmail, personName, reportAbout, reportSubject, reportedHandle, resolveReport, subjectPhoto, type ReportAction, type ReportAbout } from "@/lib/adminStore";
 import type { CxReport } from "@/lib/cxProjectStore";
 import { useAdmin } from "@/lib/useAdmin";
 import { CARD } from "./gauges";
@@ -173,7 +173,7 @@ export function AdminReportsPage() {
                           <Avatar name={reportSubject(report)} src={subjectPhoto(report)} size="sm" />
                           <span className="min-w-0">
                             <span className="block truncate font-medium text-foreground">{reportSubject(report)}</span>
-                            <span className="block text-caption text-muted">{report.kind === "person" ? "Person" : "Opportunity"}</span>
+                            <span className="block truncate text-caption text-muted">{report.kind === "person" ? personEmail(report.target) || "Person" : "Opportunity"}</span>
                           </span>
                         </span>
                       </td>
@@ -227,7 +227,7 @@ function ReportSheet({ report, open, onClose }: { report: CxReport; open: boolea
       open={open}
       onClose={onClose}
       dirty={waiting && note.trim() !== ""}
-      title={reportSubject(report)}
+      title="Report details"
       footer={
         waiting ? (
           <>

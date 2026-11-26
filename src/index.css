@@ -946,3 +946,14 @@ html {
 :is([data-theme="dark"], [data-theme="light"]) :is(a, button):is(.h-9, .h-10, .h-11, .h-12, .h-14)[class*="px-"] {
   border-radius: 9999px !important;
 }
+
+/* Native date fields follow the theme, so the calendar icon and its picker can be read on a dark background. */
+[data-theme="dark"] input[type="date"] {
+  color-scheme: dark;
+}
+[data-theme="light"] input[type="date"] {
+  color-scheme: light;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}

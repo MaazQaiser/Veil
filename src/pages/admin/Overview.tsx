@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
 import { Tooltip } from "@/components/ui/menu";
-import { IconBookmark, IconEye, IconFlag, IconHandshake, IconShield, IconUser, IconUserCheck, IconUserMinus, IconUsers } from "@/components/ui/icons";
+import { IconBookmark, IconFlag, IconHandshake, IconShield, IconUser, IconUserCheck, IconUserMinus, IconUsers } from "@/components/ui/icons";
 import {
   FOUNDING_CAP,
-  adminAttention,
   adminDashboard,
   adminOverview,
   adminReports,
-  personName,
+  personEmail, personName,
   memberPhoto,
   reportSubject,
   subjectPhoto,
@@ -31,6 +30,9 @@ const RANGES: { id: RangeDays; label: string }[] = [
 ];
 
 const MUTED = "rgb(128 128 128 / 0.45)";
+/** The two colours of the cards at the top, the same slate and orange as the charts below, taken in turn so neighbours differ. */
+const KPI = CHART.slate;
+const KPI_WARM = CHART.orange;
 
 function hoursText(hours: number | null) {
   if (hours === null) return "no resolved reports yet";
@@ -45,7 +47,6 @@ function hoursText(hours: number | null) {
 type SortKey = "about" | "reason" | "by" | "waiting";
 
 function ReportsTable({ avgResolve }: { avgResolve: string }) {
-  const repeat = adminAttention().find((item) => item.id === "repeat");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "waiting", dir: 1 });
   const waiting = adminReports().filter((item) => item.status === "open");
   const value = (report: (typeof waiting)[number], key: SortKey) =>
@@ -88,11 +89,6 @@ function ReportsTable({ avgResolve }: { avgResolve: string }) {
           All reports →
         </Link>
       </div>
-      {repeat ? (
-        <p className="border-b border-border-subtle bg-destructive-muted px-5 py-2.5 text-caption text-destructive">
-          <span className="font-semibold">{repeat.title}.</span> {repeat.detail}
-        </p>
-      ) : null}
       {rows.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 text-center">
           <p className="text-body-sm font-medium text-foreground">Nothing is waiting</p>
@@ -118,7 +114,7 @@ function ReportsTable({ avgResolve }: { avgResolve: string }) {
                       <Avatar name={reportSubject(report)} src={subjectPhoto(report)} size="sm" />
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-foreground">{reportSubject(report)}</span>
-                        <span className="block text-caption text-muted">{report.kind === "person" ? "Person" : "Opportunity"}</span>
+                        <span className="block truncate text-caption text-muted">{report.kind === "person" ? personEmail(report.target) || "Person" : "Opportunity"}</span>
                       </span>
                     </span>
                   </td>
@@ -191,20 +187,21 @@ export function AdminOverviewPage() {
       />
 
       <section className="space-y-5">
+        {/* Nine cards in one grid, slate and orange in turn. Active members, Deactivated, Waiting list and Staff accounts show how things stand right now, so they ignore the period above. */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard
             icon={<IconFlag />}
-            tint={COLOR.reports}
+            tint={KPI}
             label="Reports received"
             note={stats.reportsWaiting === 0 ? "No reports are waiting for you." : `${stats.reportsWaiting} ${plural(stats.reportsWaiting, "report is", "reports are")} still waiting for you, whatever the period.`}
             value={sum.reports.filed}
             to="/admin/reports"
-            chip={<DeltaChip value={data.reports.value} previous={data.reports.previous} word={compareWord} lowerIsBetter />}
-            visual={<Sparkline data={data.reports.spark} color={COLOR.reports} />}
+            chip={<DeltaChip value={data.reports.value} previous={data.reports.previous} word={compareWord} />}
+            visual={<Sparkline data={data.reports.spark} color={KPI} />}
             legend={
               <Legend
                 items={[
-                  { label: "waiting", value: sum.reports.toReview, color: COLOR.reports },
+                  { label: "waiting", value: sum.reports.toReview, color: KPI },
                   { label: "decided", value: sum.reports.decided, color: MUTED },
                 ]}
               />
@@ -212,28 +209,28 @@ export function AdminOverviewPage() {
           />
           <StatCard
             icon={<IconUsers />}
-            tint={COLOR.members}
+            tint={KPI_WARM}
             label="New members"
             note={`${stats.totalMembers} ${plural(stats.totalMembers, "member", "members")} in total, across all districts.`}
             value={sum.members.joined}
             unit="joined"
             to="/admin/accounts"
             chip={<DeltaChip value={data.members.value} previous={data.members.previous} word={compareWord} />}
-            visual={<Sparkline data={data.members.spark} color={COLOR.members} />}
+            visual={<Sparkline data={data.members.spark} color={KPI_WARM} />}
             legend={<Legend items={[{ label: "members in total", value: stats.totalMembers, color: MUTED }]} />}
           />
           <StatCard
             icon={<IconUser />}
-            tint={COLOR.members}
+            tint={KPI}
             label="Vaelance completed"
             note="How many of the new members completed their Vaelance. Members can't be matched until they do."
             value={sum.members.finished}
             unit={`of ${sum.members.joined} new`}
-            visual={<ProgressBar value={sum.members.finished} max={sum.members.joined} color={COLOR.members} />}
+            visual={<ProgressBar value={sum.members.finished} max={sum.members.joined} color={KPI} />}
             legend={
               <Legend
                 items={[
-                  { label: "completed", value: sum.members.finished, color: COLOR.members },
+                  { label: "completed", value: sum.members.finished, color: KPI },
                   { label: "not yet", value: sum.members.joined - sum.members.finished, color: MUTED },
                 ]}
               />
@@ -241,93 +238,71 @@ export function AdminOverviewPage() {
           />
           <StatCard
             icon={<IconBookmark />}
-            tint={COLOR.founding}
+            tint={KPI_WARM}
             label="Founding places"
             note={`${sum.founding.taken} taken ${period}. The first ${FOUNDING_CAP} members to join Vael get a founding place.`}
             value={sum.founding.held}
             unit={`of ${FOUNDING_CAP}`}
             to="/admin/founding"
-            visual={<ProgressBar value={sum.founding.held} max={FOUNDING_CAP} color={COLOR.founding} />}
+            visual={<ProgressBar value={sum.founding.held} max={FOUNDING_CAP} color={KPI_WARM} />}
             legend={
               <Legend
                 items={[
-                  { label: "taken", value: sum.founding.held, color: COLOR.founding },
+                  { label: "taken", value: sum.founding.held, color: KPI_WARM },
                   { label: "free", value: FOUNDING_CAP - sum.founding.held, color: MUTED },
                 ]}
               />
             }
           />
           <StatCard
-            icon={<IconEye />}
-            tint={COLOR.listings}
-            label="New listings"
-            note="A listing goes live when a member goes visible on Vael, either as available (Vael In) or as looking for someone (Vael Out)."
-            value={sum.listings.total}
-            unit="went live"
-            chip={<DeltaChip value={data.posted.value} previous={data.posted.previous} word={compareWord} />}
-            visual={<Sparkline data={data.posted.spark} color={COLOR.listings} />}
-            legend={
-              <Legend
-                items={[
-                  { label: "available", value: sum.listings.available, color: COLOR.available },
-                  { label: "looking", value: sum.listings.looking, color: COLOR.looking },
-                ]}
-              />
-            }
-          />
-          <StatCard
-            icon={<IconHandshake />}
-            tint={COLOR.connections}
-            label="New connections"
-            note="A connection is made when two members both say yes and can start talking. The product calls this a Handshake."
-            value={sum.connections.opened}
-            unit="made"
-            chip={<DeltaChip value={data.handshakes.value} previous={data.handshakes.previous} word={compareWord} />}
-            visual={<Sparkline data={data.handshakes.spark} color={COLOR.connections} />}
-            legend={
-              <Legend
-                items={[
-                  { label: "open", value: sum.connections.stillOpen, color: COLOR.connections },
-                  { label: "closed", value: sum.connections.ended, color: MUTED },
-                ]}
-              />
-            }
-          />
-        </div>
-
-        {/* How things stand right now, so these ignore the period above. */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
             icon={<IconUserCheck />}
-            tint={COLOR.members}
+            tint={KPI}
             label="Active members"
             note="Members who can sign in right now, whatever the period."
             value={stats.activeMembers}
             unit={`of ${stats.totalMembers}`}
             to="/admin/accounts"
-            visual={<ProgressBar value={stats.activeMembers} max={stats.totalMembers} color={COLOR.members} />}
+            visual={<ProgressBar value={stats.activeMembers} max={stats.totalMembers} color={KPI} />}
             legend={
               <Legend
                 items={[
-                  { label: "active", value: stats.activeMembers, color: COLOR.members },
+                  { label: "active", value: stats.activeMembers, color: KPI },
                   { label: "not active", value: stats.totalMembers - stats.activeMembers, color: MUTED },
                 ]}
               />
             }
           />
           <StatCard
+            icon={<IconHandshake />}
+            tint={KPI_WARM}
+            label="New connections"
+            note="A connection is made when two members both say yes and can start talking. The product calls this a Handshake."
+            value={sum.connections.opened}
+            unit="made"
+            chip={<DeltaChip value={data.handshakes.value} previous={data.handshakes.previous} word={compareWord} />}
+            visual={<Sparkline data={data.handshakes.spark} color={KPI_WARM} />}
+            legend={
+              <Legend
+                items={[
+                  { label: "open", value: sum.connections.stillOpen, color: KPI_WARM },
+                  { label: "closed", value: sum.connections.ended, color: MUTED },
+                ]}
+              />
+            }
+          />
+          <StatCard
             icon={<IconUserMinus />}
-            tint={COLOR.members}
+            tint={KPI}
             label="Deactivated"
             note="Members you have switched off. They can't sign in until you reactivate them."
             value={stats.deactivatedMembers}
             unit={`of ${stats.totalMembers}`}
             to="/admin/accounts"
-            visual={<ProgressBar value={stats.deactivatedMembers} max={stats.totalMembers} color={COLOR.members} />}
+            visual={<ProgressBar value={stats.deactivatedMembers} max={stats.totalMembers} color={KPI} />}
             legend={
               <Legend
                 items={[
-                  { label: "deactivated", value: stats.deactivatedMembers, color: COLOR.members },
+                  { label: "deactivated", value: stats.deactivatedMembers, color: KPI },
                   { label: "blocked", value: stats.blockedMembers, color: MUTED },
                 ]}
               />
@@ -335,17 +310,17 @@ export function AdminOverviewPage() {
           />
           <StatCard
             icon={<IconBookmark />}
-            tint={COLOR.founding}
+            tint={KPI_WARM}
             label="Waiting list"
             note={`Members who joined after the first ${FOUNDING_CAP} and are waiting for a Founding place to come free.`}
             value={stats.waitingForFounding}
             unit="waiting"
             to="/admin/founding"
-            visual={<ProgressBar value={stats.waitingForFounding} max={stats.totalMembers} color={COLOR.founding} />}
+            visual={<ProgressBar value={stats.waitingForFounding} max={stats.totalMembers} color={KPI_WARM} />}
             legend={
               <Legend
                 items={[
-                  { label: "waiting", value: stats.waitingForFounding, color: COLOR.founding },
+                  { label: "waiting", value: stats.waitingForFounding, color: KPI_WARM },
                   { label: "hold a place", value: stats.foundingHeld, color: MUTED },
                 ]}
               />
@@ -353,17 +328,17 @@ export function AdminOverviewPage() {
           />
           <StatCard
             icon={<IconShield />}
-            tint={CHART.sand}
+            tint={KPI}
             label="Staff accounts"
             note="The people who can sign in to this admin area, you included."
             value={stats.staffActive}
             unit="admins"
             to="/admin/admins"
-            visual={<ProgressBar value={stats.staffActive} max={stats.staffActive + stats.staffRemoved} color={CHART.sand} />}
+            visual={<ProgressBar value={stats.staffActive} max={stats.staffActive + stats.staffRemoved} color={KPI} />}
             legend={
               <Legend
                 items={[
-                  { label: "active", value: stats.staffActive, color: CHART.sand },
+                  { label: "active", value: stats.staffActive, color: KPI },
                   { label: "removed", value: stats.staffRemoved, color: MUTED },
                 ]}
               />
@@ -375,7 +350,7 @@ export function AdminOverviewPage() {
       <section className="space-y-5">
         <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
           <ChartCard title="Total members" hint={`People who had joined by the end of each ${per}.`}>
-            <LineTrend points={membersLine} color={COLOR.members} unit="member" weekly={weekly} legend={{ label: "Total members", total: data.memberTotals[data.memberTotals.length - 1] ?? 0 }} />
+            <LineTrend points={membersLine} color={CHART.orange} unit="member" weekly={weekly} legend={{ label: "Total members", total: data.memberTotals[data.memberTotals.length - 1] ?? 0 }} />
           </ChartCard>
           <ChartCard title="Listings and connections" hint={`Listings that went live and connections made, in each ${stepWord}.`}>
             <GroupedBars
