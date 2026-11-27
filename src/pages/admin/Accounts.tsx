@@ -12,8 +12,11 @@ import { adminAccounts, memberPhoto, memberVaels, setAccountStatus, type AdminAc
 import { formatDate } from "@/lib/time";
 import { useAdmin } from "@/lib/useAdmin";
 import { CARD } from "./gauges";
-import { AdminPageHeader, Detail, EmptyPanel, FilterSelect, StatusPill, TabBar } from "./parts";
+import { AdminPageHeader, Detail, EmptyPanel, FilterSelect, Pagination, StatusPill, TabBar } from "./parts";
 import { SideSheet } from "./SideSheet";
+
+/** How many members show on one page. */
+const PAGE_SIZE = 8;
 
 type Tab = "all" | "active" | "deactivated" | "blocked";
 type Pending = { member: AdminAccount; kind: "deactivate" | "block" } | null;
@@ -37,6 +40,7 @@ export function AdminAccountsPage() {
   // The member shown in the side panel. It stays set while the panel slides out, so the panel does not go blank on the way.
   const [viewing, setViewing] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const all = adminAccounts();
   const wanted = query.trim().toLowerCase();
   const rows = all.filter(
@@ -46,6 +50,10 @@ export function AdminAccountsPage() {
       (!wanted || `${member.displayName} ${member.email} ${member.handle}`.toLowerCase().includes(wanted)),
   );
   const count = (status: AdminAccount["status"]) => all.filter((member) => member.status === status).length;
+  // A new tab, district or search starts again from the first page, and a page that no longer exists falls back to the last one.
+  useEffect(() => setPage(1), [tab, district, wanted]);
+  const current = Math.min(page, Math.max(1, Math.ceil(rows.length / PAGE_SIZE)));
+  const pageRows = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
 
   function close() {
     setPending(null);
@@ -140,7 +148,7 @@ export function AdminAccountsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">
-                {rows.map((member) => (
+                {pageRows.map((member) => (
                   <tr
                     key={member.handle}
                     tabIndex={0}
@@ -218,6 +226,7 @@ export function AdminAccountsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={current} pageSize={PAGE_SIZE} total={rows.length} onChange={setPage} noun="members" />
         </section>
       )}
 
